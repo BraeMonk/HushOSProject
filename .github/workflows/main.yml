@@ -65,38 +65,44 @@ jobs:
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           CMDLINE_TOOLS_BASE_DIR="$SDK_ROOT/cmdline-tools"
           CMDLINE_TOOLS_LATEST_DIR="$CMDLINE_TOOLS_BASE_DIR/latest"
-          SDKMANAGER="$CMDLINE_TOOLS_LATEST_DIR/bin/sdkmanager"
-          TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip" # Temporary directory
+          FINAL_BIN_DIR="$CMDLINE_TOOLS_LATEST_DIR/bin" # The definitive bin directory
+          SDKMANAGER="$FINAL_BIN_DIR/sdkmanager"
+          TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip"
 
           echo "Attempting to create SDK directories and download command-line tools..."
           mkdir -p "$SDK_ROOT"
           
-          # Download cmdline-tools if not already present in the 'latest' subdirectory
           if [ ! -d "$CMDLINE_TOOLS_LATEST_DIR" ]; then
             echo "Downloading Android SDK command-line tools..."
-            mkdir -p "$TEMP_UNZIP_DIR" # Create temp dir
-            cd "$TEMP_UNZIP_DIR" # Unzip into temp dir to avoid conflicts
+            mkdir -p "$TEMP_UNZIP_DIR"
+            cd "$TEMP_UNZIP_DIR"
             
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
             
-            # Find the actual 'latest' directory inside the unzipped content
-            # It could be directly 'latest' or 'cmdline-tools/latest'
-            UNZIPPED_LATEST_PATH=""
-            if [ -d "./latest" ]; then
-              UNZIPPED_LATEST_PATH="./latest"
-            elif [ -d "./cmdline-tools/latest" ]; then
-              UNZIPPED_LATEST_PATH="./cmdline-tools/latest"
+            # --- Start of refined mv logic ---
+            # Create the final target bin directory
+            mkdir -p "$FINAL_BIN_DIR"
+
+            # Check if 'latest/bin/' exists after unzip and move its contents
+            if [ -d "./latest/bin" ] && [ "$(ls -A ./latest/bin)" ]; then
+              echo "Moving contents from ./latest/bin to $FINAL_BIN_DIR"
+              mv ./latest/bin/* "$FINAL_BIN_DIR/"
+            # Check if 'cmdline-tools/latest/bin/' exists after unzip and move its contents
+            elif [ -d "./cmdline-tools/latest/bin" ] && [ "$(ls -A ./cmdline-tools/latest/bin)" ]; then
+              echo "Moving contents from ./cmdline-tools/latest/bin to $FINAL_BIN_DIR"
+              mv ./cmdline-tools/latest/bin/* "$FINAL_BIN_DIR/"
+            # Fallback: if 'bin/' is directly in the unzipped root (less common for cmdline-tools but possible)
+            elif [ -d "./bin" ] && [ "$(ls -A ./bin)" ]; then
+              echo "Moving contents from ./bin to $FINAL_BIN_DIR"
+              mv ./bin/* "$FINAL_BIN_DIR/"
             else
-              echo "Error: Could not find 'latest' directory in unzipped cmdline-tools."
+              echo "Error: Could not find 'bin' directory with sdkmanager in unzipped cmdline-tools."
               ls -R . # List contents for debugging
               exit 1
             fi
+            # --- End of refined mv logic ---
 
-            echo "Moving $UNZIPPED_LATEST_PATH to $CMDLINE_TOOLS_LATEST_DIR"
-            mkdir -p "$CMDLINE_TOOLS_BASE_DIR" # Ensure parent dir exists
-            mv "$UNZIPPED_LATEST_PATH" "$CMDLINE_TOOLS_BASE_DIR/" # Move the 'latest' folder itself
-            
             cd "$SDK_ROOT" # Change back to SDK_ROOT for subsequent commands
             rm -rf "$TEMP_UNZIP_DIR" # Clean up temp directory
           else
@@ -106,14 +112,15 @@ jobs:
           echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER"
           if [ ! -f "$SDKMANAGER" ]; then
             echo "Error: sdkmanager not found at $SDKMANAGER. Check paths or download."
-            # Also list content of CMDLINE_TOOLS_LATEST_DIR for debugging
-            ls -la "$CMDLINE_TOOLS_LATEST_DIR" 
+            ls -la "$FINAL_BIN_DIR" # List contents of the bin directory
             exit 1
           fi
 
+          # Ensure sdkmanager is executable (sometimes permissions get lost)
+          chmod +x "$SDKMANAGER"
+
           echo "Accepting all Android SDK licenses..."
           mkdir -p "$SDK_ROOT/licenses"
-          # Method 1: Create license files directly as a fallback
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$SDK_ROOT/licenses/android-sdk-license"
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_ROOT/licenses/android-sdk-preview-license"
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > "$SDK_ROOT/licenses/android-sdk-arm-dbt-license"
@@ -121,7 +128,6 @@ jobs:
           echo "79120722343a6f314e0719f863036c702b0e6b2a" > "$SDK_ROOT/licenses/android-sdk-preview-license-old"
           echo "504667f4c0de7af1a06de9f4b1727b84351f2910" > "$SDK_ROOT/licenses/android-sdk-license-old"
 
-          # Method 2: Use 'yes' command with sdkmanager --licenses
           yes | "$SDKMANAGER" --licenses || true
           yes | "$SDKMANAGER" --licenses || true
           yes | "$SDKMANAGER" --licenses || true
