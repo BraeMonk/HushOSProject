@@ -1,8 +1,6 @@
-# This is the definitive, foolproof GitHub Actions workflow for building your Kivy app.
-# It uses caching, explicitly sets all required paths, and runs build commands in the
-# correct order to prevent common errors.
-
-name: Build HushOS for Android
+# This workflow uses Buildozer's own config commands to ensure the correct
+# SDK and build tools are used, providing the most reliable build method.
+name: Build Android App
 on:
   push:
     branches: [ "main" ]
@@ -69,31 +67,34 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-31" "build-tools;34.0.0" "ndk;25.2.9519653"
 
-      # 10. Configure buildozer.spec and Environment
-      - name: Configure buildozer.spec and Environment
+      # 10. CRITICAL: Configure Buildozer to use the correct SDK
+      - name: Configure Buildozer using its own commands
         run: |
+          # Find the NDK path dynamically
           export NDK_PATH=$(ls -d $ANDROID_HOME/ndk/* | tail -1)
-          sed -i "s|^#? *android.sdk_path *=.*|android.sdk_path = $ANDROID_HOME|g" buildozer.spec
-          sed -i "s|^#? *android.ndk_path *=.*|android.ndk_path = $NDK_PATH|g" buildozer.spec
-          sed -i "s|^#? *android.build_tools_version *=.*|android.build_tools_version = 34.0.0|g" buildozer.spec
-          echo "$ANDROID_HOME/build-tools/34.0.0" >> $GITHUB_PATH
-          echo "✅ Environment configured."
+          
+          # Use `buildozer config set` to forcefully write the correct paths
+          # This is the most reliable method.
+          buildozer config set android.sdk_path $ANDROID_HOME
+          buildozer config set android.ndk_path $NDK_PATH
+          buildozer config set android.build_tools_version 34.0.0
+          
+          echo "✅ Buildozer configuration has been updated."
+          echo "--- Verifying spec file contents: ---"
+          cat buildozer.spec | grep -E "android.sdk_path|android.ndk_path|android.build_tools_version"
+          echo "------------------------------------"
 
-      # 11. Update, Clean, and Build
-      - name: Update, Clean, and Build with Buildozer
+      # 11. Build the APK
+      - name: Build the APK with Buildozer
         run: |
-          # 1. Update: Download python-for-android and other dependencies first
+          # The standard build sequence: update dependencies, clean, and then build
           buildozer -v android update
-
-          # 2. Clean: Now that dependencies exist, clean the build
           buildozer -v android clean
-
-          # 3. Debug: Run the final build
           buildozer -v android debug
 
-      # 12. Upload the final .apk file as a downloadable artifact
+      # 12. Upload the final .apk file
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: HushOS-APK
+          name: Android-APK
           path: bin/*.apk
