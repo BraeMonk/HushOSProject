@@ -1,6 +1,7 @@
-# This workflow uses the latest development versions of the build tools
-# to ensure compatibility with modern JDKs and Android SDK structures.
-name: Build Android APK
+# This workflow is corrected to prevent Buildozer from downloading
+# a non-existent NDK version by pointing it to the pre-installed one.
+name: Build Android App
+
 on:
   push:
     branches: [ "main" ]
@@ -44,7 +45,6 @@ jobs:
             cmake libffi-dev libssl-dev
 
       # 6. Set up the Android SDK environment
-      # This action provides the modern cmdline-tools
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -56,7 +56,7 @@ jobs:
           pip install --user git+https://github.com/kivy/python-for-android.git
           pip install --user cython
 
-      # 8. Add local bin to PATH for the Buildozer executable
+      # 8. Add local bin to PATH
       - name: Add local bin to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
@@ -66,12 +66,18 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
 
-      # 10. Build the APK using a clean, standard process
+      # 10. Configure Buildozer to use pre-installed tools
+      - name: Configure Buildozer
+        run: |
+          # THE FIX IS HERE: We explicitly tell Buildozer which NDK version to use.
+          buildozer config set android.ndk_version 25c
+
+      # 11. Build the APK
       - name: Build APK with Buildozer
         run: |
           buildozer -v android debug
 
-      # 11. Upload the final APK as a build artifact
+      # 12. Upload the final APK
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
