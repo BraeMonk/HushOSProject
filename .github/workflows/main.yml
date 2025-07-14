@@ -158,11 +158,10 @@ jobs:
             mkdir -p "$HOME/.buildozer/android/platform"
             cd "$HOME/.buildozer/android/platform"
             curl -o ndk.zip "$NDK_URL"
-            # Attempt to extract, checking if the unzipped directory exists
             unzip ndk.zip
             if [ ! -d "$NDK_DIR_NAME" ]; then
                 echo "Error: NDK did not unzip to expected directory $NDK_DIR_NAME."
-                ls -F . # List contents of current directory
+                ls -F .
                 exit 1
             fi
             rm ndk.zip
@@ -171,12 +170,35 @@ jobs:
             echo "NDK $NDK_VERSION_CODE already exists at $NDK_INSTALL_PATH"
           fi
           
-          # --- Symlink NDK if needed (less common for NDK, but for safety) ---
+          # --- Create a symlink for the NDK as well, if Buildozer expects a different NDK path
           NDK_EXPECTED_BY_BUILDOZER="$HOME/.buildozer/android/platform/android-ndk-r25b"
           if [ ! -d "$NDK_EXPECTED_BY_BUILDOZER" ] && [ -d "$NDK_INSTALL_PATH" ] && [ "$NDK_INSTALL_PATH" != "$NDK_EXPECTED_BY_BUILDOZER" ]; then
             echo "Creating symlink for NDK from $NDK_INSTALL_PATH to $NDK_EXPECTED_BY_BUILDOZER…"
             ln -s "$NDK_INSTALL_PATH" "$NDK_EXPECTED_BY_BUILDOZER"
           fi
+
+          # --- FIX FOR NDK R25B PYTHON ISSUE ---
+          # ndk-build in r25b expects a python interpreter at a specific (now empty) location.
+          # We symlink the system python3 to that location.
+          NDK_PYTHON_SYMLINK_DIR="$NDK_INSTALL_PATH/build/core/prebuilt-binaries/linux-x86_64/python/bin"
+          NDK_PYTHON_SYMLINK_PATH="$NDK_PYTHON_SYMLINK_DIR/python"
+          SYSTEM_PYTHON_PATH="$(which python3)" # Get path to system's python3
+
+          echo "Ensuring NDK's expected Python location exists: $NDK_PYTHON_SYMLINK_DIR"
+          mkdir -p "$NDK_PYTHON_SYMLINK_DIR"
+          
+          if [ -f "$SYSTEM_PYTHON_PATH" ]; then
+            if [ ! -f "$NDK_PYTHON_SYMLINK_PATH" ]; then
+              echo "Creating symlink for NDK Python: $SYSTEM_PYTHON_PATH -> $NDK_PYTHON_SYMLINK_PATH"
+              ln -s "$SYSTEM_PYTHON_PATH" "$NDK_PYTHON_SYMLINK_PATH"
+            else
+              echo "NDK Python symlink already exists at: $NDK_PYTHON_SYMLINK_PATH"
+            fi
+          else
+            echo "Error: System Python3 not found at $SYSTEM_PYTHON_PATH. Cannot create NDK Python symlink."
+            exit 1
+          fi
+          # --- END FIX ---
 
 
           echo "Accepting all Android SDK licenses…"
@@ -211,9 +233,7 @@ jobs:
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
           echo "Ensuring NDK toolchain binaries are executable (more aggressively)…"
-          # Find all executables in the NDK toolchain bin directory and make them executable
           find "$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin" -type f -exec chmod +x {} + || true
-          # Explicitly target common NDK tools
           chmod +x "$NDK_INSTALL_PATH/ndk-build" || true
           chmod +x "$NDK_INSTALL_PATH/ndk-gdb" || true
           chmod +x "$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" || true
@@ -271,11 +291,9 @@ jobs:
       - name: Build Android APK
         run: |
           echo "Running buildozer android debug…"
-          # This is the critical command, and it usually contains detailed output.
-          # Redirect stderr to stdout to ensure all error messages are captured by the logger.
           buildozer android debug --verbose 2>&1 | tee buildozer_output.log
           
-          BUILD_EXIT_CODE=${PIPESTATUS[0]} # Get the exit code of buildozer, not tee
+          BUILD_EXIT_CODE=${PIPESTATUS[0]}
           echo "Buildozer command exited with code: $BUILD_EXIT_CODE"
 
           APK_FOUND=false
@@ -292,7 +310,6 @@ jobs:
           else
             echo "Buildozer failed to generate APKs. Propagating original exit code ($BUILD_EXIT_CODE)."
             echo "::error file=buildozer_output.log::Buildozer output log for detailed errors."
-            # Output the log content for easier debugging in the GitHub Actions UI
             cat buildozer_output.log
             exit $BUILD_EXIT_CODE
         shell: bash
