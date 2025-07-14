@@ -19,7 +19,7 @@ jobs:
 
       - name: Clean Buildozer cache
         run: |
-          echo "Removing existing .buildozer directory to ensure clean build..."
+          echo "Removing existing .buildozer directory to ensure clean build…"
           rm -rf "$HOME/.buildozer" || true
           rm -rf ".buildozer" || true # Also check local buildozer dir if present
         shell: bash
@@ -42,7 +42,7 @@ jobs:
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev perl
           which perl || echo "perl not found in PATH after install!"
           
-          # --- NEW: Ensure setuptools is specifically installed/upgraded first ---
+          # — NEW: Ensure setuptools is specifically installed/upgraded first —
           # This is crucial for distutils compatibility with newer Python/packaging tools.
           python3 -m pip install --upgrade setuptools pip wheel
           
@@ -57,7 +57,7 @@ jobs:
 
       - name: Force correct buildozer.spec settings
         run: |
-          echo "Checking buildozer.spec settings..."
+          echo "Checking buildozer.spec settings…"
           cp buildozer.spec buildozer.spec.backup
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
@@ -83,11 +83,11 @@ jobs:
           BUILD_TOOLS_VERSION="33.0.2"
           NDK_VERSION="23.1.7779620" # NDK 23b
 
-          echo "Attempting to create SDK directories and download command-line tools..."
+          echo "Attempting to create SDK directories and download command-line tools…"
           mkdir -p "$SDK_ROOT"
           
           if [ ! -d "$CMDLINE_TOOLS_LATEST_DIR" ]; then
-            echo "Downloading Android SDK command-line tools..."
+            echo "Downloading Android SDK command-line tools…"
             mkdir -p "$TEMP_UNZIP_DIR"
             cd "$TEMP_UNZIP_DIR"
             
@@ -99,7 +99,7 @@ jobs:
               echo "Moving contents from ./cmdline-tools/latest/bin to ${FINAL_CMDLINE_BIN_DIR}"
               mv ./latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
             elif [ -d "./cmdline-tools/latest/bin" ] && [ "$(ls -A ./cmdline-tools/latest/bin)" ]; then
-              echo "Moving contents from ./cmdline-tools/latest/bin to "$FINAL_CMDLINE_BIN_DIR"
+              echo "Moving contents from ./cmdline-tools/latest/bin to "$FINAL_CMDLINE_BIN_DIR""
               mv ./cmdline-tools/latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
             elif [ -d "./bin" ] && [ "$(ls -A ./bin)" ]; then
               echo "Moving contents from ./bin to $FINAL_CMDLINE_BIN_DIR"
@@ -123,7 +123,7 @@ jobs:
 
           chmod +x "$SDKMANAGER"
 
-          echo "Accepting all Android SDK licenses..."
+          echo "Accepting all Android SDK licenses…"
           mkdir -p "$SDK_ROOT/licenses"
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$SDK_ROOT/licenses/android-sdk-license"
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_ROOT/licenses/android-sdk-preview-license"
@@ -136,8 +136,8 @@ jobs:
           yes | "$SDKMANAGER" --licenses || true
           yes | "$SDKMANAGER" --licenses || true
 
-          echo "Installing/Updating specific Android SDK components..."
-          echo "Installing 'tools' package for broader compatibility..."
+          echo "Installing/Updating specific Android SDK components…"
+          echo "Installing 'tools' package for broader compatibility…"
           "$SDKMANAGER" "tools" || true
 
           "$SDKMANAGER" "build-tools;$BUILD_TOOLS_VERSION" || true
@@ -145,32 +145,32 @@ jobs:
           "$SDKMANAGER" "platforms;android-33" || true
           "$SDKMANAGER" "ndk;$NDK_VERSION" || true 
 
-          echo "Listing installed SDK components to verify..."
+          echo "Listing installed SDK components to verify…"
           "$SDKMANAGER" --list | grep "build-tools"
           "$SDKMANAGER" --list | grep "platform-tools"
           "$SDKMANAGER" --list | grep "ndk"
-          # Corrected: Changed || true # echo "..." to || echo "..." or just removed comment
+          # Corrected: Changed || true # echo "…" to || echo "…" or just removed comment
           ls -la "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" || echo "Build-tools $BUILD_TOOLS_VERSION directory not found after explicit install."
           ls -la "$SDK_ROOT/platform-tools" || echo "Platform-tools directory not found after explicit install."
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION" || echo "NDK $NDK_VERSION directory not found after explicit install."
 
-          # --- Add ALL necessary Android SDK tool directories to PATH for subsequent steps ---
-          echo "Adding Android SDK tool directories to GITHUB_PATH..."
+          # — Add ALL necessary Android SDK tool directories to PATH for subsequent steps —
+          echo "Adding Android SDK tool directories to GITHUB_PATH…"
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
           echo "$FINAL_CMDLINE_BIN_DIR" >> $GITHUB_PATH 
           echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH
 
-          # --- Ensure common binaries are executable (SDK & Build-Tools) ---
-          echo "Ensuring common Android SDK binaries are executable..."
+          # — Ensure common binaries are executable (SDK & Build-Tools) —
+          echo "Ensuring common Android SDK binaries are executable…"
           chmod +x "$SDK_ROOT/platform-tools/adb" || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aapt*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aidl*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "apksigner*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
-          # --- Ensure NDK toolchain binaries are executable ---
-          echo "Ensuring NDK toolchain binaries are executable..."
+          # — Ensure NDK toolchain binaries are executable —
+          echo "Ensuring NDK toolchain binaries are executable…"
           find "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" -type f -exec chmod +x {} \; || true
           chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-build" || true
           chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-gdb" || true
@@ -188,14 +188,13 @@ jobs:
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" || echo "clang not found or bad permissions."
           "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" --version || echo "clang not executable or --version not supported."
 
-
-          # --- Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
-          echo "Setting ANDROID_HOME, ANDROID_NDK_HOME, ANDROID_SDK_ROOT for all subsequent steps..."
+          # — Set ANDROID_HOME and ANDROID_NDK_HOME environment variables —
+          echo "Setting ANDROID_HOME, ANDROID_NDK_HOME, ANDROID_SDK_ROOT for all subsequent steps…"
           echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
           
-          # --- Tell python-for-android to NOT use hard links (set globally for job) ---
+          # — Tell python-for-android to NOT use hard links (set globally for job) —
           echo "P4A_NO_LINK_TO_LOCAL_SDKS=1" >> $GITHUB_ENV 
 
           echo "ANDROID_HOME is: $ANDROID_HOME"
@@ -219,13 +218,13 @@ jobs:
           echo "PATH inside Buildozer step (after explicit export): $PATH" # For debugging
           echo "P4A_NO_LINK_TO_LOCAL_SDKS inside Buildozer step: $P4A_NO_LINK_TO_LOCAL_SDKS" # For debugging
 
-          echo "Running buildozer android debug clean and update after SDK setup..."
+          echo "Running buildozer android debug clean and update after SDK setup…"
           buildozer android debug clean || true
           buildozer android debug update || true
 
       - name: Build Android APK
         run: |
-          echo "Running buildozer android debug..."
+          echo "Running buildozer android debug…"
           # Run buildozer in verbose mode
           buildozer android debug --verbose
           
@@ -233,7 +232,7 @@ jobs:
           echo "Buildozer command exited with code: $BUILD_EXIT_CODE"
 
           APK_FOUND=false
-          if ls bin/*.apk 1> /dev/null 2>&1; then
+          if ls bin/*.apk 1>/dev/null 2>&1; then
             APK_FOUND=true
             echo "::notice::APK files found in bin/ directory."
           else
@@ -245,8 +244,7 @@ jobs:
             exit 0 # Force successful exit if APKs are found
           else
             echo "Buildozer failed to generate APKs. Propagating original exit code ($BUILD_EXIT_CODE)."
-            exit $BUILD_EXIT_CODE # Exit with Buildozer's original code if no APKs
-          fi
+            exit $BUILD_EXIT_CODE # Exit with Buildozer’s original code if no APKs
         shell: bash # Explicitly use bash for the conditional logic
 
       - name: Upload APK artifact
