@@ -63,36 +63,51 @@ jobs:
       - name: Ensure Android SDK Tools are present and accept licenses
         run: |
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-          CMDLINE_TOOLS_BASE_DIR="$SDK_ROOT/cmdline-tools" # New variable for the parent of 'latest'
-          CMDLINE_TOOLS_LATEST_DIR="$CMDLINE_TOOLS_BASE_DIR/latest" # Where the actual tools should reside
+          CMDLINE_TOOLS_BASE_DIR="$SDK_ROOT/cmdline-tools"
+          CMDLINE_TOOLS_LATEST_DIR="$CMDLINE_TOOLS_BASE_DIR/latest"
           SDKMANAGER="$CMDLINE_TOOLS_LATEST_DIR/bin/sdkmanager"
+          TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip" # Temporary directory
 
           echo "Attempting to create SDK directories and download command-line tools..."
           mkdir -p "$SDK_ROOT"
-          cd "$SDK_ROOT"
-
+          
           # Download cmdline-tools if not already present in the 'latest' subdirectory
           if [ ! -d "$CMDLINE_TOOLS_LATEST_DIR" ]; then
             echo "Downloading Android SDK command-line tools..."
+            mkdir -p "$TEMP_UNZIP_DIR" # Create temp dir
+            cd "$TEMP_UNZIP_DIR" # Unzip into temp dir to avoid conflicts
+            
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
             
-            # The unzip creates a 'cmdline-tools' directory.
-            # We need to move its *contents* into the 'latest' directory
-            # or move the 'cmdline-tools' directory itself into 'latest'.
+            # Find the actual 'latest' directory inside the unzipped content
+            # It could be directly 'latest' or 'cmdline-tools/latest'
+            UNZIPPED_LATEST_PATH=""
+            if [ -d "./latest" ]; then
+              UNZIPPED_LATEST_PATH="./latest"
+            elif [ -d "./cmdline-tools/latest" ]; then
+              UNZIPPED_LATEST_PATH="./cmdline-tools/latest"
+            else
+              echo "Error: Could not find 'latest' directory in unzipped cmdline-tools."
+              ls -R . # List contents for debugging
+              exit 1
+            fi
+
+            echo "Moving $UNZIPPED_LATEST_PATH to $CMDLINE_TOOLS_LATEST_DIR"
+            mkdir -p "$CMDLINE_TOOLS_BASE_DIR" # Ensure parent dir exists
+            mv "$UNZIPPED_LATEST_PATH" "$CMDLINE_TOOLS_BASE_DIR/" # Move the 'latest' folder itself
             
-            mkdir -p "$CMDLINE_TOOLS_LATEST_DIR" # Ensure the target directory exists
-            
-            # Move the contents of the unzipped 'cmdline-tools' into the 'latest' directory
-            # This is the most common and robust way:
-            mv cmdline-tools/* "$CMDLINE_TOOLS_LATEST_DIR/"
-            rmdir cmdline-tools # Remove the now-empty 'cmdline-tools' directory
-            rm cmdline-tools.zip
+            cd "$SDK_ROOT" # Change back to SDK_ROOT for subsequent commands
+            rm -rf "$TEMP_UNZIP_DIR" # Clean up temp directory
+          else
+            cd "$SDK_ROOT" # Ensure we are in SDK_ROOT if tools already exist
           fi
 
           echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER"
           if [ ! -f "$SDKMANAGER" ]; then
             echo "Error: sdkmanager not found at $SDKMANAGER. Check paths or download."
+            # Also list content of CMDLINE_TOOLS_LATEST_DIR for debugging
+            ls -la "$CMDLINE_TOOLS_LATEST_DIR" 
             exit 1
           fi
 
@@ -120,7 +135,7 @@ jobs:
           echo "Listing installed SDK components to verify build-tools..."
           "$SDKMANAGER" --list | grep "build-tools"
           ls -la "$SDK_ROOT/build-tools/33.0.2" || echo "Build-tools 33.0.2 directory not found after explicit install."
-
+          
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
         # This step runs buildozer for the first time to set up any other Android SDK and NDK components
         # that Buildozer itself might manage or verify.
