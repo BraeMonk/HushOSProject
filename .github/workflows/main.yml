@@ -1,5 +1,5 @@
-# This workflow is corrected to prevent Buildozer from downloading
-# a non-existent NDK version by pointing it to the pre-installed one.
+# This workflow uses the latest Buildozer and explicitly sets the NDK version
+# to solve both the 'Unknown command' and 'NDK not found' errors.
 name: Build Android App
 
 on:
@@ -52,6 +52,7 @@ jobs:
       - name: Install latest Buildozer and dependencies
         run: |
           pip install --upgrade pip
+          # Install latest Buildozer from GitHub to ensure 'config' command is available
           pip install --user git+https://github.com/kivy/buildozer.git
           pip install --user git+https://github.com/kivy/python-for-android.git
           pip install --user cython
@@ -66,11 +67,12 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
 
-      # 10. Configure Buildozer to use pre-installed tools
-      - name: Configure Buildozer
+      # 10. Configure Buildozer to use pre-installed NDK
+      - name: Configure Buildozer NDK Version
         run: |
-          # THE FIX IS HERE: We explicitly tell Buildozer which NDK version to use.
+          # Set the NDK version to prevent Buildozer from downloading a non-existent one
           buildozer config set android.ndk_version 25c
+          echo "✅ NDK version set to 25c"
 
       # 11. Build the APK
       - name: Build APK with Buildozer
