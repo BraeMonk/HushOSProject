@@ -25,7 +25,19 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install dependencies
+    # ------------------ THE FIX IS HERE ------------------
+    # This block manually installs the necessary Android tools and accepts licenses,
+    # which is the most common reason for the 'Aidl not found' error.
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install Build Tools and Accept Licenses
+      run: |
+        sdkmanager "build-tools;33.0.2"
+        yes | sdkmanager --licenses
+    # ---------------- END OF FIX -----------------
+
+    - name: Install Buildozer and dependencies
       run: |
         python -m pip install --upgrade pip
         pip install cython
@@ -33,7 +45,7 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        buildozer android debug
+        buildozer -v android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
