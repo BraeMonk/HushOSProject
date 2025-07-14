@@ -42,7 +42,7 @@ jobs:
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev perl
           which perl || echo "perl not found in PATH after install!"
           
-          # — NEW: Ensure setuptools is specifically installed/upgraded first —
+          # --- NEW: Ensure setuptools is specifically installed/upgraded first ---
           # This is crucial for distutils compatibility with newer Python/packaging tools.
           python3 -m pip install --upgrade setuptools pip wheel
           
@@ -94,9 +94,10 @@ jobs:
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
             
+            # More robust check for the 'bin' directory after unzipping
             mkdir -p "$FINAL_CMDLINE_BIN_DIR"
             if [ -d "./latest/bin" ] && [ "$(ls -A ./latest/bin)" ]; then
-              echo "Moving contents from ./cmdline-tools/latest/bin to ${FINAL_CMDLINE_BIN_DIR}"
+              echo "Moving contents from ./latest/bin to ${FINAL_CMDLINE_BIN_DIR}"
               mv ./latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
             elif [ -d "./cmdline-tools/latest/bin" ] && [ "$(ls -A ./cmdline-tools/latest/bin)" ]; then
               echo "Moving contents from ./cmdline-tools/latest/bin to "$FINAL_CMDLINE_BIN_DIR""
@@ -149,19 +150,18 @@ jobs:
           "$SDKMANAGER" --list | grep "build-tools"
           "$SDKMANAGER" --list | grep "platform-tools"
           "$SDKMANAGER" --list | grep "ndk"
-          # Corrected: Changed || true # echo "…" to || echo "…" or just removed comment
           ls -la "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" || echo "Build-tools $BUILD_TOOLS_VERSION directory not found after explicit install."
           ls -la "$SDK_ROOT/platform-tools" || echo "Platform-tools directory not found after explicit install."
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION" || echo "NDK $NDK_VERSION directory not found after explicit install."
 
-          # — Add ALL necessary Android SDK tool directories to PATH for subsequent steps —
+          # --- Add ALL necessary Android SDK tool directories to PATH for subsequent steps ---
           echo "Adding Android SDK tool directories to GITHUB_PATH…"
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
           echo "$FINAL_CMDLINE_BIN_DIR" >> $GITHUB_PATH 
           echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH
 
-          # — Ensure common binaries are executable (SDK & Build-Tools) —
+          # --- Ensure common binaries are executable (SDK & Build-Tools) ---
           echo "Ensuring common Android SDK binaries are executable…"
           chmod +x "$SDK_ROOT/platform-tools/adb" || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aapt*" -exec chmod +x {} \; || true
@@ -169,7 +169,7 @@ jobs:
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "apksigner*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
-          # — Ensure NDK toolchain binaries are executable —
+          # --- Ensure NDK toolchain binaries are executable ---
           echo "Ensuring NDK toolchain binaries are executable…"
           find "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" -type f -exec chmod +x {} \; || true
           chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-build" || true
@@ -188,13 +188,13 @@ jobs:
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" || echo "clang not found or bad permissions."
           "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" --version || echo "clang not executable or --version not supported."
 
-          # — Set ANDROID_HOME and ANDROID_NDK_HOME environment variables —
+          # --- Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
           echo "Setting ANDROID_HOME, ANDROID_NDK_HOME, ANDROID_SDK_ROOT for all subsequent steps…"
           echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
           
-          # — Tell python-for-android to NOT use hard links (set globally for job) —
+          # --- Tell python-for-android to NOT use hard links (set globally for job) ---
           echo "P4A_NO_LINK_TO_LOCAL_SDKS=1" >> $GITHUB_ENV 
 
           echo "ANDROID_HOME is: $ANDROID_HOME"
