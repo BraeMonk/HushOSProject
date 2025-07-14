@@ -1,65 +1,59 @@
-name: HushOS Android CI
+name: Build Kivy Android APK
 
 on:
   push:
     branches:
-      - main
-      - master
+      - main # Trigger on pushes to the main branch
+  pull_request:
+    branches:
+      - main # Trigger on pull requests targeting the main branch
+  workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    
+  build_android_apk:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up Java Development Kit (JDK)
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
-        distribution: 'temurin'
+        distribution: 'temurin' # Recommended distribution
+        java-version: '17'      # Android API 33 often requires JDK 17
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.9' # Using 3.9, which is generally compatible with Kivy/Buildozer
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Install SDK Components and Accept Licenses
+    - name: Install Buildozer and its dependencies
       run: |
-        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
-        yes | sdkmanager --licenses
-        mkdir -p $ANDROID_SDK_ROOT/licenses
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
-        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
+        pip install buildozer
+        sudo apt-get update
+        sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev
 
-    - name: Remove pre-installed build-tools 36
+    - name: Add Google AI API Key to environment (if not already set)
+      # This is a placeholder. You should securely set this as a GitHub Secret.
+      # Replace 'YOUR_GOOGLE_AI_API_KEY' with the actual secret name if you've set it.
+      run: echo "AIzaSyB9_xVbsDjJN81reI73_KvqIOhXyKAsFNU" > .env_api_key_temp # DO NOT DO THIS IN PRODUCTION, USE SECRETS!
+
+    - name: Configure Buildozer and Download SDK/NDK
+      # This step runs buildozer for the first time to set up the Android SDK and NDK.
+      # It will take some time as it downloads necessary components.
       run: |
-        yes | sdkmanager --licenses
-        sdkmanager --uninstall "build-tools;36.0.0" || echo "build-tools 36 not installed"
+        buildozer android debug clean
+        buildozer android debug update
+        # Optionally, you can remove the temporary API key file here if it was created
+        # rm .env_api_key_temp
 
-    - name: Install Buildozer and dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install cython buildozer
+    - name: Build Android APK
+      # This is the actual build command. It uses the configured buildozer.spec.
+      run: buildozer android debug
 
-    - name: Build with Buildozer
-      run: |
-        sed -i 's|^android.sdk_path =.*|android.sdk_path =|' buildozer.spec
-        sed -i 's|^android.ndk_path =.*|android.ndk_path =|' buildozer.spec
-
-        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-        echo "ANDROID_NDK_ROOT=$ANDROID_NDK_ROOT"
-        ls -la $ANDROID_SDK_ROOT/build-tools/33.0.2/ || true
-
-        buildozer -v android debug
-
-    - name: Upload APK
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: hushos-debug-apk
-        path: bin/*.apk
+        name: HushOS-APK
+        path: bin/*.apk # Buildozer outputs APKs into the 'bin' directory
