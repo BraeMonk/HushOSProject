@@ -89,11 +89,9 @@ jobs:
             if [ -d "./latest/bin" ] && [ "$(ls -A ./latest/bin)" ]; then
               echo "Moving contents from ./latest/bin to $FINAL_CMDLINE_BIN_DIR"
               mv ./latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
-            # Check if 'cmdline-tools/latest/bin/' exists after unzip and move its contents
             elif [ -d "./cmdline-tools/latest/bin" ] && [ "$(ls -A ./cmdline-tools/latest/bin)" ]; then
               echo "Moving contents from ./cmdline-tools/latest/bin to $FINAL_CMDLINE_BIN_DIR"
               mv ./cmdline-tools/latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
-            # Fallback: if 'bin/' is directly in the unzipped root (less common for cmdline-tools but possible)
             elif [ -d "./bin" ] && [ "$(ls -A ./bin)" ]; then
               echo "Moving contents from ./bin to $FINAL_CMDLINE_BIN_DIR"
               mv ./bin/* "$FINAL_CMDLINE_BIN_DIR/"
@@ -160,10 +158,12 @@ jobs:
           # --- Ensure common binaries are executable ---
           echo "Ensuring common Android SDK binaries are executable..."
           chmod +x "$SDK_ROOT/platform-tools/adb" || true
-          chmod +x "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/aapt" || true
-          chmod +x "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/aidl" || true # NEW: chmod for aidl
-          chmod +x "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/apksigner" || true
-          chmod +x "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/zipalign" || true
+          # Note: aapt can sometimes be in a subdirectory like 'aapt/aapt' depending on build-tools version
+          # We'll rely on PATH for most of these now, but keep explicit chmod for crucial ones.
+          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aapt*" -exec chmod +x {} \; || true # More robust aapt chmod
+          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aidl*" -exec chmod +x {} \; || true # More robust aidl chmod
+          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "apksigner*" -exec chmod +x {} \; || true
+          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
           # Verify PATH update and check tools
           echo "Current PATH after modifications:"
@@ -171,11 +171,21 @@ jobs:
           echo "Verifying tool execution:"
           adb version || echo "adb not found after PATH update."
           aapt version || echo "aapt not found after PATH update."
-          aidl || echo "aidl not found after PATH update, trying explicit path." # NEW: check aidl
-          "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/aidl" --version || echo "aidl not found at specific path, or --version not supported." # More robust aidl check
-          apksigner || echo "apksigner not found after PATH update." # Check another common tool
-          zipalign || echo "zipalign not found after PATH update." # Check another common tool
+          aidl || echo "aidl not found after PATH update, trying explicit path." 
+          apksigner || echo "apksigner not found after PATH update."
+          zipalign || echo "zipalign not found after PATH update."
+
+          # --- NEW: Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
+          echo "Setting ANDROID_HOME and ANDROID_NDK_HOME environment variables..."
+          echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV # Often used interchangeably with ANDROID_HOME
           
+          # Verify environment variables (optional, for debugging)
+          echo "ANDROID_HOME is: $ANDROID_HOME"
+          echo "ANDROID_NDK_HOME is: $ANDROID_NDK_HOME"
+          echo "ANDROID_SDK_ROOT is: $ANDROID_SDK_ROOT"
+
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
         # This step runs buildozer for the first time to set up any other Android SDK and NDK components
         # that Buildozer itself might manage or verify.
