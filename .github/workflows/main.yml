@@ -37,11 +37,10 @@ jobs:
         sdkmanager "build-tools;33.0.2"
         yes | sdkmanager --licenses
     
-    - name: Install Buildozer and dependencies
+    - name: Install SDK Components and Accept Licenses
       run: |
-        python -m pip install --upgrade pip
-        pip install cython
-        pip install buildozer
+        sdkmanager "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+        yes | sdkmanager --licenses
 
     - name: Build with Buildozer
       run: |
