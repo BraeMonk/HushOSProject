@@ -39,7 +39,11 @@ jobs:
         run: |
           pip install buildozer cython
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev
+          # --- NEW: Install perl ---
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev perl
+          # Ensure perl is executable and in PATH if not already (though apt should handle this)
+          which perl || echo "perl not found in PATH after install!"
+
 
       - name: Add Google AI API Key to environment (if not already set)
         run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp
@@ -51,11 +55,16 @@ jobs:
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
           sed -i 's/^android\.ndk_version.*$/android.ndk_version = 23.1.7779620/' buildozer.spec # NDK 23b
+          # --- NEW: Explicitly set min_sdk_version to match the NDK API used by p4a ---
+          sed -i 's/^android\.min_sdk_version.*$/android.min_sdk_version = 21/' buildozer.spec
+          
           grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
           grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
           grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 23.1.7779620" >> buildozer.spec # NDK 23b
+          grep -q "^android\.min_sdk_version" buildozer.spec || echo "android.min_sdk_version = 21" >> buildozer.spec # NEW: Min SDK Version
+          
           echo "Current buildozer.spec Android settings:"
-          grep -E "(android.api|android.build_tools_version|android.ndk_version)" buildozer.spec
+          grep -E "(android.api|android.build_tools_version|android.ndk_version|android.min_sdk_version)" buildozer.spec
 
       - name: Ensure Android SDK Tools are present and accept licenses
         run: |
@@ -153,10 +162,9 @@ jobs:
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "apksigner*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
-          # --- NEW: Ensure NDK toolchain binaries are executable ---
+          # --- Ensure NDK toolchain binaries are executable ---
           echo "Ensuring NDK toolchain binaries are executable..."
           find "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" -type f -exec chmod +x {} \; || true
-          # Also for specific tools that might be outside of bin directly or for safety
           chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-build" || true
           chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-gdb" || true
 
@@ -170,7 +178,6 @@ jobs:
           aidl || echo "aidl not found after PATH update." 
           apksigner || echo "apksigner not found after PATH update."
           zipalign || echo "zipalign not found after PATH update."
-          # Verify clang specifically
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" || echo "clang not found or bad permissions."
           "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" --version || echo "clang not executable or --version not supported."
 
