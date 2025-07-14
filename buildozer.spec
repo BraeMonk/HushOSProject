@@ -56,6 +56,12 @@ android.build_tools_version = 33.0.2
 # (str) Android NDK path (will be set by GitHub Actions)
 #android.ndk_path = 
 
+# (str) Path to the Android SDK build-tools directory (helps with AIDL detection)
+#android.build_tools_path = 
+
+# (str) Path to the AIDL executable (if needed)
+#android.aidl_path = 
+
 # (str) Android entry point, default is ok for Kivy-based app
 #android.entrypoint = org.kivy.android.PythonActivity
 
