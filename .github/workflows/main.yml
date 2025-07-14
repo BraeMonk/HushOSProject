@@ -1,6 +1,6 @@
-# This workflow uses a robust manual edit of the spec file to
-# bypass Buildozer's internal NDK download, ensuring a stable build.
-name: Build Android App
+# A simplified and robust workflow using the latest development tools,
+# which automatically handle environment configuration.
+name: Build Android APK
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          key: ${{ runner.os }}-buildozer-v3-${{ hashFiles('buildozer.spec') }}
 
       # 3. Set up Java Development Kit (JDK) 17
       - name: Set up Java
@@ -48,12 +48,13 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 7. Install Buildozer and dependencies
-      - name: Install Buildozer and dependencies
+      # 7. Install the LATEST development build tools from GitHub
+      - name: Install latest Buildozer and dependencies
         run: |
           pip install --upgrade pip
-          pip install --user buildozer cython
-          pip install --user python-for-android
+          pip install --user --no-cache-dir git+https://github.com/kivy/buildozer.git
+          pip install --user --no-cache-dir git+https://github.com/kivy/python-for-android.git
+          pip install --user cython
 
       # 8. Add local bin to PATH
       - name: Add local bin to PATH
@@ -65,24 +66,12 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
 
-      # 10. Force-update buildozer.spec with correct paths
-      - name: Configure buildozer.spec
-        run: |
-          # This command finds the [android] section and adds our required settings
-          # directly underneath it, ensuring they are active and preventing downloads.
-          awk '/\[android\]/ {print; print "android.sdk_path = ${{ env.ANDROID_HOME }}"; print "android.ndk_path = ${{ env.ANDROID_HOME }}/ndk/25.2.9519653"; print "android.ndk_version = 25c"; next} 1' buildozer.spec > buildozer.spec.new && mv buildozer.spec.new buildozer.spec
-          
-          echo "✅ Spec file updated. Verifying contents:"
-          echo "-------------------------------------------"
-          cat buildozer.spec | grep -E '\[android\]|sdk_path|ndk_path|ndk_version'
-          echo "-------------------------------------------"
-
-      # 11. Build the APK
+      # 10. Build the APK (no manual config needed)
       - name: Build APK with Buildozer
         run: |
           buildozer -v android debug
 
-      # 12. Upload the final APK
+      # 11. Upload the final APK
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
