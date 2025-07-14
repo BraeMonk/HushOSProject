@@ -81,9 +81,13 @@ jobs:
           # This is where the 'latest' folder containing bin/lib should go
           FINAL_CMDLINE_TOOLS_ROOT="$TARGET_CMDLINE_TOOLS_DIR/latest"
           
-          # The actual sdkmanager executable path
-          SDKMANAGER="$FINAL_CMDLINE_TOOLS_ROOT/bin/sdkmanager"
+          # The actual sdkmanager executable path (modern location)
+          SDKMANAGER_MODERN="$FINAL_CMDLINE_TOOLS_ROOT/bin/sdkmanager"
           
+          # The path where Buildozer expects sdkmanager (legacy location)
+          SDKMANAGER_LEGACY_DIR="$SDK_ROOT/tools/bin"
+          SDKMANAGER_LEGACY_PATH="$SDKMANAGER_LEGACY_DIR/sdkmanager"
+
           TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip"
           BUILD_TOOLS_VERSION="33.0.2"
           NDK_VERSION="23.1.7779620" # NDK 23b
@@ -137,48 +141,51 @@ jobs:
             rm -rf "$TEMP_UNZIP_DIR"
           fi
 
-          # Re-establish SDKMANAGER path, as we changed the move logic
-          SDKMANAGER="$FINAL_CMDLINE_TOOLS_ROOT/bin/sdkmanager"
-          FINAL_CMDLINE_BIN_DIR="$FINAL_CMDLINE_TOOLS_ROOT/bin"
+          # --- SYMBOLIC LINKING FOR BUILDOZER COMPATIBILITY ---
+          echo "Creating symbolic link for sdkmanager for Buildozer compatibility…"
+          mkdir -p "$SDKMANAGER_LEGACY_DIR"
+          if [ -f "$SDKMANAGER_MODERN" ] && [ ! -f "$SDKMANAGER_LEGACY_PATH" ]; then
+            ln -s "$SDKMANAGER_MODERN" "$SDKMANAGER_LEGACY_PATH"
+            echo "Created symlink from '$SDKMANAGER_MODERN' to '$SDKMANAGER_LEGACY_PATH'"
+          elif [ -f "$SDKMANAGER_LEGACY_PATH" ]; then
+            echo "Symlink for sdkmanager already exists at '$SDKMANAGER_LEGACY_PATH'."
+          else
+            echo "Warning: Could not create symlink. Modern sdkmanager not found at '$SDKMANAGER_MODERN'."
+            ls -la "$FINAL_CMDLINE_TOOLS_ROOT/bin/"
+          fi
 
 
-          echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER"
-          if [ ! -f "$SDKMANAGER" ]; then
-            echo "Error: sdkmanager not found at $SDKMANAGER. Check paths or download."
-            ls -la "$FINAL_CMDLINE_BIN_DIR"
+          echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER_MODERN (modern)"
+          if [ ! -f "$SDKMANAGER_MODERN" ]; then
+            echo "Error: Modern sdkmanager not found at $SDKMANAGER_MODERN. Check paths or download."
+            ls -la "$FINAL_CMDLINE_TOOLS_ROOT/bin"
             ls -la "$FINAL_CMDLINE_TOOLS_ROOT"
             ls -la "$TARGET_CMDLINE_TOOLS_DIR"
             exit 1
           fi
 
-          chmod +x "$SDKMANAGER"
+          chmod +x "$SDKMANAGER_MODERN"
+          chmod +x "$SDKMANAGER_LEGACY_PATH" || true # Also ensure the symlink is executable
 
           echo "Accepting all Android SDK licenses…"
-          mkdir -p "$SDK_ROOT/licenses"
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$SDK_ROOT/licenses/android-sdk-license"
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_ROOT/licenses/android-sdk-preview-license"
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > "$SDK_ROOT/licenses/android-sdk-arm-dbt-license"
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$SDK_ROOT/licenses/android-googletv-license"
-          echo "79120722343a6f314e0719f863036c702b0e6b2a" > "$SDK_ROOT/licenses/android-sdk-preview-license-old"
-          echo "504667f4c0de7af1a06de9f4b1727b84351f2910" > "$SDK_ROOT/licenses/android-sdk-license-old"
-
-          yes | "$SDKMANAGER" --licenses || true
-          yes | "$SDKMANAGER" --licenses || true
-          yes | "$SDKMANAGER" --licenses || true
+          # Using the modern sdkmanager path for license acceptance
+          yes | "$SDKMANAGER_MODERN" --licenses || true
+          yes | "$SDKMANAGER_MODERN" --licenses || true
+          yes | "$SDKMANAGER_MODERN" --licenses || true
 
           echo "Installing/Updating specific Android SDK components…"
           echo "Installing 'tools' package for broader compatibility… (This might be redundant with modern SDK setup, but kept for robustness)"
-          "$SDKMANAGER" "tools" || true
+          "$SDKMANAGER_MODERN" "tools" || true # Using modern sdkmanager
 
-          "$SDKMANAGER" "build-tools;$BUILD_TOOLS_VERSION" || true
-          "$SDKMANAGER" "platform-tools" || true
-          "$SDKMANAGER" "platforms;android-33" || true
-          "$SDKMANAGER" "ndk;$NDK_VERSION" || true 
+          "$SDKMANAGER_MODERN" "build-tools;$BUILD_TOOLS_VERSION" || true
+          "$SDKMANAGER_MODERN" "platform-tools" || true
+          "$SDKMANAGER_MODERN" "platforms;android-33" || true
+          "$SDKMANAGER_MODERN" "ndk;$NDK_VERSION" || true 
 
           echo "Listing installed SDK components to verify…"
-          "$SDKMANAGER" --list | grep "build-tools"
-          "$SDKMANAGER" --list | grep "platform-tools"
-          "$SDKMANAGER" --list | grep "ndk"
+          "$SDKMANAGER_MODERN" --list | grep "build-tools"
+          "$SDKMANAGER_MODERN" --list | grep "platform-tools"
+          "$SDKMANAGER_MODERN" --list | grep "ndk"
           ls -la "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" || echo "Build-tools $BUILD_TOOLS_VERSION directory not found after explicit install."
           ls -la "$SDK_ROOT/platform-tools" || echo "Platform-tools directory not found after explicit install."
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION" || echo "NDK $NDK_VERSION directory not found after explicit install."
@@ -187,7 +194,8 @@ jobs:
           echo "Adding Android SDK tool directories to GITHUB_PATH…"
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
-          echo "$FINAL_CMDLINE_BIN_DIR" >> $GITHUB_PATH 
+          echo "$FINAL_CMDLINE_TOOLS_ROOT/bin" >> $GITHUB_PATH # Add modern bin to PATH
+          echo "$SDKMANAGER_LEGACY_DIR" >> $GITHUB_PATH # Add legacy bin to PATH (for redundant safety)
           echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH
 
           # --- Ensure common binaries are executable (SDK & Build-Tools) ---
@@ -242,8 +250,9 @@ jobs:
           
           # Adjusted CMDLINE_TOOLS_LATEST_BIN to reflect the new move logic
           CMDLINE_TOOLS_LATEST_BIN="$SDK_ROOT/cmdline-tools/latest/bin"
+          SDKMANAGER_LEGACY_DIR="$SDK_ROOT/tools/bin" # For symlink location
 
-          export PATH="$PATH:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION:$CMDLINE_TOOLS_LATEST_BIN:$SDK_ROOT/ndk/$NDK_VERSION"
+          export PATH="$PATH:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION:$CMDLINE_TOOLS_LATEST_BIN:$SDK_ROOT/ndk/$NDK_VERSION:$SDKMANAGER_LEGACY_DIR"
           
           # Explicitly export P4A_NO_LINK_TO_LOCAL_SDKS for this shell session
           export P4A_NO_LINK_TO_LOCAL_SDKS=1
