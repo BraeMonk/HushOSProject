@@ -9,9 +9,10 @@ on:
       - main # Trigger on pull requests targeting the main branch
   workflow_dispatch: # Allows manual triggering of the workflow
 
+
 jobs:
   build_android_apk:
-    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -27,13 +28,13 @@ jobs:
       - name: Set up Java Development Kit (JDK)
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin' # Recommended distribution
-          java-version: '17' # Android API 33 often requires JDK 17
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9' # Using 3.9, which is generally compatible with Kivy/Buildozer
+          python-version: '3.9'
 
       - name: Install Buildozer and its dependencies
         run: |
@@ -52,7 +53,7 @@ jobs:
         shell: bash
 
       - name: Add Google AI API Key to environment (if not already set)
-        run: echo "${{ secrets.SECRET_API_KEY }}" > .env_api_key_temp
+        run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp
         shell: bash
 
       - name: Force correct buildozer.spec settings
@@ -71,6 +72,15 @@ jobs:
 
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version|android.min_sdk_version)" buildozer.spec
+        shell: bash
+
+      - name: Clear conflicting Android NDK environment variables
+        run: |
+          echo "Clearing potentially conflicting Android NDK environment variables..."
+          echo "ANDROID_NDK_HOME=" >> $GITHUB_ENV
+          echo "ANDROID_NDK=" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=" >> $GITHUB_ENV
+          echo "ANDROID_NDK_LATEST_HOME=" >> $GITHUB_ENV
         shell: bash
 
       - name: Ensure Android SDK Tools and NDK are present and accept licenses
