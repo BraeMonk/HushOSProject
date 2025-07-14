@@ -39,8 +39,28 @@ jobs:
       - name: Install Buildozer and its dependencies
         run: |
           pip install buildozer cython
+
+          echo "Updating apt-get and installing build dependencies..."
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev perl
+          sudo apt-get install -y \
+            git zip unzip \
+            openjdk-17-jdk \
+            autoconf \
+            automake \ # <--- ADD THIS LINE
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            liblzma-dev \
+            libffi-dev \
+            libssl-dev \
+            build-essential \
+            patch \
+            python3-dev \
+            perl \
+            curl
+          
           which perl || echo "perl not found in PATH after install!"
 
           python3 -m pip install --upgrade setuptools pip wheel
