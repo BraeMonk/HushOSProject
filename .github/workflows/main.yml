@@ -17,13 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- NEW: Aggressively clean previous buildozer artifacts ---
       - name: Clean Buildozer cache
         run: |
           echo "Removing existing .buildozer directory to ensure clean build..."
           rm -rf "$HOME/.buildozer" || true
           rm -rf ".buildozer" || true # Also check local buildozer dir if present
-        shell: bash # Ensure bash for rm -rf
+        shell: bash
 
       - name: Set up Java Development Kit (JDK)
         uses: actions/setup-java@v4
@@ -43,26 +42,18 @@ jobs:
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev
 
       - name: Add Google AI API Key to environment (if not already set)
-        # IMPORTANT: Replace "GOOGLE_AI_API_KEY_SECRET" with the actual name of your GitHub Secret.
-        run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp # Use secrets!
+        run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp
 
       - name: Force correct buildozer.spec settings
         run: |
           echo "Checking buildozer.spec settings..."
-
-          # Backup original
           cp buildozer.spec buildozer.spec.backup
-
-          # Force the correct versions
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
           sed -i 's/^android\.ndk_version.*$/android.ndk_version = 23.1.7779620/' buildozer.spec # NDK 23b
-
-          # Add these lines if they don't exist
           grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
           grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
           grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 23.1.7779620" >> buildozer.spec # NDK 23b
-
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version)" buildozer.spec
 
@@ -154,13 +145,21 @@ jobs:
           echo "$FINAL_CMDLINE_BIN_DIR" >> $GITHUB_PATH 
           echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH
 
-          # --- Ensure common binaries are executable ---
+          # --- Ensure common binaries are executable (SDK & Build-Tools) ---
           echo "Ensuring common Android SDK binaries are executable..."
           chmod +x "$SDK_ROOT/platform-tools/adb" || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aapt*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aidl*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "apksigner*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
+
+          # --- NEW: Ensure NDK toolchain binaries are executable ---
+          echo "Ensuring NDK toolchain binaries are executable..."
+          find "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" -type f -exec chmod +x {} \; || true
+          # Also for specific tools that might be outside of bin directly or for safety
+          chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-build" || true
+          chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-gdb" || true
+
 
           # Verify PATH update and check tools
           echo "Current PATH after GITHUB_PATH modifications:"
@@ -171,6 +170,10 @@ jobs:
           aidl || echo "aidl not found after PATH update." 
           apksigner || echo "apksigner not found after PATH update."
           zipalign || echo "zipalign not found after PATH update."
+          # Verify clang specifically
+          ls -la "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" || echo "clang not found or bad permissions."
+          "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" --version || echo "clang not executable or --version not supported."
+
 
           # --- Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
           echo "Setting ANDROID_HOME, ANDROID_NDK_HOME, ANDROID_SDK_ROOT for all subsequent steps..."
@@ -184,7 +187,7 @@ jobs:
           echo "ANDROID_HOME is: $ANDROID_HOME"
           echo "ANDROID_NDK_HOME is: $ANDROID_NDK_HOME"
           echo "ANDROID_SDK_ROOT is: $ANDROID_SDK_ROOT"
-          echo "P4A_NO_LINK_TO_LOCAL_SDKS is: $P4A_NO_LINK_TO_LOCAL_SDKS" # Verify it's set
+          echo "P4A_NO_LINK_TO_LOCAL_SDKS is: $P4A_NO_LINK_TO_LOCAL_SDKS"
 
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
         run: |
@@ -196,7 +199,7 @@ jobs:
 
           export PATH="$PATH:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION:$CMDLINE_TOOLS_LATEST_BIN:$SDK_ROOT/ndk/$NDK_VERSION"
           
-          # --- NEW: Explicitly export P4A_NO_LINK_TO_LOCAL_SDKS for this shell session ---
+          # Explicitly export P4A_NO_LINK_TO_LOCAL_SDKS for this shell session
           export P4A_NO_LINK_TO_LOCAL_SDKS=1
 
           echo "PATH inside Buildozer step (after explicit export): $PATH" # For debugging
