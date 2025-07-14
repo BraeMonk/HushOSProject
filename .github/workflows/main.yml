@@ -230,3 +230,4 @@ jobs:
         with:
           name: HushOS-APK
           path: bin/*.apk # Buildozer outputs APKs into the 'bin' directory
+          timeout-minutes: 10
