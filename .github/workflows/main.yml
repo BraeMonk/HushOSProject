@@ -1,5 +1,5 @@
-# This workflow uses a robust manual edit of the spec file,
-# bypassing the 'config' command entirely to ensure compatibility.
+# This workflow uses a robust manual edit of the spec file to
+# bypass Buildozer's internal NDK download, ensuring a stable build.
 name: Build Android App
 
 on:
@@ -65,11 +65,11 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
 
-      # 10. THE FIX: Robustly edit buildozer.spec
-      - name: Force-update buildozer.spec with correct paths
+      # 10. Force-update buildozer.spec with correct paths
+      - name: Configure buildozer.spec
         run: |
           # This command finds the [android] section and adds our required settings
-          # directly underneath it, ensuring they are active.
+          # directly underneath it, ensuring they are active and preventing downloads.
           awk '/\[android\]/ {print; print "android.sdk_path = ${{ env.ANDROID_HOME }}"; print "android.ndk_path = ${{ env.ANDROID_HOME }}/ndk/25.2.9519653"; print "android.ndk_version = 25c"; next} 1' buildozer.spec > buildozer.spec.new && mv buildozer.spec.new buildozer.spec
           
           echo "✅ Spec file updated. Verifying contents:"
