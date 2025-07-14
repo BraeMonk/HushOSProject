@@ -47,6 +47,11 @@ android.build_tools_version = 33.0.2
 # (str) A known stable NDK version
 android.ndk_version = 25.2.9519653
 
+# These blank paths force Buildozer to use the SDK and NDK from the
+# environment, which are set up by the GitHub Actions workflow.
+android.sdk_path = 
+android.ndk_path =
+
 # (str) How the app window behaves when the keyboard appears.
 android.window_soft_input_mode = adjustResize
 
