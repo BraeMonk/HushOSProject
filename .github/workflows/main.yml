@@ -28,13 +28,11 @@ jobs:
     - name: Set up Android SDK
       uses: android-actions/setup-android@v3
 
-    # This is the single, correct step to install all needed parts of the SDK.
     - name: Install SDK Components and Accept Licenses
       run: |
         sdkmanager "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
         yes | sdkmanager --licenses
 
-    # This was the missing step. You must install buildozer before you can use it.
     - name: Install Buildozer and dependencies
       run: |
         python -m pip install --upgrade pip
@@ -43,6 +41,11 @@ jobs:
     
     - name: Build with Buildozer
       run: |
+        # This is the fix: Force buildozer to use the environment's SDK and NDK
+        buildozer set-spec android.sdk_path ""
+        buildozer set-spec android.ndk_path ""
+        
+        # Now, run the build
         buildozer -v android debug
 
     - name: Upload APK
