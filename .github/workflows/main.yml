@@ -140,7 +140,6 @@ jobs:
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION" || echo "NDK $NDK_VERSION directory not found after explicit install."
 
           # --- Add ALL necessary Android SDK tool directories to PATH for subsequent steps ---
-          # These are picked up by GitHub Actions, but might not be explicitly seen by buildozer's specific shell
           echo "Adding Android SDK tool directories to GITHUB_PATH..."
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
@@ -153,7 +152,7 @@ jobs:
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aapt*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aidl*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "apksigner*" -exec chmod +x {} \; || true
-          find "$SDK_ROOT/build_tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
+          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
           # Verify PATH update and check tools
           echo "Current PATH after GITHUB_PATH modifications:"
@@ -166,21 +165,22 @@ jobs:
           zipalign || echo "zipalign not found after PATH update."
 
           # --- Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
-          echo "Setting ANDROID_HOME and ANDROID_NDK_HOME environment variables for all subsequent steps..."
+          echo "Setting ANDROID_HOME, ANDROID_NDK_HOME, ANDROID_SDK_ROOT for all subsequent steps..."
           echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
           
+          # --- NEW: Tell python-for-android to NOT use hard links ---
+          echo "P4A_NO_LINK_TO_LOCAL_SDKS=1" >> $GITHUB_ENV # This is the new crucial line
+
           echo "ANDROID_HOME is: $ANDROID_HOME"
           echo "ANDROID_NDK_HOME is: $ANDROID_NDK_HOME"
           echo "ANDROID_SDK_ROOT is: $ANDROID_SDK_ROOT"
+          echo "P4A_NO_LINK_TO_LOCAL_SDKS is: $P4A_NO_LINK_TO_LOCAL_SDKS" # Verify it's set
 
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
-        # This step runs buildozer for the first time to set up any other Android SDK and NDK components
-        # that Buildozer itself might manage or verify.
         run: |
-          # --- Re-export all necessary Android SDK paths for this shell session ---
-          # This ensures buildozer directly sees them regardless of GitHub Actions' internal PATH handling.
+          # Re-export all necessary Android SDK paths for this shell session, for robustness
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           BUILD_TOOLS_VERSION="33.0.2"
           NDK_VERSION="23.1.7779620"
@@ -194,7 +194,6 @@ jobs:
           buildozer android debug update || true
 
       - name: Build Android APK
-        # This is the actual build command. It uses the configured buildozer.spec.
         run: buildozer android debug
 
       - name: Upload APK artifact
