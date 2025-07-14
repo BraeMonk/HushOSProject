@@ -17,10 +17,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9' # A stable Python version compatible with Kivy's build tools
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install system dependencies
         run: |
@@ -29,8 +48,6 @@ jobs:
           git \
           zip \
           unzip \
-          openjdk-17-jdk \
-          python3-pip \
           autoconf \
           libtool \
           pkg-config \
@@ -50,12 +67,6 @@ jobs:
 
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      # --- DEBUGGING STEP ---
-      # This command will list all files in the current directory so we can see
-      # if buildozer.spec is actually there when the build runs.
-      - name: List files in repository
-        run: ls -la
 
       - name: Run Buildozer
         run: buildozer -v android debug
