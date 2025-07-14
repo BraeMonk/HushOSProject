@@ -42,7 +42,7 @@ android.api = 33
 android.minapi = 21
 
 # (str) Explicitly set the Build Tools version for reliability
-android.build_tools_version = 33.0.2
+android.build_tools_version = 36.0.0
 
 # (str) A known stable NDK version
 android.ndk_version = 25.2.9519653
