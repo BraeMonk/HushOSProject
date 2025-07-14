@@ -53,26 +53,26 @@ jobs:
           pip install --user buildozer==1.5.0
           pip install --user cython==0.29.34
 
-                  # 7. Add Buildozer to PATH
+      # 7. Add Buildozer to PATH
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 8. Manually install Android SDK where Buildozer expects it
-      - name: Manually install Android SDK (with build-tools) into Buildozer path
+      # 8. Install SDK components to GitHub-provided Android SDK
+      - name: Install SDK components
         run: |
-          mkdir -p ~/.buildozer/android/platform/
-          cp -r $ANDROID_HOME ~/.buildozer/android/platform/android-sdk
-
-          yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-31" "build-tools;34.0.0"
 
-          echo "Checking for aidl..."
-          find ~/.buildozer/android/platform/android-sdk/build-tools -name aidl
+          echo "Verifying AIDL in GitHub SDK..."
+          find $ANDROID_HOME/build-tools -name aidl || (echo "AIDL not found!" && exit 1)
 
       # 9. Run Buildozer to compile the APK
       - name: Run Buildozer
-        run: buildozer -v android debug
+        run: |
+          export ANDROID_HOME=$ANDROID_HOME
+          buildozer -v android debug
+
 
 
 
