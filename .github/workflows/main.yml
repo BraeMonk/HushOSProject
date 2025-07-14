@@ -37,7 +37,8 @@ jobs:
       - name: Add Google AI API Key to environment (if not already set)
         # This is a placeholder. You should securely set this as a GitHub Secret.
         # Replace 'YOUR_GOOGLE_AI_API_KEY' with the actual secret name if you've set it.
-        run: echo "${{secrets.SECRET_API_KEY}}" > .env_api_key_temp # DO NOT DO THIS IN PRODUCTION, USE SECRETS!
+        # IMPORTANT: Replace "YOUR_GOOGLE_AI_API_KEY_SECRET" with the actual name of your GitHub Secret.
+        run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp # Use secrets!
 
       - name: Force correct buildozer.spec settings
         run: |
@@ -46,55 +47,85 @@ jobs:
           # Backup original
           cp buildozer.spec buildozer.spec.backup
 
-          # Force the correct versions
-          sed -i 's/android.build_tools_version.*/android.build_tools_version = 33.0.2/' buildozer.spec
-          sed -i 's/android.api.*/android.api = 33/' buildozer.spec
-          sed -i 's/android.ndk_version.*/android.ndk_version = 25.2.9519653/' buildozer.spec
+          # Force the correct versions - use 33.0.2 as specified
+          sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
+          sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
+          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 25.2.9519653/' buildozer.spec
 
-          # Add these lines if they don't exist
-          grep -q "android.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
-          grep -q "android.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
-          grep -q "android.ndk_version" buildozer.spec || echo "android.ndk_version = 25.2.9519653" >> buildozer.spec
+          # Add these lines if they don't exist (using 'grep -q' to check for existence)
+          grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
+          grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
+          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 25.2.9519653" >> buildozer.spec
 
           # Show the relevant lines
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version)" buildozer.spec
 
-      - name: Configure Buildozer, Accept Licenses and Download SDK/NDK
-        # This step runs buildozer for the first time.
-        # Buildozer will automatically download the SDK and NDK and *attempt* to accept licenses.
-        # We'll then use sdkmanager explicitly to ensure licenses are accepted.
+
+      - name: Ensure Android SDK Tools are present and accept licenses
         run: |
-          echo "Running initial buildozer debug clean to trigger SDK/NDK download and license prompts..."
-          # Running a clean and then a debug update ensures Buildozer attempts to get components.
-          buildozer android debug clean || true # Allow failure here, as it might fail due to licenses
-          buildozer android debug update || true # Allow failure here
-
-          # Now, explicitly accept all licenses.
-          # This needs to be done *after* sdkmanager might have been run by buildozer
-          # and possibly created the necessary directories.
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          CMDLINE_TOOLS_DIR="$SDK_ROOT/cmdline-tools/latest"
+          SDKMANAGER="$CMDLINE_TOOLS_DIR/bin/sdkmanager"
 
-          echo "Ensuring SDK licenses are accepted using sdkmanager..."
-          # Create licenses directory if it doesn't exist
+          echo "Attempting to create SDK directories and download command-line tools..."
+          mkdir -p "$SDK_ROOT"
+          cd "$SDK_ROOT"
+
+          # Download cmdline-tools if not already present
+          if [ ! -d "$CMDLINE_TOOLS_DIR" ]; then
+            echo "Downloading Android SDK command-line tools..."
+            curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
+            unzip cmdline-tools.zip
+            mkdir -p "$CMDLINE_TOOLS_DIR"
+            mv cmdline-tools "$CMDLINE_TOOLS_DIR/latest" # Correctly move content to 'latest'
+            rm cmdline-tools.zip
+          fi
+
+          echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER"
+          if [ ! -f "$SDKMANAGER" ]; then
+            echo "Error: sdkmanager not found at $SDKMANAGER. Check paths or download."
+            exit 1
+          fi
+
+          echo "Accepting all Android SDK licenses..."
           mkdir -p "$SDK_ROOT/licenses"
+          # Method 1: Create license files directly as a fallback
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$SDK_ROOT/licenses/android-sdk-license"
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_ROOT/licenses/android-sdk-preview-license"
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > "$SDK_ROOT/licenses/android-sdk-arm-dbt-license"
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$SDK_ROOT/licenses/android-googletv-license"
+          echo "79120722343a6f314e0719f863036c702b0e6b2a" > "$SDK_ROOT/licenses/android-sdk-preview-license-old"
+          echo "504667f4c0de7af1a06de9f4b1727b84351f2910" > "$SDK_ROOT/licenses/android-sdk-license-old"
 
-          # Use printf to send 'y' for all prompts
-          # Run multiple times to catch all potential license agreements
+          # Method 2: Use 'yes' command with sdkmanager --licenses
+          # Run multiple times to be absolutely sure all possible licenses are accepted
           yes | "$SDKMANAGER" --licenses || true
-          yes | "$SDKMANAGER" --licenses || true # Run again for good measure
+          yes | "$SDKMANAGER" --licenses || true
+          yes | "$SDKMANAGER" --licenses || true
 
-          echo "Installing specific Android SDK components..."
-          # Install build-tools version that matches buildozer.spec
-          "$SDKMANAGER" "build-tools;33.0.2" "platform-tools" "platforms;android-33" "ndk;25.2.9519653" || true
+          echo "Installing/Updating specific Android SDK components..."
+          # Install the specific build-tools version Buildozer needs
+          "$SDKMANAGER" "build-tools;33.0.2" || true
+          "$SDKMANAGER" "platform-tools" || true
+          "$SDKMANAGER" "platforms;android-33" || true
+          "$SDKMANAGER" "ndk;25.2.9519653" || true # Make sure NDK matches buildozer.spec
 
-          echo "Verifying build-tools installation..."
-          ls -la "$SDK_ROOT/build-tools/" || echo "Build-tools directory not found after explicit install."
+          echo "Listing installed SDK components to verify build-tools..."
+          "$SDKMANAGER" --list | grep "build-tools"
+          ls -la "$SDK_ROOT/build-tools/33.0.2" || echo "Build-tools 33.0.2 directory not found after explicit install."
+
+      - name: Configure Buildozer and Download remaining SDK/NDK (if any)
+        # This step runs buildozer for the first time to set up any other Android SDK and NDK components
+        # that Buildozer itself might manage or verify.
+        run: |
+          echo "Running buildozer android debug clean and update after SDK setup..."
+          # Clean and update should now correctly find/verify components
+          buildozer android debug clean || true
+          buildozer android debug update || true
 
       - name: Build Android APK
         # This is the actual build command. It uses the configured buildozer.spec.
-        # With licenses accepted and tools installed, this should now succeed.
         run: buildozer android debug
 
       - name: Upload APK artifact
