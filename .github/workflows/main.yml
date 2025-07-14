@@ -53,21 +53,27 @@ jobs:
           pip install --user buildozer==1.5.0
           pip install --user cython==0.29.34
 
-            # 7. Add the installed tools to the system's PATH
+                  # 7. Add Buildozer to PATH
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 8.5 Install Android Build Tools in Buildozer's SDK
-      - name: Install Android Build Tools for Buildozer SDK
+      # 8. Manually install Android SDK where Buildozer expects it
+      - name: Manually install Android SDK (with build-tools) into Buildozer path
         run: |
-          buildozer android update
+          mkdir -p ~/.buildozer/android/platform/
+          cp -r $ANDROID_HOME ~/.buildozer/android/platform/android-sdk
+
           yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
           ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-31" "build-tools;34.0.0"
 
-      # 9. Run the Buildozer command to compile the APK
+          echo "Checking for aidl..."
+          find ~/.buildozer/android/platform/android-sdk/build-tools -name aidl
+
+      # 9. Run Buildozer to compile the APK
       - name: Run Buildozer
         run: buildozer -v android debug
+
 
 
       # 10. Upload the final .apk file as a downloadable artifact
