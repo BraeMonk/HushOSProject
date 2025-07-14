@@ -224,7 +224,15 @@ jobs:
           buildozer android debug update || true
 
       - name: Build Android APK
-        run: buildozer android debug
+        run: |
+          buildozer android debug --verbose
+          # Check the exit code of the last command (buildozer)
+          BUILD_EXIT_CODE=$?
+          echo "Buildozer command exited with code: $BUILD_EXIT_CODE"
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "::error::Buildozer reported success but returned non-zero exit code ($BUILD_EXIT_CODE)."
+            exit $BUILD_EXIT_CODE
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
