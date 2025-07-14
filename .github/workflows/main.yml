@@ -96,7 +96,7 @@ jobs:
             
             mkdir -p "$FINAL_CMDLINE_BIN_DIR"
             if [ -d "./latest/bin" ] && [ "$(ls -A ./latest/bin)" ]; then
-              echo "Moving contents from ./latest/bin to $FINAL_CMDLINE_BIN_DIR"
+              echo "Moving contents from ./cmdline-tools/latest/bin to ${FINAL_CMDLINE_BIN_DIR}"
               mv ./latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
             elif [ -d "./cmdline-tools/latest/bin" ] && [ "$(ls -A ./cmdline-tools/latest/bin)" ]; then
               echo "Moving contents from ./cmdline-tools/latest/bin to "$FINAL_CMDLINE_BIN_DIR"
