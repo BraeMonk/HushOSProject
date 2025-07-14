@@ -14,46 +14,70 @@ jobs:
     runs-on: ubuntu-latest # Use the latest Ubuntu runner
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Java Development Kit (JDK)
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin' # Recommended distribution
-        java-version: '17'      # Android API 33 often requires JDK 17
+      - name: Set up Java Development Kit (JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # Recommended distribution
+          java-version: '17' # Android API 33 often requires JDK 17
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9' # Using 3.9, which is generally compatible with Kivy/Buildozer
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9' # Using 3.9, which is generally compatible with Kivy/Buildozer
 
-    - name: Install Buildozer and its dependencies
-      run: |
-        pip install buildozer cython
-        sudo apt-get update
-        sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev
+      - name: Install Buildozer and its dependencies
+        run: |
+          pip install buildozer cython
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev
 
-    - name: Add Google AI API Key to environment (if not already set)
-      # This is a placeholder. You should securely set this as a GitHub Secret.
-      # Replace 'YOUR_GOOGLE_AI_API_KEY' with the actual secret name if you've set it.
-      run: echo "AIzaSyB9_xVbsDjJN81reI73_KvqIOhXyKAsFNU" > .env_api_key_temp # DO NOT DO THIS IN PRODUCTION, USE SECRETS!
+      - name: Add Google AI API Key to environment (if not already set)
+        # This is a placeholder. You should securely set this as a GitHub Secret.
+        # Replace 'YOUR_GOOGLE_AI_API_KEY' with the actual secret name if you've set it.
+        run: echo "AIzaSyB9_xVbsDjJN81reI73_KvqIOhXyKAsFNU" > .env_api_key_temp # DO NOT DO THIS IN PRODUCTION, USE SECRETS!
 
-    - name: Configure Buildozer and Download SDK/NDK
-      # This step runs buildozer for the first time to set up the Android SDK and NDK.
-      # It will take some time as it downloads necessary components.
-      run: |
-        buildozer android debug clean
-        buildozer android debug update
-        # Optionally, you can remove the temporary API key file here if it was created
-        # rm .env_api_key_temp
+      - name: Configure Buildozer and Download SDK/NDK
+        # This step runs buildozer for the first time to set up the Android SDK and NDK.
+        # It will take some time as it downloads necessary components.
+        run: |
+          buildozer android debug clean
+          buildozer android debug update
 
-    - name: Build Android APK
-      # This is the actual build command. It uses the configured buildozer.spec.
-      run: buildozer android debug
+      - name: Accept Android SDK licenses
+        run: |
+          # Accept all Android SDK licenses automatically
+          yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          
+          # Alternative method using expect if the above doesn't work
+          # sudo apt-get install -y expect
+          # expect -c "
+          # spawn $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          # expect \"Accept?\"
+          # send \"y\r\"
+          # expect eof
+          # "
 
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: HushOS-APK
-        path: bin/*.apk # Buildozer outputs APKs into the 'bin' directory
+      - name: Install required Android SDK components
+        run: |
+          # Install build-tools version that matches buildozer.spec
+          $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2"
+          
+          # Install other potentially needed components
+          $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools"
+          $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-33"
+          
+          # Install NDK version that matches buildozer.spec
+          $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653"
+
+      - name: Build Android APK
+        # This is the actual build command. It uses the configured buildozer.spec.
+        run: buildozer android debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HushOS-APK
+          path: bin/*.apk # Buildozer outputs APKs into the 'bin' directory
