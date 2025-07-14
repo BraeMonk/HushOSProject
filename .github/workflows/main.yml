@@ -1,5 +1,7 @@
 # This is the definitive, foolproof GitHub Actions workflow for building your Kivy app.
-# It uses caching, explicitly sets all required paths, and cleans the build to prevent errors.
+# It uses caching, explicitly sets all required paths, and runs build commands in the
+# correct order to prevent common errors.
+
 name: Build HushOS for Android
 on:
   push:
@@ -70,30 +72,23 @@ jobs:
       # 10. Configure buildozer.spec and Environment
       - name: Configure buildozer.spec and Environment
         run: |
-          # --- Configure buildozer.spec ---
           export NDK_PATH=$(ls -d $ANDROID_HOME/ndk/* | tail -1)
           sed -i "s|^#? *android.sdk_path *=.*|android.sdk_path = $ANDROID_HOME|g" buildozer.spec
           sed -i "s|^#? *android.ndk_path *=.*|android.ndk_path = $NDK_PATH|g" buildozer.spec
           sed -i "s|^#? *android.build_tools_version *=.*|android.build_tools_version = 34.0.0|g" buildozer.spec
-          
-          echo "✅ buildozer.spec configured."
-
-          # --- Add build-tools to the main PATH (The Foolproof Fix) ---
           echo "$ANDROID_HOME/build-tools/34.0.0" >> $GITHUB_PATH
-          echo "✅ Android build-tools added to system PATH."
+          echo "✅ Environment configured."
 
-      # 11. Clean, Build, and Diagnose
-      - name: Clean, Build, and Diagnose
+      # 11. Update, Clean, and Build
+      - name: Update, Clean, and Build with Buildozer
         run: |
-          echo "--- Verifying 'aidl' location ---"
-          which aidl
-          ls -l $(which aidl)
-          echo "---------------------------------"
+          # 1. Update: Download python-for-android and other dependencies first
+          buildozer -v android update
 
-          # Clean previous build artifacts to prevent conflicts
+          # 2. Clean: Now that dependencies exist, clean the build
           buildozer -v android clean
-          
-          # Run the build
+
+          # 3. Debug: Run the final build
           buildozer -v android debug
 
       # 12. Upload the final .apk file as a downloadable artifact
