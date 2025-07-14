@@ -18,7 +18,6 @@ source.include_exts = py,png,jpg,kv,atlas,wav,json
 version = 0.1
 
 # (list) List of modules to bundle with your application
-# Added specific, stable version of pyjnius to fix build error.
 requirements = python3,kivy,google-generativeai,pillow,pyjnius==1.6.1
 
 # (str) Presplash background color (for new android builds)
@@ -34,7 +33,6 @@ icon.filename = %(source.dir)s/assets/icon.png
 orientation = portrait
 
 # (list) Permissions
-# INTERNET is required for the AI. VIBRATE can be used for notifications.
 android.permissions = INTERNET,VIBRATE
 
 # (int) Android API to use. 31 is a good modern choice.
@@ -44,7 +42,6 @@ android.api = 31
 android.minapi = 21
 
 # (str) How the app window behaves when the keyboard appears.
-# 'adjustResize' ensures the window resizes, preventing the keyboard from covering input fields.
 android.window_soft_input_mode = adjustResize
 
 # (int) Android NDK version to use
@@ -53,13 +50,12 @@ android.ndk = 25b
 # (str) Version of the Android Build Tools to use
 android.build_tools_version = 34.0.0
 
-
 [buildozer]
-
-android.sdk_path = $ANDROID_HOME
-
 # (int) Log level (0 = error, 1 = info, 2 = debug (with command output))
 log_level = 2
 
 # (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 1
+
+# Remove the android.sdk_path entry; Buildozer will use the $ANDROID_HOME automatically
+# android.sdk_path = $ANDROID_HOME  # REMOVE THIS LINE
