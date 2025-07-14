@@ -1,6 +1,6 @@
 # This is the definitive, foolproof GitHub Actions workflow for building your Kivy app.
-# It uses the modern Ubuntu 22.04 runner and manually installs the legacy
-# libtinfo5 library to ensure maximum compatibility and stability.
+# It uses a dedicated action to set up the Android SDK, then manually installs
+# the required build-tools and accepts all licenses before running Buildozer.
 
 name: Build HushOS for Android
 
@@ -18,65 +18,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Java Development Kit (JDK) version 17
+      # 2. Set up the Java Development Kit (JDK)
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Set up Python version 3.9
+      # 3. Set up the Android SDK environment
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 4. Install all necessary system-level dependencies, including libtinfo5
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --allow-unauthenticated \
+          git zip unzip autoconf libtool pkg-config \
+          zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+
+      # 5. Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      # 4. Install all necessary system-level dependencies
-      - name: Install system dependencies
-        run: |
-          # Manually add the Ubuntu 20.04 (Focal) repository to get libtinfo5
-          echo "deb http://archive.ubuntu.com/ubuntu/ focal main universe" | sudo tee /etc/apt/sources.list.d/focal.list
-          sudo apt-get update
-          # Install all dependencies, including the now-available libtinfo5
-          sudo apt-get install -y --allow-unauthenticated \
-          git \
-          zip \
-          unzip \
-          autoconf \
-          libtool \
-          pkg-config \
-          zlib1g-dev \
-          libncurses5-dev \
-          libncursesw5-dev \
-          libtinfo5 \
-          cmake \
-          libffi-dev \
-          libssl-dev
-
-      # 5. Install Python build tools
+      # 6. Install Python build tools
       - name: Install Buildozer and Cython
         run: |
           pip install --upgrade pip
           pip install --user buildozer==1.5.0
           pip install --user cython==0.29.34
 
-      # 6. Add the installed tools to the system's PATH
+      # 7. Add the installed tools to the system's PATH
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 7. Automatically accept Android SDK licenses
-      - name: Accept Android SDK licenses
+      # 8. Manually install Android build-tools and accept licenses
+      #    This is the critical step that fixes the "Aidl not found" error.
+      - name: Install Android Build Tools and Accept Licenses
         run: |
-          mkdir -p $ANDROID_HOME/licenses
-          echo "24333761,d56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_HOME/licenses/android-sdk-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
-          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_HOME/licenses/intel-android-extra-license
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-31" "build-tools;34.0.0"
 
-      # 8. Run the Buildozer command to compile the APK
+      # 9. Run the Buildozer command to compile the APK
       - name: Run Buildozer
         run: buildozer -v android debug
 
-      # 9. Upload the final .apk file as a downloadable artifact
+      # 10. Upload the final .apk file as a downloadable artifact
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
