@@ -41,84 +41,60 @@ jobs:
 
       - name: Force correct buildozer.spec settings
         run: |
-          # Ensure our buildozer.spec has the correct versions and prevent version 36
           echo "Checking buildozer.spec settings..."
-          
+
           # Backup original
           cp buildozer.spec buildozer.spec.backup
-          
+
           # Force the correct versions
           sed -i 's/android.build_tools_version.*/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/android.api.*/android.api = 33/' buildozer.spec
           sed -i 's/android.ndk_version.*/android.ndk_version = 25.2.9519653/' buildozer.spec
-          
+
           # Add these lines if they don't exist
           grep -q "android.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
           grep -q "android.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
           grep -q "android.ndk_version" buildozer.spec || echo "android.ndk_version = 25.2.9519653" >> buildozer.spec
-          
+
           # Show the relevant lines
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version)" buildozer.spec
 
-      - name: Configure Buildozer and Download SDK/NDK
-        # This step runs buildozer for the first time to set up the Android SDK and NDK.
-        # It will take some time as it downloads necessary components.
+      - name: Configure Buildozer, Accept Licenses and Download SDK/NDK
+        # This step runs buildozer for the first time.
+        # Buildozer will automatically download the SDK and NDK and *attempt* to accept licenses.
+        # We'll then use sdkmanager explicitly to ensure licenses are accepted.
         run: |
-          buildozer android debug clean
-          buildozer android debug update
+          echo "Running initial buildozer debug clean to trigger SDK/NDK download and license prompts..."
+          # Running a clean and then a debug update ensures Buildozer attempts to get components.
+          buildozer android debug clean || true # Allow failure here, as it might fail due to licenses
+          buildozer android debug update || true # Allow failure here
 
-      - name: Accept ALL Android SDK licenses and install components
-        run: |
-          # First, accept all licenses with multiple methods to ensure it works
-          echo "Accepting all Android SDK licenses..."
-          
-          # Method 1: Create license files directly BEFORE any sdkmanager calls
-          mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-arm-dbt-license
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-googletv-license
-          echo "79120722343a6f314e0719f863036c702b0e6b2a" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license-old
-          echo "504667f4c0de7af1a06de9f4b1727b84351f2910" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license-old
-          
-          # Method 2: Use printf to send 'y' responses directly to sdkmanager
-          SDKMANAGER="$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager"
-          
-          # Accept licenses first
-          printf 'y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n' | $SDKMANAGER --licenses || true
-          
-          # Now install the specific components we need (NOT the latest versions)
-          echo "Installing Android SDK components..."
-          
+          # Now, explicitly accept all licenses.
+          # This needs to be done *after* sdkmanager might have been run by buildozer
+          # and possibly created the necessary directories.
+          SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          echo "Ensuring SDK licenses are accepted using sdkmanager..."
+          # Create licenses directory if it doesn't exist
+          mkdir -p "$SDK_ROOT/licenses"
+
+          # Use printf to send 'y' for all prompts
+          # Run multiple times to catch all potential license agreements
+          yes | "$SDKMANAGER" --licenses || true
+          yes | "$SDKMANAGER" --licenses || true # Run again for good measure
+
+          echo "Installing specific Android SDK components..."
           # Install build-tools version that matches buildozer.spec
-          $SDKMANAGER "build-tools;33.0.2" || true
-          
-          # Install other potentially needed components
-          $SDKMANAGER "platform-tools" || true
-          $SDKMANAGER "platforms;android-33" || true
-          
-          # Install NDK version that matches buildozer.spec
-          $SDKMANAGER "ndk;25.2.9519653" || true
-          
-          # Accept licenses again after installation
-          printf 'y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n' | $SDKMANAGER --licenses || true
-          
+          "$SDKMANAGER" "build-tools;33.0.2" "platform-tools" "platforms;android-33" "ndk;25.2.9519653" || true
+
           echo "Verifying build-tools installation..."
-          ls -la $HOME/.buildozer/android/platform/android-sdk/build-tools/ || echo "Build-tools directory not found"
-          
-          # If build-tools still not found, try to manually create the directory structure
-          if [ ! -d "$HOME/.buildozer/android/platform/android-sdk/build-tools/33.0.2" ]; then
-            echo "Attempting to fix build-tools installation..."
-            $SDKMANAGER --install "build-tools;33.0.2" || true
-            
-            # Last resort: check what build-tools versions are available
-            echo "Available build-tools versions:"
-            $SDKMANAGER --list | grep "build-tools" || echo "Could not list build-tools"
-          fi
+          ls -la "$SDK_ROOT/build-tools/" || echo "Build-tools directory not found after explicit install."
 
       - name: Build Android APK
         # This is the actual build command. It uses the configured buildozer.spec.
+        # With licenses accepted and tools installed, this should now succeed.
         run: buildozer android debug
 
       - name: Upload APK artifact
