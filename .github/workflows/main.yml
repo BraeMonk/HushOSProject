@@ -42,8 +42,6 @@ jobs:
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev perl
           which perl || echo "perl not found in PATH after install!"
           
-          # --- NEW: Ensure setuptools is specifically installed/upgraded first ---
-          # This is crucial for distutils compatibility with newer Python/packaging tools.
           python3 -m pip install --upgrade setuptools pip wheel
           
           echo "Verifying pip location:"
@@ -61,36 +59,34 @@ jobs:
           cp buildozer.spec buildozer.spec.backup
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
-          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 23.1.7779620/' buildozer.spec # NDK 23b
+          # --- IMPORTANT CHANGE HERE: Set NDK version to 25b ---
+          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 25b/' buildozer.spec 
           sed -i 's/^android\.min_sdk_version.*$/android.min_sdk_version = 21/' buildozer.spec
           
           grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
           grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
-          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 23.1.7779620" >> buildozer.spec # NDK 23b
+          # --- IMPORTANT CHANGE HERE: Set NDK version to 25b ---
+          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 25b" >> buildozer.spec 
           grep -q "^android\.min_sdk_version" buildozer.spec || echo "android.min_sdk_version = 21" >> buildozer.spec # Min SDK Version
           
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version|android.min_sdk_version)" buildozer.spec
 
-      - name: Ensure Android SDK Tools are present and accept licenses
+      - name: Ensure Android SDK Tools and NDK are present and accept licenses
         run: |
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-          # The target directory where the 'cmdline-tools' should reside
           TARGET_CMDLINE_TOOLS_DIR="$SDK_ROOT/cmdline-tools"
-          
-          # This is where the 'latest' folder containing bin/lib should go
           FINAL_CMDLINE_TOOLS_ROOT="$TARGET_CMDLINE_TOOLS_DIR/latest"
-          
-          # The actual sdkmanager executable path (modern location)
           SDKMANAGER_MODERN="$FINAL_CMDLINE_TOOLS_ROOT/bin/sdkmanager"
-          
-          # The path where Buildozer expects sdkmanager (legacy location)
           SDKMANAGER_LEGACY_DIR="$SDK_ROOT/tools/bin"
           SDKMANAGER_LEGACY_PATH="$SDKMANAGER_LEGACY_DIR/sdkmanager"
 
           TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip"
           BUILD_TOOLS_VERSION="33.0.2"
-          NDK_VERSION="23.1.7779620" # NDK 23b
+          # --- IMPORTANT CHANGE HERE: Set NDK version to 25b for download/path ---
+          NDK_VERSION_CODE="25b" # For the NDK URL and folder name
+          NDK_URL="https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION_CODE}-linux.zip"
+          NDK_DIR_NAME="android-ndk-r${NDK_VERSION_CODE}" # Expected folder name after unzip
 
           echo "Attempting to create SDK directories and download command-line tools…"
           mkdir -p "$SDK_ROOT"
@@ -103,17 +99,14 @@ jobs:
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
             
-            # Identify the actual root directory inside the unzipped archive
-            # This handles cases where it's 'cmdline-tools', 'tools', or directly 'bin'/'lib'
             UNZIPPED_ROOT_DIR=""
             if [ -d "./cmdline-tools" ]; then
                 UNZIPPED_ROOT_DIR="./cmdline-tools"
-            elif [ -d "./tools" ]; then # Some older versions might unpack to 'tools'
+            elif [ -d "./tools" ]; then
                 UNZIPPED_ROOT_DIR="./tools"
-            elif [ -d "./latest" ]; then # If 'latest' is the immediate subdir
+            elif [ -d "./latest" ]; then
                 UNZIPPED_ROOT_DIR="./latest"
-            elif [ -d "./bin" ] && [ -d "./lib" ]; then # If bin and lib are directly in the root
-                # Create a temporary 'latest' directory to house them before moving
+            elif [ -d "./bin" ] && [ -d "./lib" ]; then
                 mkdir -p temp_latest_dir
                 mv ./bin ./lib temp_latest_dir/
                 UNZIPPED_ROOT_DIR="./temp_latest_dir"
@@ -130,18 +123,13 @@ jobs:
 
             echo "Moving unzipped command-line tools from '$UNZIPPED_ROOT_DIR' to '$FINAL_CMDLINE_TOOLS_ROOT'…"
             mkdir -p "$FINAL_CMDLINE_TOOLS_ROOT"
-            # Move contents of the identified root directory into FINAL_CMDLINE_TOOLS_ROOT
             mv "$UNZIPPED_ROOT_DIR"/* "$FINAL_CMDLINE_TOOLS_ROOT/" || true
-            mv "$UNZIPPED_ROOT_DIR"/.[!.]* "$FINAL_CMDLINE_TOOLS_ROOT/" 2>/dev/null || true # Move dotfiles/dirs if any
+            mv "$UNZIPPED_ROOT_DIR"/.[!.]* "$FINAL_CMDLINE_TOOLS_ROOT/" 2>/dev/null || true
 
-            # After moving, the original UNZIPPED_ROOT_DIR might still exist but be empty, or not.
-            # We want to ensure the target directory structure is correctly established.
-            # Clean up the temporary unzip directory
-            cd "$SDK_ROOT" # Change back to SDK_ROOT before removing temp_unzip_dir
+            cd "$SDK_ROOT"
             rm -rf "$TEMP_UNZIP_DIR"
           fi
 
-          # --- SYMBOLIC LINKING FOR BUILDOZER COMPATIBILITY ---
           echo "Creating symbolic link for sdkmanager for Buildozer compatibility…"
           mkdir -p "$SDKMANAGER_LEGACY_DIR"
           if [ -f "$SDKMANAGER_MODERN" ] && [ ! -f "$SDKMANAGER_LEGACY_PATH" ]; then
@@ -154,7 +142,6 @@ jobs:
             ls -la "$FINAL_CMDLINE_TOOLS_ROOT/bin/"
           fi
 
-
           echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER_MODERN (modern)"
           if [ ! -f "$SDKMANAGER_MODERN" ]; then
             echo "Error: Modern sdkmanager not found at $SDKMANAGER_MODERN. Check paths or download."
@@ -165,40 +152,60 @@ jobs:
           fi
 
           chmod +x "$SDKMANAGER_MODERN"
-          chmod +x "$SDKMANAGER_LEGACY_PATH" || true # Also ensure the symlink is executable
+          chmod +x "$SDKMANAGER_LEGACY_PATH" || true
+
+          # --- Download and Extract NDK r25b directly if not present ---
+          NDK_INSTALL_PATH="$HOME/.buildozer/android/platform/$NDK_DIR_NAME"
+          if [ ! -d "$NDK_INSTALL_PATH" ]; then
+            echo "Downloading Android NDK $NDK_VERSION_CODE from $NDK_URL…"
+            mkdir -p "$HOME/.buildozer/android/platform"
+            cd "$HOME/.buildozer/android/platform"
+            curl -o ndk.zip "$NDK_URL"
+            unzip ndk.zip
+            rm ndk.zip
+            echo "NDK $NDK_VERSION_CODE extracted to $NDK_INSTALL_PATH"
+          else
+            echo "NDK $NDK_VERSION_CODE already exists at $NDK_INSTALL_PATH"
+          fi
+          
+          # --- Create a symlink for the NDK as well, if Buildozer expects a different NDK path
+          #     This is less common for NDK, but can happen if P4A has a hardcoded path.
+          #     The `ANDROIDNDK` env var in your error `'/home/runner/.buildozer/android/platform/android-ndk-r25b'`
+          #     matches the `NDK_DIR_NAME` we're using, so this symlink might not be strictly necessary
+          #     if Buildozer correctly picks up the ANDROID_NDK_HOME, but adding it for robustness.
+          NDK_EXPECTED_BY_BUILDOZER="$HOME/.buildozer/android/platform/android-ndk-r25b" # From your error log
+          if [ ! -d "$NDK_EXPECTED_BY_BUILDOZER" ] && [ -d "$NDK_INSTALL_PATH" ] && [ "$NDK_INSTALL_PATH" != "$NDK_EXPECTED_BY_BUILDOZER" ]; then
+            echo "Creating symlink for NDK from $NDK_INSTALL_PATH to $NDK_EXPECTED_BY_BUILDOZER…"
+            ln -s "$NDK_INSTALL_PATH" "$NDK_EXPECTED_BY_BUILDOZER"
+          fi
+
 
           echo "Accepting all Android SDK licenses…"
-          # Using the modern sdkmanager path for license acceptance
           yes | "$SDKMANAGER_MODERN" --licenses || true
           yes | "$SDKMANAGER_MODERN" --licenses || true
           yes | "$SDKMANAGER_MODERN" --licenses || true
 
           echo "Installing/Updating specific Android SDK components…"
-          echo "Installing 'tools' package for broader compatibility… (This might be redundant with modern SDK setup, but kept for robustness)"
-          "$SDKMANAGER_MODERN" "tools" || true # Using modern sdkmanager
-
           "$SDKMANAGER_MODERN" "build-tools;$BUILD_TOOLS_VERSION" || true
           "$SDKMANAGER_MODERN" "platform-tools" || true
           "$SDKMANAGER_MODERN" "platforms;android-33" || true
-          "$SDKMANAGER_MODERN" "ndk;$NDK_VERSION" || true 
+          # NDK is manually downloaded/unzipped, so no need for sdkmanager "ndk;$NDK_VERSION_CODE" here.
 
           echo "Listing installed SDK components to verify…"
           "$SDKMANAGER_MODERN" --list | grep "build-tools"
           "$SDKMANAGER_MODERN" --list | grep "platform-tools"
-          "$SDKMANAGER_MODERN" --list | grep "ndk"
+          # NDK won't show in sdkmanager list if manually downloaded, verify by directory
+          ls -la "$NDK_INSTALL_PATH" || echo "NDK $NDK_VERSION_CODE directory not found after explicit install."
           ls -la "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" || echo "Build-tools $BUILD_TOOLS_VERSION directory not found after explicit install."
           ls -la "$SDK_ROOT/platform-tools" || echo "Platform-tools directory not found after explicit install."
-          ls -la "$SDK_ROOT/ndk/$NDK_VERSION" || echo "NDK $NDK_VERSION directory not found after explicit install."
 
-          # --- Add ALL necessary Android SDK tool directories to PATH for subsequent steps ---
           echo "Adding Android SDK tool directories to GITHUB_PATH…"
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
-          echo "$FINAL_CMDLINE_TOOLS_ROOT/bin" >> $GITHUB_PATH # Add modern bin to PATH
-          echo "$SDKMANAGER_LEGACY_DIR" >> $GITHUB_PATH # Add legacy bin to PATH (for redundant safety)
-          echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH
+          echo "$FINAL_CMDLINE_TOOLS_ROOT/bin" >> $GITHUB_PATH
+          echo "$SDKMANAGER_LEGACY_DIR" >> $GITHUB_PATH
+          echo "$NDK_INSTALL_PATH" >> $GITHUB_PATH # Add the actual NDK installation path to PATH
 
-          # --- Ensure common binaries are executable (SDK & Build-Tools) ---
           echo "Ensuring common Android SDK binaries are executable…"
           chmod +x "$SDK_ROOT/platform-tools/adb" || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aapt*" -exec chmod +x {} \; || true
@@ -206,15 +213,11 @@ jobs:
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "apksigner*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
-          # --- Ensure NDK toolchain binaries are executable ---
           echo "Ensuring NDK toolchain binaries are executable…"
-          # This path is relative to the NDK root that Buildozer expects, it might need adjustment if NDK layout changes
-          find "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" -type f -exec chmod +x {} \; || true
-          chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-build" || true
-          chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-gdb" || true
+          find "$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin" -type f -exec chmod +x {} \; || true
+          chmod +x "$NDK_INSTALL_PATH/ndk-build" || true
+          chmod +x "$NDK_INSTALL_PATH/ndk-gdb" || true
 
-
-          # Verify PATH update and check tools
           echo "Current PATH after GITHUB_PATH modifications:"
           echo "$PATH"
           echo "Verifying tool execution:"
@@ -223,42 +226,39 @@ jobs:
           aidl || echo "aidl not found after PATH update." 
           apksigner || echo "apksigner not found after PATH update."
           zipalign || echo "zipalign not found after PATH update."
-          ls -la "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" || echo "clang not found or bad permissions."
-          "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" --version || echo "clang not executable or --version not supported."
+          ls -la "$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" || echo "clang not found or bad permissions."
+          "$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-clang" --version || echo "clang not executable or --version not supported."
 
-          # --- Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
           echo "Setting ANDROID_HOME, ANDROID_NDK_HOME, ANDROID_SDK_ROOT for all subsequent steps…"
           echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$NDK_INSTALL_PATH" >> $GITHUB_ENV # Set to the actual NDK path
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
           
-          # --- Tell python-for-android to NOT use hard links (set globally for job) ---
           echo "P4A_NO_LINK_TO_LOCAL_SDKS=1" >> $GITHUB_ENV 
 
           echo "ANDROID_HOME is: $ANDROID_HOME"
           echo "ANDROID_NDK_HOME is: $ANDROID_NDK_HOME"
           echo "ANDROID_SDK_ROOT is: $ANDROID_SDK_ROOT"
           echo "P4A_NO_LINK_TO_LOCAL_SDKS is: $P4A_NO_LINK_TO_LOCAL_SDKS"
-        shell: bash # Ensure bash is used for this complex script
+        shell: bash
 
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
         run: |
-          # Re-export all necessary Android SDK paths for this shell session, for robustness
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           BUILD_TOOLS_VERSION="33.0.2"
-          NDK_VERSION="23.1.7779620"
+          NDK_VERSION_CODE="25b" # Matching buildozer.spec and download
+          NDK_DIR_NAME="android-ndk-r${NDK_VERSION_CODE}"
+          NDK_INSTALL_PATH="$HOME/.buildozer/android/platform/$NDK_DIR_NAME"
           
-          # Adjusted CMDLINE_TOOLS_LATEST_BIN to reflect the new move logic
           CMDLINE_TOOLS_LATEST_BIN="$SDK_ROOT/cmdline-tools/latest/bin"
-          SDKMANAGER_LEGACY_DIR="$SDK_ROOT/tools/bin" # For symlink location
+          SDKMANAGER_LEGACY_DIR="$SDK_ROOT/tools/bin"
 
-          export PATH="$PATH:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION:$CMDLINE_TOOLS_LATEST_BIN:$SDK_ROOT/ndk/$NDK_VERSION:$SDKMANAGER_LEGACY_DIR"
+          export PATH="$PATH:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION:$CMDLINE_TOOLS_LATEST_BIN:$NDK_INSTALL_PATH:$SDKMANAGER_LEGACY_DIR"
           
-          # Explicitly export P4A_NO_LINK_TO_LOCAL_SDKS for this shell session
           export P4A_NO_LINK_TO_LOCAL_SDKS=1
 
-          echo "PATH inside Buildozer step (after explicit export): $PATH" # For debugging
-          echo "P4A_NO_LINK_TO_LOCAL_SDKS inside Buildozer step: $P4A_NO_LINK_TO_LOCAL_SDKS" # For debugging
+          echo "PATH inside Buildozer step (after explicit export): $PATH"
+          echo "P4A_NO_LINK_TO_LOCAL_SDKS inside Buildozer step: $P4A_NO_LINK_TO_LOCAL_SDKS"
 
           echo "Running buildozer android debug clean and update after SDK setup…"
           buildozer android debug clean || true
@@ -267,7 +267,6 @@ jobs:
       - name: Build Android APK
         run: |
           echo "Running buildozer android debug…"
-          # Run buildozer in verbose mode
           buildozer android debug --verbose
           
           BUILD_EXIT_CODE=$?
@@ -283,15 +282,15 @@ jobs:
 
           if [ "$APK_FOUND" = true ]; then
             echo "Buildozer successfully generated APKs. Overriding exit code to success (0)."
-            exit 0 # Force successful exit if APKs are found
+            exit 0
           else
             echo "Buildozer failed to generate APKs. Propagating original exit code ($BUILD_EXIT_CODE)."
-            exit $BUILD_EXIT_CODE # Exit with Buildozer’s original code if no APKs
-        shell: bash # Explicitly use bash for the conditional logic
+            exit $BUILD_EXIT_CODE
+        shell: bash
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: HushOS-APK
-          path: bin/*.apk # Buildozer outputs APKs into the 'bin' directory
+          path: bin/*.apk
           timeout-minutes: 10
