@@ -29,36 +29,35 @@ jobs:
       uses: android-actions/setup-android@v3
 
     - name: Install SDK Components and Accept Licenses
-  run: |
-    sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
-    
-    # Accept default licenses
-    yes | sdkmanager --licenses
-    
-    # Accept everything by direct injection of all common hashes
-    mkdir -p $ANDROID_SDK_ROOT/licenses
-    echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-    echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
-    echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
+      run: |
+        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+
+        # Accept all licenses interactively (automated)
+        yes | sdkmanager --licenses
+
+        # Inject licenses manually to ensure no license prompts block the build
+        mkdir -p $ANDROID_SDK_ROOT/licenses
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
 
     - name: Install Buildozer and dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install cython
-        pip install buildozer
+        pip install cython buildozer
 
     - name: Build with Buildozer
       run: |
-        # THE FIX: Use 'sed' to force buildozer to use the environment's SDK and NDK
+        # Force buildozer.spec to use environment SDK and NDK paths (empty = auto)
         sed -i 's|^android.sdk_path =.*|android.sdk_path =|' buildozer.spec
         sed -i 's|^android.ndk_path =.*|android.ndk_path =|' buildozer.spec
-        
-        # Optional: display SDK/NDK paths to debug environment correctness
-        echo "SDK Path: $ANDROID_SDK_ROOT"
-        echo "NDK Path: $ANDROID_NDK_ROOT"
+
+        # Debug SDK/NDK paths and verify aidl existence
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+        echo "ANDROID_NDK_ROOT=$ANDROID_NDK_ROOT"
         ls -la $ANDROID_SDK_ROOT/build-tools/33.0.2/ || true
 
-        # Build step
+        # Run the build
         buildozer -v android debug
 
     - name: Upload APK
