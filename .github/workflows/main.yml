@@ -36,8 +36,7 @@ jobs:
 
       - name: Add Google AI API Key to environment (if not already set)
         # This is a placeholder. You should securely set this as a GitHub Secret.
-        # Replace 'YOUR_GOOGLE_AI_API_KEY' with the actual secret name if you've set it.
-        # IMPORTANT: Replace "YOUR_GOOGLE_AI_API_KEY_SECRET" with the actual name of your GitHub Secret.
+        # Replace 'YOUR_GOOGLE_AI_API_KEY_SECRET' with the actual name of your GitHub Secret.
         run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp # Use secrets!
 
       - name: Force correct buildozer.spec settings
@@ -61,24 +60,33 @@ jobs:
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version)" buildozer.spec
 
-
       - name: Ensure Android SDK Tools are present and accept licenses
         run: |
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-          CMDLINE_TOOLS_DIR="$SDK_ROOT/cmdline-tools/latest"
-          SDKMANAGER="$CMDLINE_TOOLS_DIR/bin/sdkmanager"
+          CMDLINE_TOOLS_BASE_DIR="$SDK_ROOT/cmdline-tools" # New variable for the parent of 'latest'
+          CMDLINE_TOOLS_LATEST_DIR="$CMDLINE_TOOLS_BASE_DIR/latest" # Where the actual tools should reside
+          SDKMANAGER="$CMDLINE_TOOLS_LATEST_DIR/bin/sdkmanager"
 
           echo "Attempting to create SDK directories and download command-line tools..."
           mkdir -p "$SDK_ROOT"
           cd "$SDK_ROOT"
 
-          # Download cmdline-tools if not already present
-          if [ ! -d "$CMDLINE_TOOLS_DIR" ]; then
+          # Download cmdline-tools if not already present in the 'latest' subdirectory
+          if [ ! -d "$CMDLINE_TOOLS_LATEST_DIR" ]; then
             echo "Downloading Android SDK command-line tools..."
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
-            mkdir -p "$CMDLINE_TOOLS_DIR"
-            mv cmdline-tools "$CMDLINE_TOOLS_DIR/latest" # Correctly move content to 'latest'
+            
+            # The unzip creates a 'cmdline-tools' directory.
+            # We need to move its *contents* into the 'latest' directory
+            # or move the 'cmdline-tools' directory itself into 'latest'.
+            
+            mkdir -p "$CMDLINE_TOOLS_LATEST_DIR" # Ensure the target directory exists
+            
+            # Move the contents of the unzipped 'cmdline-tools' into the 'latest' directory
+            # This is the most common and robust way:
+            mv cmdline-tools/* "$CMDLINE_TOOLS_LATEST_DIR/"
+            rmdir cmdline-tools # Remove the now-empty 'cmdline-tools' directory
             rm cmdline-tools.zip
           fi
 
@@ -99,17 +107,15 @@ jobs:
           echo "504667f4c0de7af1a06de9f4b1727b84351f2910" > "$SDK_ROOT/licenses/android-sdk-license-old"
 
           # Method 2: Use 'yes' command with sdkmanager --licenses
-          # Run multiple times to be absolutely sure all possible licenses are accepted
           yes | "$SDKMANAGER" --licenses || true
           yes | "$SDKMANAGER" --licenses || true
           yes | "$SDKMANAGER" --licenses || true
 
           echo "Installing/Updating specific Android SDK components..."
-          # Install the specific build-tools version Buildozer needs
           "$SDKMANAGER" "build-tools;33.0.2" || true
           "$SDKMANAGER" "platform-tools" || true
           "$SDKMANAGER" "platforms;android-33" || true
-          "$SDKMANAGER" "ndk;25.2.9519653" || true # Make sure NDK matches buildozer.spec
+          "$SDKMANAGER" "ndk;25.2.9519653" || true
 
           echo "Listing installed SDK components to verify build-tools..."
           "$SDKMANAGER" --list | grep "build-tools"
