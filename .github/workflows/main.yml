@@ -53,20 +53,22 @@ jobs:
           pip install --user buildozer==1.5.0
           pip install --user cython==0.29.34
 
-      # 7. Add the installed tools to the system's PATH
+            # 7. Add the installed tools to the system's PATH
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 8. Manually install Android build-tools and accept licenses
-      #    This is the critical step that fixes the "Aidl not found" error.
-      - name: Install Android Build Tools and Accept Licenses
+      # 8.5 Install Android Build Tools in Buildozer's SDK
+      - name: Install Android Build Tools for Buildozer SDK
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-31" "build-tools;34.0.0"
+          buildozer android update
+          yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+            "platform-tools" "platforms;android-31" "build-tools;34.0.0"
 
       # 9. Run the Buildozer command to compile the APK
       - name: Run Buildozer
         run: buildozer -v android debug
+
 
       # 10. Upload the final .apk file as a downloadable artifact
       - name: Upload APK as Artifact
