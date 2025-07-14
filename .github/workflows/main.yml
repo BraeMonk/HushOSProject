@@ -30,7 +30,7 @@ jobs:
 
     - name: Install SDK Components and Accept Licenses
       run: |
-        sdkmanager "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+        sdkmanager "platform-tools", "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
         yes | sdkmanager --licenses
 
     - name: Install Buildozer and dependencies
