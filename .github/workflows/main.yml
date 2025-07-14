@@ -1,6 +1,6 @@
-# This is a GitHub Actions workflow file that will automatically build your Kivy app.
-# It sets up a Linux environment, installs all necessary dependencies,
-# runs Buildozer, and uploads the final .apk file as an artifact.
+# This is the final, robust GitHub Actions workflow for building your Kivy app.
+# It uses the official Kivy Docker image, which handles all dependencies
+# and license agreements automatically.
 
 name: Build HushOS for Android
 
@@ -11,67 +11,25 @@ on:
 
 jobs:
   build-android:
-    runs-on: ubuntu-22.04 # Use a stable, long-term support version of Ubuntu
+    # Use the standard GitHub-hosted runner
+    runs-on: ubuntu-latest
 
     steps:
+      # 1. Check out your repository's code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      # 2. Build the app using the official Kivy Buildozer Action
+      # This single step replaces all the complex setup and installation.
+      # It runs in a pre-configured Docker container that has everything needed.
+      - name: Build with Buildozer
+        uses: kivy/buildozer-action@v1
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          command: buildozer -v android debug
+          # The buildozer.spec file from your repository will be used automatically.
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9' # A stable Python version compatible with Kivy's build tools
-
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-          git \
-          zip \
-          unzip \
-          autoconf \
-          libtool \
-          pkg-config \
-          zlib1g-dev \
-          libncurses5-dev \
-          libncursesw5-dev \
-          libtinfo5 \
-          cmake \
-          libffi-dev \
-          libssl-dev
-
-      - name: Install Buildozer and Cython
-        run: |
-          pip install --upgrade pip
-          pip install --user buildozer==1.5.0
-          pip install --user cython==0.29.34
-
-      - name: Add Buildozer to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Run Buildozer
-        run: buildozer -v android debug
-
-      - name: Upload APK as Artifact
+      # 3. Upload the final .apk file as a downloadable artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: HushOS-APK
