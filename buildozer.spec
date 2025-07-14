@@ -11,9 +11,6 @@ package.domain = org.hushos
 # (str) Source code where the main.py live
 source.dir = .
 
-# (str) Main python file to run
-main.py = hushos.py
-
 # (list) Source files to include (let buildozer find them)
 source.include_exts = py,png,jpg,kv,atlas,wav,json
 
@@ -21,7 +18,7 @@ source.include_exts = py,png,jpg,kv,atlas,wav,json
 version = 0.1
 
 # (list) List of modules to bundle with your application
-# FIX: Added specific, stable version of pyjnius to fix build error.
+# Added specific, stable version of pyjnius to fix build error.
 requirements = python3,kivy,google-generativeai,pillow,pyjnius==1.6.1
 
 # (str) Presplash background color (for new android builds)
@@ -52,6 +49,10 @@ android.window_soft_input_mode = adjustResize
 
 # (int) Android NDK version to use
 android.ndk = 25b
+
+# (str) Version of the Android Build Tools to use
+android.build_tools_version = 34.0.0
+
 
 [buildozer]
 # (int) Log level (0 = error, 1 = info, 2 = debug (with command output))
