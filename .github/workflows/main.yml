@@ -1,82 +1,72 @@
 # This is the definitive, foolproof GitHub Actions workflow for building your Kivy app.
-# It manually sets up the entire build environment, including all specific
-# system dependencies like libtinfo5, and accepts Android licenses.
+# It manually installs the specific Android SDK components and accepts all licenses
+# before running Buildozer, which is the most reliable method.
 
 name: Build HushOS for Android
 
-# This workflow runs automatically whenever you push a change to the 'main' branch.
 on:
   push:
     branches: [ "main" ]
 
 jobs:
   build-android:
-    # Use a standard, stable version of Ubuntu for the build
-    runs-on: ubuntu-22.04
+    # Use the standard, latest Ubuntu runner for best compatibility
+    runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out your repository's code so the workflow can access it
+      # 1. Check out your repository's code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Java Development Kit (JDK) version 17
+      # 2. Set up the Java Development Kit (JDK)
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Set up Python version 3.9, which is stable for Kivy builds
+      # 3. Set up the Android SDK environment
+      # This action correctly sets up all the necessary paths.
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 4. Install required system dependencies, including libtinfo5
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+          git zip unzip autoconf libtool pkg-config \
+          zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+
+      # 5. Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      # 4. Install all necessary system-level dependencies for building
-      #    This now includes libtinfo5 and other required libraries.
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-          git \
-          zip \
-          unzip \
-          autoconf \
-          libtool \
-          pkg-config \
-          zlib1g-dev \
-          libncurses5-dev \
-          libncursesw5-dev \
-          libtinfo5 \
-          cmake \
-          libffi-dev \
-          libssl-dev
-
-      # 5. Install Python build tools (Buildozer and the correct Cython version)
+      # 6. Install Python build tools
       - name: Install Buildozer and Cython
         run: |
           pip install --upgrade pip
           pip install --user buildozer==1.5.0
           pip install --user cython==0.29.34
 
-      # 6. Add the installed tools to the system's PATH
+      # 7. Add the installed tools to the system's PATH
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 7. Automatically accept Android SDK licenses
-      #    This is a robust method to handle license acceptance.
-      - name: Accept Android SDK licenses
+      # 8. Manually install Android build-tools and accept licenses
+      #    This is the critical step that fixes the "Aidl not found" error.
+      - name: Install Android Build Tools and Accept Licenses
         run: |
-          mkdir -p $ANDROID_SDK_ROOT/licenses
-          echo "24333761,d56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
-          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_SDK_ROOT/licenses/intel-android-extra-license
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-31" "build-tools;34.0.0"
 
-      # 8. Run the Buildozer command to compile the APK
+      # 9. Run the Buildozer command to compile the APK
       - name: Run Buildozer
         run: buildozer -v android debug
 
-      # 9. Upload the final .apk file as a downloadable artifact
+      # 10. Upload the final .apk file as a downloadable artifact
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
