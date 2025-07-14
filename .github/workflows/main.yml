@@ -45,20 +45,16 @@ jobs:
           # Backup original
           cp buildozer.spec buildozer.spec.backup
 
-          # Force the correct versions - use 33.0.2 as specified
-          # Keep android.build_tools_version = 33.0.2
-          # Keep android.api = 33
-          # *** CHANGE NDK VERSION HERE ***
+          # Force the correct versions
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
-          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 23.1.7779620/' buildozer.spec # Changed to 23b
+          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 23.1.7779620/' buildozer.spec # NDK 23b
 
-          # Add these lines if they don't exist (using 'grep -q' to check for existence)
+          # Add these lines if they don't exist
           grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
           grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
-          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 23.1.7779620" >> buildozer.spec # Changed to 23b
+          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 23.1.7779620" >> buildozer.spec # NDK 23b
 
-          # Show the relevant lines
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version)" buildozer.spec
 
@@ -67,12 +63,11 @@ jobs:
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           CMDLINE_TOOLS_BASE_DIR="$SDK_ROOT/cmdline-tools"
           CMDLINE_TOOLS_LATEST_DIR="$CMDLINE_TOOLS_BASE_DIR/latest"
-          FINAL_CMDLINE_BIN_DIR="$CMDLINE_TOOLS_LATEST_DIR/bin" # The definitive cmdline-tools bin directory
+          FINAL_CMDLINE_BIN_DIR="$CMDLINE_TOOLS_LATEST_DIR/bin"
           SDKMANAGER="$FINAL_CMDLINE_BIN_DIR/sdkmanager"
           TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip"
-          BUILD_TOOLS_VERSION="33.0.2" # Define build tools version for clarity and reusability
-          # *** CHANGE NDK VERSION HERE ***
-          NDK_VERSION="23.1.7779620" # Changed to 23b
+          BUILD_TOOLS_VERSION="33.0.2"
+          NDK_VERSION="23.1.7779620" # NDK 23b
 
           echo "Attempting to create SDK directories and download command-line tools..."
           mkdir -p "$SDK_ROOT"
@@ -85,11 +80,7 @@ jobs:
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
             
-            # --- Start of robust 'bin' extraction logic ---
-            # Create the final target bin directory for cmdline tools
             mkdir -p "$FINAL_CMDLINE_BIN_DIR"
-
-            # Check if 'latest/bin/' exists after unzip and move its contents
             if [ -d "./latest/bin" ] && [ "$(ls -A ./latest/bin)" ]; then
               echo "Moving contents from ./latest/bin to $FINAL_CMDLINE_BIN_DIR"
               mv ./latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
@@ -101,24 +92,21 @@ jobs:
               mv ./bin/* "$FINAL_CMDLINE_BIN_DIR/"
             else
               echo "Error: Could not find 'bin' directory with sdkmanager in unzipped cmdline-tools."
-              ls -R . # List contents for debugging
+              ls -R .
               exit 1
             fi
-            # --- End of robust 'bin' extraction logic ---
-            rm -rf "$TEMP_UNZIP_DIR" # Clean up temp directory right after move
+            rm -rf "$TEMP_UNZIP_DIR"
           fi
 
-          # Change to SDK_ROOT before continuing, ensures consistent base path
           cd "$SDK_ROOT"
 
           echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER"
           if [ ! -f "$SDKMANAGER" ]; then
             echo "Error: sdkmanager not found at $SDKMANAGER. Check paths or download."
-            ls -la "$FINAL_CMDLINE_BIN_DIR" # List contents of the bin directory
+            ls -la "$FINAL_CMDLINE_BIN_DIR"
             exit 1
           fi
 
-          # Ensure sdkmanager is executable (sometimes permissions get lost)
           chmod +x "$SDKMANAGER"
 
           echo "Accepting all Android SDK licenses..."
@@ -135,14 +123,12 @@ jobs:
           yes | "$SDKMANAGER" --licenses || true
 
           echo "Installing/Updating specific Android SDK components..."
-          # Install the 'tools' package first, which might resolve the 'android' command issue
           echo "Installing 'tools' package for broader compatibility..."
           "$SDKMANAGER" "tools" || true
 
           "$SDKMANAGER" "build-tools;$BUILD_TOOLS_VERSION" || true
           "$SDKMANAGER" "platform-tools" || true
           "$SDKMANAGER" "platforms;android-33" || true
-          # *** CHANGE NDK VERSION HERE ***
           "$SDKMANAGER" "ndk;$NDK_VERSION" || true 
 
           echo "Listing installed SDK components to verify..."
@@ -153,12 +139,13 @@ jobs:
           ls -la "$SDK_ROOT/platform-tools" || echo "Platform-tools directory not found after explicit install."
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION" || echo "NDK $NDK_VERSION directory not found after explicit install."
 
-          # --- Add ALL necessary Android SDK tool directories to PATH ---
-          echo "Adding Android SDK tool directories to PATH for all subsequent steps..."
+          # --- Add ALL necessary Android SDK tool directories to PATH for subsequent steps ---
+          # These are picked up by GitHub Actions, but might not be explicitly seen by buildozer's specific shell
+          echo "Adding Android SDK tool directories to GITHUB_PATH..."
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
-          echo "$FINAL_CMDLINE_BIN_DIR" >> $GITHUB_PATH # Add cmdline-tools/latest/bin
-          echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH # Add NDK root for tools like ndk-build, if necessary
+          echo "$FINAL_CMDLINE_BIN_DIR" >> $GITHUB_PATH 
+          echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH
 
           # --- Ensure common binaries are executable ---
           echo "Ensuring common Android SDK binaries are executable..."
@@ -169,7 +156,7 @@ jobs:
           find "$SDK_ROOT/build_tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
           # Verify PATH update and check tools
-          echo "Current PATH after modifications:"
+          echo "Current PATH after GITHUB_PATH modifications:"
           echo "$PATH"
           echo "Verifying tool execution:"
           adb version || echo "adb not found after PATH update."
@@ -179,12 +166,11 @@ jobs:
           zipalign || echo "zipalign not found after PATH update."
 
           # --- Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
-          echo "Setting ANDROID_HOME and ANDROID_NDK_HOME environment variables..."
+          echo "Setting ANDROID_HOME and ANDROID_NDK_HOME environment variables for all subsequent steps..."
           echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV # Often used interchangeably with ANDROID_HOME
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
           
-          # Verify environment variables (optional, for debugging)
           echo "ANDROID_HOME is: $ANDROID_HOME"
           echo "ANDROID_NDK_HOME is: $ANDROID_NDK_HOME"
           echo "ANDROID_SDK_ROOT is: $ANDROID_SDK_ROOT"
@@ -193,9 +179,17 @@ jobs:
         # This step runs buildozer for the first time to set up any other Android SDK and NDK components
         # that Buildozer itself might manage or verify.
         run: |
+          # --- Re-export all necessary Android SDK paths for this shell session ---
+          # This ensures buildozer directly sees them regardless of GitHub Actions' internal PATH handling.
+          SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          BUILD_TOOLS_VERSION="33.0.2"
+          NDK_VERSION="23.1.7779620"
+          CMDLINE_TOOLS_LATEST_BIN="$SDK_ROOT/cmdline-tools/latest/bin"
+
+          export PATH="$PATH:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION:$CMDLINE_TOOLS_LATEST_BIN:$SDK_ROOT/ndk/$NDK_VERSION"
+          echo "PATH inside Buildozer step (after explicit export): $PATH" # For debugging
+
           echo "Running buildozer android debug clean and update after SDK setup..."
-          # Clean and update should now correctly find/verify components
-          # These commands should now succeed or provide new errors
           buildozer android debug clean || true
           buildozer android debug update || true
 
