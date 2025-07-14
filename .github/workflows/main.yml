@@ -1,5 +1,6 @@
 # This is the definitive, foolproof GitHub Actions workflow for building your Kivy app.
-# It uses Ubuntu 20.04 for maximum compatibility with all required libraries.
+# It uses the modern Ubuntu 22.04 runner and manually installs the legacy
+# libtinfo5 library to ensure maximum compatibility and stability.
 
 name: Build HushOS for Android
 
@@ -9,8 +10,8 @@ on:
 
 jobs:
   build-android:
-    # Use Ubuntu 20.04, which has better support for older libraries like libtinfo5
-    runs-on: ubuntu-20.04
+    # Use the stable and supported Ubuntu 22.04 runner
+    runs-on: ubuntu-22.04
 
     steps:
       # 1. Check out your repository's code
@@ -33,8 +34,11 @@ jobs:
       # 4. Install all necessary system-level dependencies
       - name: Install system dependencies
         run: |
+          # Manually add the Ubuntu 20.04 (Focal) repository to get libtinfo5
+          echo "deb http://archive.ubuntu.com/ubuntu/ focal main universe" | sudo tee /etc/apt/sources.list.d/focal.list
           sudo apt-get update
-          sudo apt-get install -y \
+          # Install all dependencies, including the now-available libtinfo5
+          sudo apt-get install -y --allow-unauthenticated \
           git \
           zip \
           unzip \
