@@ -39,11 +39,15 @@ jobs:
         run: |
           pip install buildozer cython
           sudo apt-get update
-          # --- NEW: Install perl ---
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev perl
-          # Ensure perl is executable and in PATH if not already (though apt should handle this)
           which perl || echo "perl not found in PATH after install!"
-
+          # --- NEW: Upgrade pip and verify its presence ---
+          python3 -m pip install --upgrade pip setuptools wheel
+          echo "Verifying pip location:"
+          which pip || echo "pip executable not found in PATH!"
+          which pip3 || echo "pip3 executable not found in PATH!"
+          python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))" # Show where scripts like pip are
+          ls -la "$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))")" || true # List contents of scripts dir
 
       - name: Add Google AI API Key to environment (if not already set)
         run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp
@@ -55,13 +59,12 @@ jobs:
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
           sed -i 's/^android\.ndk_version.*$/android.ndk_version = 23.1.7779620/' buildozer.spec # NDK 23b
-          # --- NEW: Explicitly set min_sdk_version to match the NDK API used by p4a ---
           sed -i 's/^android\.min_sdk_version.*$/android.min_sdk_version = 21/' buildozer.spec
           
           grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
           grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
           grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 23.1.7779620" >> buildozer.spec # NDK 23b
-          grep -q "^android\.min_sdk_version" buildozer.spec || echo "android.min_sdk_version = 21" >> buildozer.spec # NEW: Min SDK Version
+          grep -q "^android\.min_sdk_version" buildozer.spec || echo "android.min_sdk_version = 21" >> buildozer.spec # Min SDK Version
           
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version|android.min_sdk_version)" buildozer.spec
