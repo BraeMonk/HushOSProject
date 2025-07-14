@@ -56,7 +56,7 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    # 7. Install SDK and NDK components with explicit AIDL tools
+    # 7. Install SDK and NDK components
     - name: Install SDK and NDK components
       run: |
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
@@ -64,25 +64,21 @@ jobs:
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.2" \
-          "ndk;25.2.9519653" \
-          "tools"
-        
-        # Verify AIDL is available
-        echo "Checking for AIDL in build-tools..."
-        find $ANDROID_HOME/build-tools -name "aidl" -type f || echo "AIDL not found in build-tools"
-        
-        # Create symlink to AIDL if needed
-        if [ ! -f "$ANDROID_HOME/build-tools/33.0.2/aidl" ]; then
-          echo "Creating AIDL symlink..."
-          sudo ln -sf /usr/bin/aidl "$ANDROID_HOME/build-tools/33.0.2/aidl" || echo "Failed to create AIDL symlink"
-        fi
+          "ndk;25.2.9519653"
 
+    # 7.1 - THE FIX: Remove obsolete tools directory to ensure Java 17+ compatibility
+    - name: Remove obsolete Android SDK 'tools' directory
+      run: |
+        if [ -d "$ANDROID_HOME/tools" ]; then
+          echo "Obsolete 'tools' directory found. Removing it to prevent Java version conflicts."
+          rm -rf $ANDROID_HOME/tools
+        fi
+        
     # 8. Install Python build tools
     - name: Install Buildozer and Cython
       run: |
         python -m pip install --upgrade pip
         pip install --user buildozer cython
-        # Also install python-for-android directly to avoid missing dependency issues
         pip install --user python-for-android
 
     # 9. Add local bin to PATH
@@ -92,11 +88,9 @@ jobs:
     # 10. Configure buildozer.spec file with correct paths
     - name: Configure Buildozer spec file
       run: |
-        # Set environment variables
         export NDK_PATH="$ANDROID_HOME/ndk/25.2.9519653"
         export SDK_PATH="$ANDROID_HOME"
         
-        # Update buildozer.spec file directly using sed
         sed -i "s|#android.sdk_path =.*|android.sdk_path = $SDK_PATH|" buildozer.spec
         sed -i "s|#android.ndk_path =.*|android.ndk_path = $NDK_PATH|" buildozer.spec
         sed -i "s|#android.build_tools_version =.*|android.build_tools_version = 33.0.2|" buildozer.spec
@@ -104,7 +98,6 @@ jobs:
         sed -i "s|#android.minapi =.*|android.minapi = 21|" buildozer.spec
         sed -i "s|#android.ndk =.*|android.ndk = 25.2.9519653|" buildozer.spec
         
-        # Also handle cases where the lines might not be commented
         sed -i "s|android.sdk_path =.*|android.sdk_path = $SDK_PATH|" buildozer.spec
         sed -i "s|android.ndk_path =.*|android.ndk_path = $NDK_PATH|" buildozer.spec
         sed -i "s|android.build_tools_version =.*|android.build_tools_version = 33.0.2|" buildozer.spec
@@ -112,7 +105,6 @@ jobs:
         sed -i "s|android.minapi =.*|android.minapi = 21|" buildozer.spec
         sed -i "s|android.ndk =.*|android.ndk = 25.2.9519653|" buildozer.spec
         
-        # If the lines don't exist, add them
         if ! grep -q "android.sdk_path" buildozer.spec; then
           echo "android.sdk_path = $SDK_PATH" >> buildozer.spec
         fi
@@ -137,7 +129,7 @@ jobs:
         grep -E "android\.(sdk_path|ndk_path|build_tools_version|api|minapi|ndk)" buildozer.spec || echo "No Android settings found"
         echo "--------------------------------------------"
 
-    # 11. Verify Android environment and AIDL
+    # 11. Verify Android environment
     - name: Verify Android environment
       run: |
         echo "ANDROID_HOME: $ANDROID_HOME"
@@ -157,13 +149,10 @@ jobs:
     # 12. Initialize and build the APK
     - name: Build APK with Buildozer
       run: |
-        # Force clean everything to avoid cache issues
         rm -rf .buildozer/
         
-        # Initialize python-for-android properly
         buildozer android p4a -- --help || echo "P4A initialization attempted"
         
-        # Clean and build
         buildozer android clean
         buildozer -v android debug
       env:
