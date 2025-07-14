@@ -67,10 +67,10 @@ jobs:
       #    This is a robust method to handle license acceptance.
       - name: Accept Android SDK licenses
         run: |
-          mkdir -p $ANDROID_HOME/licenses
-          echo "24333761,d56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_HOME/licenses/android-sdk-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
-          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_HOME/licenses/intel-android-extra-license
+          mkdir -p $ANDROID_SDK_ROOT/licenses
+          echo "24333761,d56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
+          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_SDK_ROOT/licenses/intel-android-extra-license
 
       # 8. Run the Buildozer command to compile the APK
       - name: Run Buildozer
