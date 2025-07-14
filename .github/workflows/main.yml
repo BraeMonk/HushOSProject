@@ -1,6 +1,6 @@
 # This is the definitive, foolproof GitHub Actions workflow for building your Kivy app.
-# It uses a dedicated action to set up the Android SDK, then manually installs
-# the required build-tools and accepts all licenses before running Buildozer.
+# It uses the modern Ubuntu 22.04 runner, manually installs legacy dependencies,
+# and fully prepares the Android SDK environment before running Buildozer.
 
 name: Build HushOS for Android
 
@@ -18,7 +18,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up the Java Development Kit (JDK)
+      # 2. Set up Java Development Kit (JDK) version 17
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -29,10 +29,13 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 4. Install all necessary system-level dependencies, including libtinfo5
+      # 4. Install all necessary system-level dependencies
       - name: Install system dependencies
         run: |
+          # Manually add the Ubuntu 20.04 (Focal) repository to get libtinfo5
+          echo "deb http://archive.ubuntu.com/ubuntu/ focal main universe" | sudo tee /etc/apt/sources.list.d/focal.list
           sudo apt-get update
+          # Install all dependencies, including the now-available libtinfo5
           sudo apt-get install -y --allow-unauthenticated \
           git zip unzip autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
