@@ -37,7 +37,7 @@ jobs:
       - name: Add Google AI API Key to environment (if not already set)
         # This is a placeholder. You should securely set this as a GitHub Secret.
         # Replace 'YOUR_GOOGLE_AI_API_KEY' with the actual secret name if you've set it.
-        run: echo "AIzaSyB9_xVbsDjJN81reI73_KvqIOhXyKAsFNU" > .env_api_key_temp # DO NOT DO THIS IN PRODUCTION, USE SECRETS!
+        run: echo "${{secrets.SECRET_API_KEY}}" > .env_api_key_temp # DO NOT DO THIS IN PRODUCTION, USE SECRETS!
 
       - name: Force correct buildozer.spec settings
         run: |
