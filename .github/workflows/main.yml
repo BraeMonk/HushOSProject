@@ -1,6 +1,5 @@
 # This is the definitive, foolproof GitHub Actions workflow for building your Kivy app.
-# It uses the modern Ubuntu 22.04 runner, manually installs legacy dependencies,
-# and fully prepares the Android SDK environment before running Buildozer.
+# It uses caching, explicitly sets all required paths, and cleans the build to prevent errors.
 name: Build HushOS for Android
 on:
   push:
@@ -8,7 +7,6 @@ on:
 
 jobs:
   build-android:
-    # Use the stable and supported Ubuntu 22.04 runner
     runs-on: ubuntu-22.04
 
     steps:
@@ -16,70 +14,89 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Java Development Kit (JDK) version 17
+      # 2. Cache the .buildozer directory for faster builds
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
+      # 3. Set up Java Development Kit (JDK) version 17
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Set up the Android SDK environment
+      # 4. Set up the Android SDK environment
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 4. Install all necessary system-level dependencies
+      # 5. Install all necessary system-level dependencies
       - name: Install system dependencies
         run: |
-          # Manually add the Ubuntu 20.04 (Focal) repository to get libtinfo5
           echo "deb http://archive.ubuntu.com/ubuntu/ focal main universe" | sudo tee /etc/apt/sources.list.d/focal.list
           sudo apt-get update
-          # Install all dependencies, including the now-available libtinfo5
           sudo apt-get install -y --allow-unauthenticated \
           git zip unzip autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
 
-      # 5. Set up Python
+      # 6. Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      # 6. Install Python build tools
+      # 7. Install Python build tools
       - name: Install Buildozer and Cython
         run: |
           pip install --upgrade pip
           pip install --user buildozer==1.5.0
           pip install --user cython==0.29.34
 
-      # 7. Add Buildozer to PATH
+      # 8. Add Buildozer to PATH
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 8. Install SDK and NDK components
+      # 9. Install SDK and NDK components
       - name: Install SDK and NDK components
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          # Install SDK tools, platform, build-tools, and NDK (version 25b is a safe choice)
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-31" "build-tools;34.0.0" "ndk;25.2.9519653"
 
-      # 9. Configure buildozer.spec to use existing Android environment
-      - name: Configure buildozer.spec
+      # 10. Configure buildozer.spec and Environment
+      - name: Configure buildozer.spec and Environment
         run: |
-          # Dynamically find the NDK path, as its folder name can vary
+          # --- Configure buildozer.spec ---
           export NDK_PATH=$(ls -d $ANDROID_HOME/ndk/* | tail -1)
-          
-          # Use sed to update the buildozer.spec file, forcing it to use the system SDK/NDK
           sed -i "s|^#? *android.sdk_path *=.*|android.sdk_path = $ANDROID_HOME|g" buildozer.spec
           sed -i "s|^#? *android.ndk_path *=.*|android.ndk_path = $NDK_PATH|g" buildozer.spec
+          sed -i "s|^#? *android.build_tools_version *=.*|android.build_tools_version = 34.0.0|g" buildozer.spec
           
-          echo "INFO: buildozer.spec configured to use system Android environment."
+          echo "✅ buildozer.spec configured."
 
-      # 10. Run Buildozer to compile the APK
-      - name: Run Buildozer
-        run: buildozer -v android debug
+          # --- Add build-tools to the main PATH (The Foolproof Fix) ---
+          echo "$ANDROID_HOME/build-tools/34.0.0" >> $GITHUB_PATH
+          echo "✅ Android build-tools added to system PATH."
 
-      # 11. Upload the final .apk file as a downloadable artifact
+      # 11. Clean, Build, and Diagnose
+      - name: Clean, Build, and Diagnose
+        run: |
+          echo "--- Verifying 'aidl' location ---"
+          which aidl
+          ls -l $(which aidl)
+          echo "---------------------------------"
+
+          # Clean previous build artifacts to prevent conflicts
+          buildozer -v android clean
+          
+          # Run the build
+          buildozer -v android debug
+
+      # 12. Upload the final .apk file as a downloadable artifact
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
