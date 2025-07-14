@@ -55,6 +55,9 @@ android.build_tools_version = 34.0.0
 
 
 [buildozer]
+
+android.sdk_path = $ANDROID_HOME
+
 # (int) Log level (0 = error, 1 = info, 2 = debug (with command output))
 log_level = 2
 
