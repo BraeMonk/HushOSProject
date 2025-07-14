@@ -1,5 +1,4 @@
 [app]
-
 # (str) Title of your application
 title = HushOS
 
@@ -19,7 +18,7 @@ source.include_exts = py,png,jpg,kv,atlas,wav,json
 version = 0.1
 
 # (list) List of modules to bundle with your application
-# Ensure all necessary libraries are listed here.
+# FIX: Added specific, stable version of pyjnius to fix build error.
 requirements = python3,kivy,google-generativeai,pillow,pyjnius==1.6.1
 
 # (str) Presplash background color (for new android builds)
@@ -52,14 +51,8 @@ android.window_soft_input_mode = adjustResize
 android.ndk = 25b
 
 [buildozer]
-
 # (int) Log level (0 = error, 1 = info, 2 = debug (with command output))
 log_level = 2
 
 # (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 1
-
-[android]
-
-# (str) Android SDK directory (if empty, it will be automatically downloaded.)
-android.sdk_path = /mnt/d/Hush/.buildozer/android/platform/android-sdk
