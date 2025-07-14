@@ -12,14 +12,12 @@ package.domain = org.hushos
 source.dir = .
 
 # (list) Source file extensions to include
-# Added 'json' to ensure all your data and log files are included
 source.include_exts = py,png,jpg,kv,atlas,wav,json
 
 # (str) Application versioning
 version = 0.1
 
 # (list) List of modules to bundle with your application
-# Added 'kivymd' as a common UI library, and specified the google-generativeai recipe
 requirements = python3,kivy,google-generativeai,pillow,pyjnius==1.6.1
 
 # (str) Presplash background color
@@ -37,17 +35,20 @@ orientation = portrait
 # (list) Permissions
 android.permissions = INTERNET,VIBRATE
 
-# (int) Android API target. 34 is the latest as of recent updates.
-android.api = 34
+# (int) Android API target. 33 is very stable for CI builds.
+android.api = 33
 
-# (int) Minimum API required. 21 is a good baseline.
+# (int) Minimum API required
 android.minapi = 21
+
+# (str) Explicitly set the Build Tools version for reliability
+android.build_tools_version = 33.0.2
+
+# (str) A known stable NDK version
+android.ndk_version = 25.2.9519653
 
 # (str) How the app window behaves when the keyboard appears.
 android.window_soft_input_mode = adjustResize
-
-# (str) Android NDK version to use. 26b is a stable, recent choice.
-android.ndk_version = 26b
 
 # (str) The python-for-android branch to use. 'develop' often has more recent recipes.
 p4a.branch = develop
