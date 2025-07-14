@@ -41,17 +41,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev perl
           which perl || echo "perl not found in PATH after install!"
-          
+
           python3 -m pip install --upgrade setuptools pip wheel
-          
+
           echo "Verifying pip location:"
           which pip || echo "pip executable not found in PATH!"
           which pip3 || echo "pip3 executable not found in PATH!"
           python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))" # Show where scripts like pip are
           ls -la "$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))")" || true # List contents of scripts dir
+        shell: bash
 
       - name: Add Google AI API Key to environment (if not already set)
-        run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp
+        run: echo "${{ secrets.SECRET_API_KEY }}" > .env_api_key_temp
+        shell: bash
 
       - name: Force correct buildozer.spec settings
         run: |
@@ -59,16 +61,17 @@ jobs:
           cp buildozer.spec buildozer.spec.backup
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
-          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 25b/' buildozer.spec 
+          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 25b/' buildozer.spec
           sed -i 's/^android\.min_sdk_version.*$/android.min_sdk_version = 21/' buildozer.spec
-          
+
           grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
           grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
-          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 25b" >> buildozer.spec 
-          grep -q "^android\.min_sdk_version" buildozer.spec || echo "android.min_sdk_version = 21" >> buildozer.spec 
-          
+          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 25b" >> buildozer.spec
+          grep -q "^android\.min_sdk_version" buildozer.spec || echo "android.min_sdk_version = 21" >> buildozer.spec
+
           echo "Current buildozer.spec Android settings:"
           grep -E "(android.api|android.build_tools_version|android.ndk_version|android.min_sdk_version)" buildozer.spec
+        shell: bash
 
       - name: Ensure Android SDK Tools and NDK are present and accept licenses
         run: |
@@ -88,44 +91,49 @@ jobs:
 
           echo "Attempting to create SDK directories and download command-line tools…"
           mkdir -p "$SDK_ROOT"
-          
+
           if [ ! -d "$FINAL_CMDLINE_TOOLS_ROOT" ]; then
             echo "Downloading Android SDK command-line tools…"
             mkdir -p "$TEMP_UNZIP_DIR"
             cd "$TEMP_UNZIP_DIR"
-            
+
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
-            
-            UNZIPPED_ROOT_DIR=""
+
+            # The zip extracts into a "cmdline-tools" directory at its root
+            # Move contents of "cmdline-tools" to TARGET_CMDLINE_TOOLS_DIR
             if [ -d "./cmdline-tools" ]; then
-                UNZIPPED_ROOT_DIR="./cmdline-tools"
-            elif [ -d "./tools" ]; then
-                UNZIPPED_ROOT_DIR="./tools"
-            elif [ -d "./latest" ]; then
-                UNZIPPED_ROOT_DIR="./latest"
-            elif [ -d "./bin" ] && [ -d "./lib" ]; then
-                mkdir -p temp_latest_dir
-                mv ./bin ./lib temp_latest_dir/
-                UNZIPPED_ROOT_DIR="./temp_latest_dir"
+              echo "Moving unzipped command-line tools from '$TEMP_UNZIP_DIR/cmdline-tools' to '$TARGET_CMDLINE_TOOLS_DIR'…"
+              mkdir -p "$TARGET_CMDLINE_TOOLS_DIR"
+              mv ./cmdline-tools/* "$TARGET_CMDLINE_TOOLS_DIR/" || true
+              mv ./cmdline-tools/.[!.]* "$TARGET_CMDLINE_TOOLS_DIR/" 2>/dev/null || true
             else
-                echo "Error: Could not determine the root directory of unzipped command-line tools."
-                ls -R .
-                exit 1
+              echo "Error: Expected 'cmdline-tools' directory not found after unzipping."
+              ls -R .
+              exit 1
             fi
-
-            if [ -z "$UNZIPPED_ROOT_DIR" ]; then
-                echo "Error: Unzipped command-line tools directory not found or recognized."
-                exit 1
-            fi
-
-            echo "Moving unzipped command-line tools from '$UNZIPPED_ROOT_DIR' to '$FINAL_CMDLINE_TOOLS_ROOT'…"
-            mkdir -p "$FINAL_CMDLINE_TOOLS_ROOT"
-            mv "$UNZIPPED_ROOT_DIR"/* "$FINAL_CMDLINE_TOOLS_ROOT/" || true
-            mv "$UNZIPPED_ROOT_DIR"/.[!.]* "$FINAL_CMDLINE_TOOLS_ROOT/" 2>/dev/null || true
 
             cd "$SDK_ROOT"
             rm -rf "$TEMP_UNZIP_DIR"
+          fi
+
+          # Ensure the `latest` directory exists within cmdline-tools
+          # This is crucial as the downloaded zip may not contain "latest" directly at the root
+          # but rather expects you to create it and move the extracted contents (bin, lib, etc.) into it.
+          if [ ! -d "$FINAL_CMDLINE_TOOLS_ROOT/bin" ]; then
+              echo "Ensuring '$FINAL_CMDLINE_TOOLS_ROOT' structure is correct and creating 'latest' if needed..."
+              # Check if contents are directly under $TARGET_CMDLINE_TOOLS_DIR (i.e. 'bin', 'lib')
+              if [ -d "$TARGET_CMDLINE_TOOLS_DIR/bin" ]; then
+                  echo "Found 'bin' directly in '$TARGET_CMDLINE_TOOLS_DIR'. Moving to 'latest'..."
+                  mkdir -p "$FINAL_CMDLINE_TOOLS_ROOT"
+                  mv "$TARGET_CMDLINE_TOOLS_DIR"/bin "$FINAL_CMDLINE_TOOLS_ROOT/" || true
+                  mv "$TARGET_CMDLINE_TOOLS_DIR"/lib "$FINAL_CMDLINE_TOOLS_ROOT/" || true
+                  mv "$TARGET_CMDLINE_TOOLS_DIR"/source.properties "$FINAL_CMDLINE_TOOLS_ROOT/" || true
+              else
+                  echo "Warning: 'bin' directory not found where expected within '$TARGET_CMDLINE_TOOLS_DIR'."
+                  echo "Contents of $TARGET_CMDLINE_TOOLS_DIR:"
+                  ls -la "$TARGET_CMDLINE_TOOLS_DIR"
+              fi
           fi
 
           echo "Creating symbolic link for sdkmanager for Buildozer compatibility…"
@@ -146,4 +154,60 @@ jobs:
             ls -la "$FINAL_CMDLINE_TOOLS_ROOT/bin"
             ls -la "$FINAL_CMDLINE_TOOLS_ROOT"
             ls -la "$TARGET_CMDLINE_TOOLS_DIR"
-            exit
+            exit 1
+          fi
+
+          echo "Adding Android SDK tools to PATH for sdkmanager to be found."
+          echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+          echo "$FINAL_CMDLINE_TOOLS_ROOT/bin" >> $GITHUB_PATH
+          echo "$SDKMANAGER_LEGACY_DIR" >> $GITHUB_PATH
+
+          echo "Accepting Android SDK licenses…"
+          # This step is crucial. sdkmanager won't work without accepting licenses.
+          # The expect command line utility is used to automate license acceptance.
+          # Install 'expect' if not already present
+          sudo apt-get install -y expect
+
+          # Script to automatically accept licenses
+          expect -c '
+            set timeout 10
+            spawn '"$SDKMANAGER_MODERN"' --licenses
+            expect {
+              "y/N" { send "y\r"; exp_continue }
+              eof
+            }
+          ' || true # Use || true to prevent job failure if licenses are already accepted or other minor issues
+
+          echo "Installing Android SDK build tools, platform-tools, and platform…"
+          "$SDKMANAGER_MODERN" "platforms;android-33" "build-tools;$BUILD_TOOLS_VERSION" "platform-tools" || true
+
+          echo "Downloading and unpacking NDK..."
+          if [ ! -d "$NDK_INSTALL_PATH" ]; then
+              curl -o "$TEMP_UNZIP_DIR/android-ndk.zip" "$NDK_URL"
+              mkdir -p "$TEMP_UNZIP_DIR/ndk_unzip"
+              unzip "$TEMP_UNZIP_DIR/android-ndk.zip" -d "$TEMP_UNZIP_DIR/ndk_unzip"
+              # NDK zip extracts into a directory named like 'android-ndk-r25b'
+              mv "$TEMP_UNZIP_DIR/ndk_unzip/$NDK_DIR_NAME" "$HOME/.buildozer/android/platform/"
+              rm -rf "$TEMP_UNZIP_DIR"
+          else
+              echo "NDK already exists at $NDK_INSTALL_PATH."
+          fi
+
+          echo "Verifying NDK path set in Buildozer config (if applicable)."
+          echo "It will be set by Buildozer during the build process if needed."
+        shell: bash
+
+      - name: Build Kivy Android APK
+        run: |
+          # Initialize buildozer
+          buildozer init || true # Initialize if not already present
+
+          # Build the APK
+          buildozer android debug
+        shell: bash
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kivy-app-apk
+          path: bin/*.apk
