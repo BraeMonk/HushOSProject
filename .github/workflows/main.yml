@@ -41,9 +41,13 @@ jobs:
     
     - name: Build with Buildozer
       run: |
-        # This is the fix: Force buildozer to use the environment's SDK and NDK
-        buildozer set-spec android.sdk_path ""
-        buildozer set-spec android.ndk_path ""
+        # THE FIX: Use 'sed' to force buildozer to use the environment's SDK and NDK
+        # This finds the line starting with 'android.sdk_path' and replaces it
+        # with 'android.sdk_path = ' (an empty path).
+        sed -i 's|^android.sdk_path =.*|android.sdk_path =|' buildozer.spec
+        
+        # This does the same for the NDK path.
+        sed -i 's|^android.ndk_path =.*|android.ndk_path =|' buildozer.spec
         
         # Now, run the build
         buildozer -v android debug
