@@ -35,8 +35,7 @@ jobs:
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev
 
       - name: Add Google AI API Key to environment (if not already set)
-        # This is a placeholder. You should securely set this as a GitHub Secret.
-        # Replace 'YOUR_GOOGLE_AI_API_KEY_SECRET' with the actual name of your GitHub Secret.
+        # IMPORTANT: Replace "GOOGLE_AI_API_KEY_SECRET" with the actual name of your GitHub Secret.
         run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp # Use secrets!
 
       - name: Force correct buildozer.spec settings
@@ -65,9 +64,11 @@ jobs:
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           CMDLINE_TOOLS_BASE_DIR="$SDK_ROOT/cmdline-tools"
           CMDLINE_TOOLS_LATEST_DIR="$CMDLINE_TOOLS_BASE_DIR/latest"
-          FINAL_BIN_DIR="$CMDLINE_TOOLS_LATEST_DIR/bin" # The definitive bin directory
-          SDKMANAGER="$FINAL_BIN_DIR/sdkmanager"
+          FINAL_CMDLINE_BIN_DIR="$CMDLINE_TOOLS_LATEST_DIR/bin" # The definitive cmdline-tools bin directory
+          SDKMANAGER="$FINAL_CMDLINE_BIN_DIR/sdkmanager"
           TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip"
+          BUILD_TOOLS_VERSION="33.0.2" # Define build tools version for clarity and reusability
+          NDK_VERSION="25.2.9519653" # Define NDK version for clarity and reusability
 
           echo "Attempting to create SDK directories and download command-line tools..."
           mkdir -p "$SDK_ROOT"
@@ -80,28 +81,28 @@ jobs:
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
             
-            # --- Start of refined mv logic ---
-            # Create the final target bin directory
-            mkdir -p "$FINAL_BIN_DIR"
+            # --- Start of robust 'bin' extraction logic ---
+            # Create the final target bin directory for cmdline tools
+            mkdir -p "$FINAL_CMDLINE_BIN_DIR"
 
             # Check if 'latest/bin/' exists after unzip and move its contents
             if [ -d "./latest/bin" ] && [ "$(ls -A ./latest/bin)" ]; then
-              echo "Moving contents from ./latest/bin to $FINAL_BIN_DIR"
-              mv ./latest/bin/* "$FINAL_BIN_DIR/"
+              echo "Moving contents from ./latest/bin to $FINAL_CMDLINE_BIN_DIR"
+              mv ./latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
             # Check if 'cmdline-tools/latest/bin/' exists after unzip and move its contents
             elif [ -d "./cmdline-tools/latest/bin" ] && [ "$(ls -A ./cmdline-tools/latest/bin)" ]; then
-              echo "Moving contents from ./cmdline-tools/latest/bin to $FINAL_BIN_DIR"
-              mv ./cmdline-tools/latest/bin/* "$FINAL_BIN_DIR/"
+              echo "Moving contents from ./cmdline-tools/latest/bin to $FINAL_CMDLINE_BIN_DIR"
+              mv ./cmdline-tools/latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
             # Fallback: if 'bin/' is directly in the unzipped root (less common for cmdline-tools but possible)
             elif [ -d "./bin" ] && [ "$(ls -A ./bin)" ]; then
-              echo "Moving contents from ./bin to $FINAL_BIN_DIR"
-              mv ./bin/* "$FINAL_BIN_DIR/"
+              echo "Moving contents from ./bin to $FINAL_CMDLINE_BIN_DIR"
+              mv ./bin/* "$FINAL_CMDLINE_BIN_DIR/"
             else
               echo "Error: Could not find 'bin' directory with sdkmanager in unzipped cmdline-tools."
               ls -R . # List contents for debugging
               exit 1
             fi
-            # --- End of refined mv logic ---
+            # --- End of robust 'bin' extraction logic ---
             rm -rf "$TEMP_UNZIP_DIR" # Clean up temp directory right after move
           fi
 
@@ -111,7 +112,7 @@ jobs:
           echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER"
           if [ ! -f "$SDKMANAGER" ]; then
             echo "Error: sdkmanager not found at $SDKMANAGER. Check paths or download."
-            ls -la "$FINAL_BIN_DIR" # List contents of the bin directory
+            ls -la "$FINAL_CMDLINE_BIN_DIR" # List contents of the bin directory
             exit 1
           fi
 
@@ -136,25 +137,35 @@ jobs:
           echo "Installing 'tools' package for broader compatibility..."
           "$SDKMANAGER" "tools" || true
 
-          "$SDKMANAGER" "build-tools;33.0.2" || true
-          "$SDKMANAGER" "platform-tools" || true # Ensure platform-tools is installed
+          "$SDKMANAGER" "build-tools;$BUILD_TOOLS_VERSION" || true
+          "$SDKMANAGER" "platform-tools" || true
           "$SDKMANAGER" "platforms;android-33" || true
-          "$SDKMANAGER" "ndk;25.2.9519653" || true
+          "$SDKMANAGER" "ndk;$NDK_VERSION" || true # Use NDK_VERSION variable here
 
-          echo "Listing installed SDK components to verify build-tools and platform-tools..."
+          echo "Listing installed SDK components to verify..."
           "$SDKMANAGER" --list | grep "build-tools"
           "$SDKMANAGER" --list | grep "platform-tools"
-          ls -la "$SDK_ROOT/build-tools/33.0.2" || echo "Build-tools 33.0.2 directory not found after explicit install."
+          "$SDKMANAGER" --list | grep "ndk"
+          ls -la "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" || echo "Build-tools $BUILD_TOOLS_VERSION directory not found after explicit install."
           ls -la "$SDK_ROOT/platform-tools" || echo "Platform-tools directory not found after explicit install."
+          ls -la "$SDK_ROOT/ndk/$NDK_VERSION" || echo "NDK $NDK_VERSION directory not found after explicit install."
 
-          # --- NEW: Add Android SDK platform-tools to PATH ---
-          echo "Adding platform-tools to PATH..."
+          # --- Add ALL necessary Android SDK tool directories to PATH ---
+          echo "Adding Android SDK tool directories to PATH for all subsequent steps..."
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
-          # Verify PATH update for this step (optional, but good for debugging)
-          echo "Current PATH: $PATH"
-          # Try to run adb directly to confirm it's found
-          adb version || echo "adb not directly found in PATH after update for this step."
+          echo "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
+          echo "$FINAL_CMDLINE_BIN_DIR" >> $GITHUB_PATH # Add cmdline-tools/latest/bin
+          echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH # Add NDK root for tools like ndk-build, if necessary
 
+          # Verify PATH update for this step (optional, but highly recommended for debugging)
+          echo "Current PATH after modifications:"
+          echo "$PATH"
+          # Try to run common tools to confirm they're found
+          adb version || echo "adb not directly found in PATH after update."
+          aapt version || echo "aapt not directly found in PATH after update."
+          # aapt is often a versioned binary, so check specific path as fallback if it's still failing
+          # This should now be found by PATH, but if not, the full path is "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/aapt"
+          
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
         # This step runs buildozer for the first time to set up any other Android SDK and NDK components
         # that Buildozer itself might manage or verify.
