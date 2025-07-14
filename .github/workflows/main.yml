@@ -149,6 +149,7 @@ jobs:
           "$SDKMANAGER" --list | grep "build-tools"
           "$SDKMANAGER" --list | grep "platform-tools"
           "$SDKMANAGER" --list | grep "ndk"
+          # Corrected: Changed || true # echo "..." to || echo "..." or just removed comment
           ls -la "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" || echo "Build-tools $BUILD_TOOLS_VERSION directory not found after explicit install."
           ls -la "$SDK_ROOT/platform-tools" || echo "Platform-tools directory not found after explicit install."
           ls -la "$SDK_ROOT/ndk/$NDK_VERSION" || echo "NDK $NDK_VERSION directory not found after explicit install."
