@@ -29,17 +29,20 @@ jobs:
       uses: android-actions/setup-android@v3
 
     - name: Install SDK Components and Accept Licenses
-      run: |
-        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+        run: |
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+          yes | sdkmanager --licenses
 
-        # Accept all licenses interactively (automated)
-        yes | sdkmanager --licenses
+    - name: Uninstall build-tools 36 if installed
+        run: |
+          sdkmanager --uninstall "build-tools;36.0.0" || echo "build-tools 36 not installed"
 
-        # Inject licenses manually to ensure no license prompts block the build
-        mkdir -p $ANDROID_SDK_ROOT/licenses
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
-        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
+    - name: Manually accept licenses
+        run: |
+          mkdir -p $ANDROID_SDK_ROOT/licenses
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
 
     - name: Install Buildozer and dependencies
       run: |
