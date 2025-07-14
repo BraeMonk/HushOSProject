@@ -102,13 +102,11 @@ jobs:
               exit 1
             fi
             # --- End of refined mv logic ---
-
-            # Change back to SDK_ROOT for subsequent commands and then clean up temp
-            cd "$SDK_ROOT"
-            rm -rf "$TEMP_UNZIP_DIR" 
-          else
-            cd "$SDK_ROOT" # Ensure we are in SDK_ROOT if tools already exist
+            rm -rf "$TEMP_UNZIP_DIR" # Clean up temp directory right after move
           fi
+
+          # Change to SDK_ROOT before continuing, ensures consistent base path
+          cd "$SDK_ROOT"
 
           echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER"
           if [ ! -f "$SDKMANAGER" ]; then
@@ -139,14 +137,24 @@ jobs:
           "$SDKMANAGER" "tools" || true
 
           "$SDKMANAGER" "build-tools;33.0.2" || true
-          "$SDKMANAGER" "platform-tools" || true
+          "$SDKMANAGER" "platform-tools" || true # Ensure platform-tools is installed
           "$SDKMANAGER" "platforms;android-33" || true
           "$SDKMANAGER" "ndk;25.2.9519653" || true
 
-          echo "Listing installed SDK components to verify build-tools..."
+          echo "Listing installed SDK components to verify build-tools and platform-tools..."
           "$SDKMANAGER" --list | grep "build-tools"
+          "$SDKMANAGER" --list | grep "platform-tools"
           ls -la "$SDK_ROOT/build-tools/33.0.2" || echo "Build-tools 33.0.2 directory not found after explicit install."
-          
+          ls -la "$SDK_ROOT/platform-tools" || echo "Platform-tools directory not found after explicit install."
+
+          # --- NEW: Add Android SDK platform-tools to PATH ---
+          echo "Adding platform-tools to PATH..."
+          echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
+          # Verify PATH update for this step (optional, but good for debugging)
+          echo "Current PATH: $PATH"
+          # Try to run adb directly to confirm it's found
+          adb version || echo "adb not directly found in PATH after update for this step."
+
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
         # This step runs buildozer for the first time to set up any other Android SDK and NDK components
         # that Buildozer itself might manage or verify.
