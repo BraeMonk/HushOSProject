@@ -183,6 +183,8 @@ jobs:
 
           echo "Downloading and unpacking NDK..."
           if [ ! -d "$NDK_INSTALL_PATH" ]; then
+              # Ensure the TEMP_UNZIP_DIR is created before curl attempts to write to it
+              mkdir -p "$TEMP_UNZIP_DIR"
               curl -o "$TEMP_UNZIP_DIR/android-ndk.zip" "$NDK_URL"
               mkdir -p "$TEMP_UNZIP_DIR/ndk_unzip"
               unzip "$TEMP_UNZIP_DIR/android-ndk.zip" -d "$TEMP_UNZIP_DIR/ndk_unzip"
