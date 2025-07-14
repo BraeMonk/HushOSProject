@@ -41,8 +41,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev liblzma-dev libffi-dev libssl-dev perl
           which perl || echo "perl not found in PATH after install!"
-          # --- NEW: Upgrade pip and verify its presence ---
-          python3 -m pip install --upgrade pip setuptools wheel
+          
+          # --- NEW: Ensure setuptools is specifically installed/upgraded first ---
+          # This is crucial for distutils compatibility with newer Python/packaging tools.
+          python3 -m pip install --upgrade setuptools pip wheel
+          
           echo "Verifying pip location:"
           which pip || echo "pip executable not found in PATH!"
           which pip3 || echo "pip3 executable not found in PATH!"
