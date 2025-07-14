@@ -75,10 +75,15 @@ jobs:
       - name: Ensure Android SDK Tools are present and accept licenses
         run: |
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-          CMDLINE_TOOLS_BASE_DIR="$SDK_ROOT/cmdline-tools"
-          CMDLINE_TOOLS_LATEST_DIR="$CMDLINE_TOOLS_BASE_DIR/latest"
-          FINAL_CMDLINE_BIN_DIR="$CMDLINE_TOOLS_LATEST_DIR/bin"
-          SDKMANAGER="$FINAL_CMDLINE_BIN_DIR/sdkmanager"
+          # The target directory where the 'cmdline-tools' should reside
+          TARGET_CMDLINE_TOOLS_DIR="$SDK_ROOT/cmdline-tools"
+          
+          # This is where the 'latest' folder containing bin/lib should go
+          FINAL_CMDLINE_TOOLS_ROOT="$TARGET_CMDLINE_TOOLS_DIR/latest"
+          
+          # The actual sdkmanager executable path
+          SDKMANAGER="$FINAL_CMDLINE_TOOLS_ROOT/bin/sdkmanager"
+          
           TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip"
           BUILD_TOOLS_VERSION="33.0.2"
           NDK_VERSION="23.1.7779620" # NDK 23b
@@ -86,7 +91,7 @@ jobs:
           echo "Attempting to create SDK directories and download command-line tools…"
           mkdir -p "$SDK_ROOT"
           
-          if [ ! -d "$CMDLINE_TOOLS_LATEST_DIR" ]; then
+          if [ ! -d "$FINAL_CMDLINE_TOOLS_ROOT" ]; then
             echo "Downloading Android SDK command-line tools…"
             mkdir -p "$TEMP_UNZIP_DIR"
             cd "$TEMP_UNZIP_DIR"
@@ -94,31 +99,55 @@ jobs:
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
             
-            # More robust check for the 'bin' directory after unzipping
-            mkdir -p "$FINAL_CMDLINE_BIN_DIR"
-            if [ -d "./latest/bin" ] && [ "$(ls -A ./latest/bin)" ]; then
-              echo "Moving contents from ./latest/bin to ${FINAL_CMDLINE_BIN_DIR}"
-              mv ./latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
-            elif [ -d "./cmdline-tools/latest/bin" ] && [ "$(ls -A ./cmdline-tools/latest/bin)" ]; then
-              echo "Moving contents from ./cmdline-tools/latest/bin to "$FINAL_CMDLINE_BIN_DIR""
-              mv ./cmdline-tools/latest/bin/* "$FINAL_CMDLINE_BIN_DIR/"
-            elif [ -d "./bin" ] && [ "$(ls -A ./bin)" ]; then
-              echo "Moving contents from ./bin to $FINAL_CMDLINE_BIN_DIR"
-              mv ./bin/* "$FINAL_CMDLINE_BIN_DIR/"
+            # Identify the actual root directory inside the unzipped archive
+            # This handles cases where it's 'cmdline-tools', 'tools', or directly 'bin'/'lib'
+            UNZIPPED_ROOT_DIR=""
+            if [ -d "./cmdline-tools" ]; then
+                UNZIPPED_ROOT_DIR="./cmdline-tools"
+            elif [ -d "./tools" ]; then # Some older versions might unpack to 'tools'
+                UNZIPPED_ROOT_DIR="./tools"
+            elif [ -d "./latest" ]; then # If 'latest' is the immediate subdir
+                UNZIPPED_ROOT_DIR="./latest"
+            elif [ -d "./bin" ] && [ -d "./lib" ]; then # If bin and lib are directly in the root
+                # Create a temporary 'latest' directory to house them before moving
+                mkdir -p temp_latest_dir
+                mv ./bin ./lib temp_latest_dir/
+                UNZIPPED_ROOT_DIR="./temp_latest_dir"
             else
-              echo "Error: Could not find 'bin' directory with sdkmanager in unzipped cmdline-tools."
-              ls -R .
-              exit 1
+                echo "Error: Could not determine the root directory of unzipped command-line tools."
+                ls -R .
+                exit 1
             fi
+
+            if [ -z "$UNZIPPED_ROOT_DIR" ]; then
+                echo "Error: Unzipped command-line tools directory not found or recognized."
+                exit 1
+            fi
+
+            echo "Moving unzipped command-line tools from '$UNZIPPED_ROOT_DIR' to '$FINAL_CMDLINE_TOOLS_ROOT'…"
+            mkdir -p "$FINAL_CMDLINE_TOOLS_ROOT"
+            # Move contents of the identified root directory into FINAL_CMDLINE_TOOLS_ROOT
+            mv "$UNZIPPED_ROOT_DIR"/* "$FINAL_CMDLINE_TOOLS_ROOT/" || true
+            mv "$UNZIPPED_ROOT_DIR"/.[!.]* "$FINAL_CMDLINE_TOOLS_ROOT/" 2>/dev/null || true # Move dotfiles/dirs if any
+
+            # After moving, the original UNZIPPED_ROOT_DIR might still exist but be empty, or not.
+            # We want to ensure the target directory structure is correctly established.
+            # Clean up the temporary unzip directory
+            cd "$SDK_ROOT" # Change back to SDK_ROOT before removing temp_unzip_dir
             rm -rf "$TEMP_UNZIP_DIR"
           fi
 
-          cd "$SDK_ROOT"
+          # Re-establish SDKMANAGER path, as we changed the move logic
+          SDKMANAGER="$FINAL_CMDLINE_TOOLS_ROOT/bin/sdkmanager"
+          FINAL_CMDLINE_BIN_DIR="$FINAL_CMDLINE_TOOLS_ROOT/bin"
+
 
           echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER"
           if [ ! -f "$SDKMANAGER" ]; then
             echo "Error: sdkmanager not found at $SDKMANAGER. Check paths or download."
             ls -la "$FINAL_CMDLINE_BIN_DIR"
+            ls -la "$FINAL_CMDLINE_TOOLS_ROOT"
+            ls -la "$TARGET_CMDLINE_TOOLS_DIR"
             exit 1
           fi
 
@@ -138,7 +167,7 @@ jobs:
           yes | "$SDKMANAGER" --licenses || true
 
           echo "Installing/Updating specific Android SDK components…"
-          echo "Installing 'tools' package for broader compatibility…"
+          echo "Installing 'tools' package for broader compatibility… (This might be redundant with modern SDK setup, but kept for robustness)"
           "$SDKMANAGER" "tools" || true
 
           "$SDKMANAGER" "build-tools;$BUILD_TOOLS_VERSION" || true
@@ -171,6 +200,7 @@ jobs:
 
           # --- Ensure NDK toolchain binaries are executable ---
           echo "Ensuring NDK toolchain binaries are executable…"
+          # This path is relative to the NDK root that Buildozer expects, it might need adjustment if NDK layout changes
           find "$SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" -type f -exec chmod +x {} \; || true
           chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-build" || true
           chmod +x "$SDK_ROOT/ndk/$NDK_VERSION/ndk-gdb" || true
@@ -201,6 +231,7 @@ jobs:
           echo "ANDROID_NDK_HOME is: $ANDROID_NDK_HOME"
           echo "ANDROID_SDK_ROOT is: $ANDROID_SDK_ROOT"
           echo "P4A_NO_LINK_TO_LOCAL_SDKS is: $P4A_NO_LINK_TO_LOCAL_SDKS"
+        shell: bash # Ensure bash is used for this complex script
 
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
         run: |
@@ -208,6 +239,8 @@ jobs:
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           BUILD_TOOLS_VERSION="33.0.2"
           NDK_VERSION="23.1.7779620"
+          
+          # Adjusted CMDLINE_TOOLS_LATEST_BIN to reflect the new move logic
           CMDLINE_TOOLS_LATEST_BIN="$SDK_ROOT/cmdline-tools/latest/bin"
 
           export PATH="$PATH:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION:$CMDLINE_TOOLS_LATEST_BIN:$SDK_ROOT/ndk/$NDK_VERSION"
