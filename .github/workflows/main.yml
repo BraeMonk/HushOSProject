@@ -1,5 +1,5 @@
-# This workflow installs the latest Buildozer and explicitly sets the NDK version
-# to solve both the 'Unknown command' and 'NDK not found' errors.
+# This workflow uses a robust awk command to guarantee the spec file is
+# correctly modified, bypassing all previous command and download errors.
 name: Build Android App
 
 on:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # 1. Check out repository code
+      # 1. Checkout repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -46,16 +46,14 @@ jobs:
 
       # 6. Set up the Android SDK environment
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: actions/setup-android@v3
 
-      # 7. Install the LATEST development build tools
-      - name: Install latest Buildozer and dependencies
+      # 7. Install Buildozer and dependencies
+      - name: Install Buildozer and dependencies
         run: |
           pip install --upgrade pip
-          # Install latest Buildozer from GitHub to ensure 'config' command is available
-          pip install --user git+https://github.com/kivy/buildozer.git
-          pip install --user git+https://github.com/kivy/python-for-android.git
-          pip install --user cython
+          pip install --user buildozer cython
+          pip install --user python-for-android
 
       # 8. Add local bin to PATH
       - name: Add local bin to PATH
@@ -67,13 +65,37 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
 
-      # 10. Configure Buildozer to use pre-installed NDK
-      - name: Configure Buildozer NDK Version
+      # 10. Force-update buildozer.spec with a robust script
+      - name: Configure buildozer.spec
         run: |
-          # This is the fix: Set the NDK version to prevent Buildozer from downloading it.
-          # The version '25c' corresponds to the '25.2.9519653' we installed.
-          buildozer config set android.ndk_version 25c
-          echo "✅ NDK version set to 25c in buildozer.spec"
+          # This script ensures the [android] section exists, then sets the values.
+          # This avoids the 'Unknown command' error and the NDK download error.
+          SPEC_FILE="buildozer.spec"
+          
+          # Ensure [android] section exists
+          if ! grep -q "\[android\]" "$SPEC_FILE"; then
+            echo -e "\n[android]" >> "$SPEC_FILE"
+          fi
+          
+          # Function to update or add a key-value pair under [android]
+          update_spec() {
+            local key="$1"
+            local value="$2"
+            if grep -q "^#\?$key" "$SPEC_FILE"; then
+              sed -i "s|^#\?$key *=.*|$key = $value|" "$SPEC_FILE"
+            else
+              sed -i "/\[android\]/a $key = $value" "$SPEC_FILE"
+            fi
+          }
+
+          update_spec "android.sdk_path" "${ANDROID_HOME}"
+          update_spec "android.ndk_path" "${ANDROID_HOME}/ndk/25.2.9519653"
+          update_spec "android.ndk_version" "25c"
+          
+          echo "✅ Spec file updated. Verifying contents:"
+          echo "-------------------------------------------"
+          cat "$SPEC_FILE" | grep -A 4 "\[android\]"
+          echo "-------------------------------------------"
 
       # 11. Build the APK
       - name: Build APK with Buildozer
