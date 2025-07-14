@@ -39,7 +39,7 @@ jobs:
       with:
         python-version: '3.11'
 
-    # 5. Install system dependencies
+    # 5. Install system dependencies including AIDL
     - name: Install system dependencies
       run: |
         sudo apt-get update
@@ -48,13 +48,13 @@ jobs:
           zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
           cmake libffi-dev libssl-dev build-essential \
           libltdl-dev python3-dev openjdk-17-jdk \
-          ccache
+          ccache aidl libstdc++6
 
     # 6. Set up Android SDK
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    # 7. Install SDK and NDK components
+    # 7. Install SDK and NDK components with explicit AIDL tools
     - name: Install SDK and NDK components
       run: |
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
@@ -62,7 +62,18 @@ jobs:
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.2" \
-          "ndk;25.2.9519653"
+          "ndk;25.2.9519653" \
+          "tools"
+        
+        # Verify AIDL is available
+        echo "Checking for AIDL in build-tools..."
+        find $ANDROID_HOME/build-tools -name "aidl" -type f || echo "AIDL not found in build-tools"
+        
+        # Create symlink to AIDL if needed
+        if [ ! -f "$ANDROID_HOME/build-tools/33.0.2/aidl" ]; then
+          echo "Creating AIDL symlink..."
+          sudo ln -sf /usr/bin/aidl "$ANDROID_HOME/build-tools/33.0.2/aidl" || echo "Failed to create AIDL symlink"
+        fi
 
     # 8. Install Python build tools
     - name: Install Buildozer and Cython
@@ -122,7 +133,7 @@ jobs:
         grep -E "android\.(sdk_path|ndk_path|build_tools_version|api|minapi|ndk)" buildozer.spec || echo "No Android settings found"
         echo "--------------------------------------------"
 
-    # 11. Verify Android environment
+    # 11. Verify Android environment and AIDL
     - name: Verify Android environment
       run: |
         echo "ANDROID_HOME: $ANDROID_HOME"
@@ -133,6 +144,11 @@ jobs:
         ls -la $ANDROID_HOME/cmdline-tools/latest/bin/
         echo "NDK contents:"
         ls -la $ANDROID_HOME/ndk/ || echo "NDK directory not found"
+        echo "Build tools contents:"
+        ls -la $ANDROID_HOME/build-tools/33.0.2/ || echo "Build tools directory not found"
+        echo "AIDL location check:"
+        which aidl || echo "System AIDL not found"
+        find $ANDROID_HOME -name "aidl" -type f 2>/dev/null || echo "No AIDL found in Android SDK"
 
     # 12. Build the APK
     - name: Build APK with Buildozer
