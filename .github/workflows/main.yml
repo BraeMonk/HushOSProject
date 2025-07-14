@@ -73,45 +73,49 @@ jobs:
           # First, accept all licenses with multiple methods to ensure it works
           echo "Accepting all Android SDK licenses..."
           
-          # Method 1: Use yes command
-          yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          
-          # Method 2: Use expect for more reliable license acceptance
-          sudo apt-get install -y expect
-          expect -c "
-          set timeout 300
-          spawn $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          expect {
-            \"Accept?\" { send \"y\r\"; exp_continue }
-            \"(y/N):\" { send \"y\r\"; exp_continue }
-            \"(Y/n):\" { send \"y\r\"; exp_continue }
-            eof
-          }
-          " || true
-          
-          # Method 3: Create license files directly
+          # Method 1: Create license files directly BEFORE any sdkmanager calls
           mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-arm-dbt-license
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-googletv-license
+          echo "79120722343a6f314e0719f863036c702b0e6b2a" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license-old
+          echo "504667f4c0de7af1a06de9f4b1727b84351f2910" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license-old
           
-          # Now install the specific components we need
+          # Method 2: Use printf to send 'y' responses directly to sdkmanager
+          SDKMANAGER="$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager"
+          
+          # Accept licenses first
+          printf 'y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n' | $SDKMANAGER --licenses || true
+          
+          # Now install the specific components we need (NOT the latest versions)
           echo "Installing Android SDK components..."
           
           # Install build-tools version that matches buildozer.spec
-          $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" || true
+          $SDKMANAGER "build-tools;33.0.2" || true
           
           # Install other potentially needed components
-          $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" || true
-          $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" || true
+          $SDKMANAGER "platform-tools" || true
+          $SDKMANAGER "platforms;android-33" || true
           
           # Install NDK version that matches buildozer.spec
-          $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653" || true
+          $SDKMANAGER "ndk;25.2.9519653" || true
           
           # Accept licenses again after installation
-          yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          printf 'y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n' | $SDKMANAGER --licenses || true
           
           echo "Verifying build-tools installation..."
           ls -la $HOME/.buildozer/android/platform/android-sdk/build-tools/ || echo "Build-tools directory not found"
+          
+          # If build-tools still not found, try to manually create the directory structure
+          if [ ! -d "$HOME/.buildozer/android/platform/android-sdk/build-tools/33.0.2" ]; then
+            echo "Attempting to fix build-tools installation..."
+            $SDKMANAGER --install "build-tools;33.0.2" || true
+            
+            # Last resort: check what build-tools versions are available
+            echo "Available build-tools versions:"
+            $SDKMANAGER --list | grep "build-tools" || echo "Could not list build-tools"
+          fi
 
       - name: Build Android APK
         # This is the actual build command. It uses the configured buildozer.spec.
