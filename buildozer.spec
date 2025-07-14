@@ -11,6 +11,9 @@ package.domain = org.hushos
 # (str) Source code where the main.py live
 source.dir = .
 
+# (str) Main python file to run
+main.py = hushos.py
+
 # (list) Source files to include (let buildozer find them)
 source.include_exts = py,png,jpg,kv,atlas,wav,json
 
