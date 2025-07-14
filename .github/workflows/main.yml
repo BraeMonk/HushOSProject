@@ -103,8 +103,9 @@ jobs:
             fi
             # --- End of refined mv logic ---
 
-            cd "$SDK_ROOT" # Change back to SDK_ROOT for subsequent commands
-            rm -rf "$TEMP_UNZIP_DIR" # Clean up temp directory
+            # Change back to SDK_ROOT for subsequent commands and then clean up temp
+            cd "$SDK_ROOT"
+            rm -rf "$TEMP_UNZIP_DIR" 
           else
             cd "$SDK_ROOT" # Ensure we are in SDK_ROOT if tools already exist
           fi
@@ -133,6 +134,10 @@ jobs:
           yes | "$SDKMANAGER" --licenses || true
 
           echo "Installing/Updating specific Android SDK components..."
+          # Install the 'tools' package first, which might resolve the 'android' command issue
+          echo "Installing 'tools' package for broader compatibility..."
+          "$SDKMANAGER" "tools" || true
+
           "$SDKMANAGER" "build-tools;33.0.2" || true
           "$SDKMANAGER" "platform-tools" || true
           "$SDKMANAGER" "platforms;android-33" || true
