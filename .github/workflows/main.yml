@@ -1,5 +1,5 @@
-# This workflow uses a robust awk command to guarantee the spec file is
-# correctly modified, bypassing all previous command and download errors.
+# This workflow uses the latest v5 of the setup-android action to
+# resolve the "action not found" error.
 name: Build Android App
 
 on:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # 1. Checkout repository code
+      # 1. Check out repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -44,9 +44,9 @@ jobs:
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev
 
-      # 6. Set up the Android SDK environment
+      # 6. Set up the Android SDK environment using the latest action version
       - name: Setup Android SDK
-        uses: actions/setup-android@v3
+        uses: actions/setup-android@v5
 
       # 7. Install Buildozer and dependencies
       - name: Install Buildozer and dependencies
@@ -68,16 +68,12 @@ jobs:
       # 10. Force-update buildozer.spec with a robust script
       - name: Configure buildozer.spec
         run: |
-          # This script ensures the [android] section exists, then sets the values.
-          # This avoids the 'Unknown command' error and the NDK download error.
           SPEC_FILE="buildozer.spec"
           
-          # Ensure [android] section exists
           if ! grep -q "\[android\]" "$SPEC_FILE"; then
             echo -e "\n[android]" >> "$SPEC_FILE"
           fi
           
-          # Function to update or add a key-value pair under [android]
           update_spec() {
             local key="$1"
             local value="$2"
@@ -92,10 +88,7 @@ jobs:
           update_spec "android.ndk_path" "${ANDROID_HOME}/ndk/25.2.9519653"
           update_spec "android.ndk_version" "25c"
           
-          echo "✅ Spec file updated. Verifying contents:"
-          echo "-------------------------------------------"
-          cat "$SPEC_FILE" | grep -A 4 "\[android\]"
-          echo "-------------------------------------------"
+          echo "✅ Spec file updated."
 
       # 11. Build the APK
       - name: Build APK with Buildozer
