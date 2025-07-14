@@ -157,14 +157,24 @@ jobs:
           echo "$FINAL_CMDLINE_BIN_DIR" >> $GITHUB_PATH # Add cmdline-tools/latest/bin
           echo "$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_PATH # Add NDK root for tools like ndk-build, if necessary
 
-          # Verify PATH update for this step (optional, but highly recommended for debugging)
+          # --- Ensure common binaries are executable ---
+          echo "Ensuring common Android SDK binaries are executable..."
+          chmod +x "$SDK_ROOT/platform-tools/adb" || true
+          chmod +x "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/aapt" || true
+          chmod +x "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/aidl" || true # NEW: chmod for aidl
+          chmod +x "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/apksigner" || true
+          chmod +x "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/zipalign" || true
+
+          # Verify PATH update and check tools
           echo "Current PATH after modifications:"
           echo "$PATH"
-          # Try to run common tools to confirm they're found
-          adb version || echo "adb not directly found in PATH after update."
-          aapt version || echo "aapt not directly found in PATH after update."
-          # aapt is often a versioned binary, so check specific path as fallback if it's still failing
-          # This should now be found by PATH, but if not, the full path is "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/aapt"
+          echo "Verifying tool execution:"
+          adb version || echo "adb not found after PATH update."
+          aapt version || echo "aapt not found after PATH update."
+          aidl || echo "aidl not found after PATH update, trying explicit path." # NEW: check aidl
+          "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/aidl" --version || echo "aidl not found at specific path, or --version not supported." # More robust aidl check
+          apksigner || echo "apksigner not found after PATH update." # Check another common tool
+          zipalign || echo "zipalign not found after PATH update." # Check another common tool
           
       - name: Configure Buildozer and Download remaining SDK/NDK (if any)
         # This step runs buildozer for the first time to set up any other Android SDK and NDK components
