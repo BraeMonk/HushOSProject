@@ -1,10 +1,8 @@
 # This is the final, robust GitHub Actions workflow for building your Kivy app.
-# It manually sets up the entire build environment, including accepting Android licenses,
-# to ensure the highest reliability.
+# It uses a dedicated action to correctly set up the Android SDK and accept licenses.
 
 name: Build HushOS for Android
 
-# This workflow runs automatically whenever you push a change to the 'main' branch.
 on:
   push:
     branches: [ "main" ]
@@ -12,46 +10,35 @@ on:
 jobs:
   build-android:
     # Use a standard, stable version of Ubuntu for the build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       # 1. Check out your repository's code so the workflow can access it
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Java Development Kit (JDK) version 17
+      # 2. Set up the Java Development Kit (JDK)
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Set up Python version 3.9, which is stable for Kivy builds
+      # 3. Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      # 4. Install all necessary system-level dependencies for building
+      # 4. Install system-level dependencies
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-          git \
-          zip \
-          unzip \
-          autoconf \
-          libtool \
-          pkg-config \
-          zlib1g-dev \
-          libncurses5-dev \
-          libncursesw5-dev \
-          libtinfo5 \
-          cmake \
-          libffi-dev \
-          libssl-dev
+          git zip unzip autoconf libtool pkg-config \
+          zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
 
-      # 5. Install Python build tools (Buildozer and the correct Cython version)
+      # 5. Install Python build tools
       - name: Install Buildozer and Cython
         run: |
           pip install --upgrade pip
@@ -62,16 +49,12 @@ jobs:
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 7. Automatically accept Android SDK licenses
-      # This is the crucial step that fixes the "Aidl not found" error.
-      - name: Accept Android SDK licenses
-        run: yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses
-
-      # 8. Run the Buildozer command to compile the APK
+      # 7. Run the Buildozer command to compile the APK
+      #    Buildozer will automatically download the Android SDK and NDK.
       - name: Run Buildozer
         run: buildozer -v android debug
 
-      # 9. Upload the final .apk file as a downloadable artifact
+      # 8. Upload the final .apk file as a downloadable artifact
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
