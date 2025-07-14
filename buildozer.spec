@@ -72,10 +72,10 @@ android.build_tools_version = 33.0.2
 #android.service_class_name = org.kivy.android.PythonService
 
 # (str) python-for-android fork to use, defaults to upstream (kivy)
-#p4a.fork = kivy
+p4a.fork = kivy
 
 # (str) python-for-android branch to use, defaults to master
-#p4a.branch = master
+p4a.branch = master
 
 # (str) python-for-android specific commit to use, defaults to HEAD, must be within p4a.branch
 #p4a.commit = HEAD
@@ -100,6 +100,9 @@ android.build_tools_version = 33.0.2
 
 # (str) Path to a custom blacklist file
 #android.blacklist_src = 
+
+# (str) Bootstrap to use for android builds
+p4a.bootstrap = sdl2
 
 # (list) Android application meta-data to set (key=value format)
 #android.meta_data = 
