@@ -46,14 +46,17 @@ jobs:
           cp buildozer.spec buildozer.spec.backup
 
           # Force the correct versions - use 33.0.2 as specified
+          # Keep android.build_tools_version = 33.0.2
+          # Keep android.api = 33
+          # *** CHANGE NDK VERSION HERE ***
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
-          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 25.2.9519653/' buildozer.spec
+          sed -i 's/^android\.ndk_version.*$/android.ndk_version = 23.1.7779620/' buildozer.spec # Changed to 23b
 
           # Add these lines if they don't exist (using 'grep -q' to check for existence)
           grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
           grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
-          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 25.2.9519653" >> buildozer.spec
+          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 23.1.7779620" >> buildozer.spec # Changed to 23b
 
           # Show the relevant lines
           echo "Current buildozer.spec Android settings:"
@@ -68,7 +71,8 @@ jobs:
           SDKMANAGER="$FINAL_CMDLINE_BIN_DIR/sdkmanager"
           TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip"
           BUILD_TOOLS_VERSION="33.0.2" # Define build tools version for clarity and reusability
-          NDK_VERSION="25.2.9519653" # Define NDK version for clarity and reusability
+          # *** CHANGE NDK VERSION HERE ***
+          NDK_VERSION="23.1.7779620" # Changed to 23b
 
           echo "Attempting to create SDK directories and download command-line tools..."
           mkdir -p "$SDK_ROOT"
@@ -138,7 +142,8 @@ jobs:
           "$SDKMANAGER" "build-tools;$BUILD_TOOLS_VERSION" || true
           "$SDKMANAGER" "platform-tools" || true
           "$SDKMANAGER" "platforms;android-33" || true
-          "$SDKMANAGER" "ndk;$NDK_VERSION" || true # Use NDK_VERSION variable here
+          # *** CHANGE NDK VERSION HERE ***
+          "$SDKMANAGER" "ndk;$NDK_VERSION" || true 
 
           echo "Listing installed SDK components to verify..."
           "$SDKMANAGER" --list | grep "build-tools"
@@ -158,12 +163,10 @@ jobs:
           # --- Ensure common binaries are executable ---
           echo "Ensuring common Android SDK binaries are executable..."
           chmod +x "$SDK_ROOT/platform-tools/adb" || true
-          # Note: aapt can sometimes be in a subdirectory like 'aapt/aapt' depending on build-tools version
-          # We'll rely on PATH for most of these now, but keep explicit chmod for crucial ones.
-          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aapt*" -exec chmod +x {} \; || true # More robust aapt chmod
-          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aidl*" -exec chmod +x {} \; || true # More robust aidl chmod
+          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aapt*" -exec chmod +x {} \; || true
+          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "aidl*" -exec chmod +x {} \; || true
           find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "apksigner*" -exec chmod +x {} \; || true
-          find "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
+          find "$SDK_ROOT/build_tools/$BUILD_TOOLS_VERSION" -type f -name "zipalign*" -exec chmod +x {} \; || true
 
           # Verify PATH update and check tools
           echo "Current PATH after modifications:"
@@ -171,11 +174,11 @@ jobs:
           echo "Verifying tool execution:"
           adb version || echo "adb not found after PATH update."
           aapt version || echo "aapt not found after PATH update."
-          aidl || echo "aidl not found after PATH update, trying explicit path." 
+          aidl || echo "aidl not found after PATH update." 
           apksigner || echo "apksigner not found after PATH update."
           zipalign || echo "zipalign not found after PATH update."
 
-          # --- NEW: Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
+          # --- Set ANDROID_HOME and ANDROID_NDK_HOME environment variables ---
           echo "Setting ANDROID_HOME and ANDROID_NDK_HOME environment variables..."
           echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
@@ -192,6 +195,7 @@ jobs:
         run: |
           echo "Running buildozer android debug clean and update after SDK setup..."
           # Clean and update should now correctly find/verify components
+          # These commands should now succeed or provide new errors
           buildozer android debug clean || true
           buildozer android debug update || true
 
