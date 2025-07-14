@@ -46,7 +46,7 @@ jobs:
 
       # 6. Set up the Android SDK environment using the latest action version
       - name: Setup Android SDK
-        uses: actions/setup-android@v5
+        uses: android-actions/setup-android@v3
 
       # 7. Install Buildozer and dependencies
       - name: Install Buildozer and dependencies
