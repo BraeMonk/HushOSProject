@@ -1,8 +1,10 @@
-# This is the final, robust GitHub Actions workflow for building your Kivy app.
-# It uses a dedicated action to correctly set up the Android SDK and accept licenses.
+# This is the definitive, foolproof GitHub Actions workflow for building your Kivy app.
+# It manually sets up the entire build environment, including all specific
+# system dependencies like libtinfo5, and accepts Android licenses.
 
 name: Build HushOS for Android
 
+# This workflow runs automatically whenever you push a change to the 'main' branch.
 on:
   push:
     branches: [ "main" ]
@@ -10,35 +12,47 @@ on:
 jobs:
   build-android:
     # Use a standard, stable version of Ubuntu for the build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       # 1. Check out your repository's code so the workflow can access it
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up the Java Development Kit (JDK)
+      # 2. Set up Java Development Kit (JDK) version 17
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Set up Python
+      # 3. Set up Python version 3.9, which is stable for Kivy builds
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      # 4. Install system-level dependencies
+      # 4. Install all necessary system-level dependencies for building
+      #    This now includes libtinfo5 and other required libraries.
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-          git zip unzip autoconf libtool pkg-config \
-          zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          git \
+          zip \
+          unzip \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev
 
-      # 5. Install Python build tools
+      # 5. Install Python build tools (Buildozer and the correct Cython version)
       - name: Install Buildozer and Cython
         run: |
           pip install --upgrade pip
@@ -49,12 +63,20 @@ jobs:
       - name: Add Buildozer to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # 7. Run the Buildozer command to compile the APK
-      #    Buildozer will automatically download the Android SDK and NDK.
+      # 7. Automatically accept Android SDK licenses
+      #    This is a robust method to handle license acceptance.
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p $ANDROID_HOME/licenses
+          echo "24333761,d56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_HOME/licenses/android-sdk-license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
+          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_HOME/licenses/intel-android-extra-license
+
+      # 8. Run the Buildozer command to compile the APK
       - name: Run Buildozer
         run: buildozer -v android debug
 
-      # 8. Upload the final .apk file as a downloadable artifact
+      # 9. Upload the final .apk file as a downloadable artifact
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
