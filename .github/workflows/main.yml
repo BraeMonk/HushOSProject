@@ -18,11 +18,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Clean Buildozer cache
+      - name: Clean Buildozer and P4A cache directories
         run: |
           echo "Removing existing .buildozer directory to ensure clean build…"
           rm -rf "$HOME/.buildozer" || true
           rm -rf ".buildozer" || true # Also check local buildozer dir if present
+          echo "Removing existing python-for-android cache…"
+          # This specifically targets the p4a build cache, which can get corrupted
+          rm -rf "$HOME/.python-for-android" || true
+          rm -rf "/tmp/p4a-build" || true
         shell: bash
 
       - name: Set up Java Development Kit (JDK)
@@ -36,7 +40,7 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install Buildozer and its dependencies
+      - name: Install Buildozer and its dependencies (with aggressive P4A reinstall)
         run: |
           echo "Updating apt-get and installing build dependencies..."
           sudo apt-get update
@@ -59,19 +63,21 @@ jobs:
             perl \
             curl
           
-          echo "Verifying perl, pip locations..."
+          echo "Ensuring pip is up-to-date..."
+          python3 -m pip install --upgrade setuptools pip wheel
+
+          echo "Removing and reinstalling buildozer, cython, and python-for-android for a clean slate..."
+          pip uninstall -y buildozer cython python-for-android || true
+          pip install buildozer cython
+          pip install python-for-android # This will install the latest stable version
+
+          echo "Verifying perl, pip locations and python-for-android installation..."
           which perl || echo "perl not found in PATH after install!"
           which pip || echo "pip executable not found in PATH!"
           which pip3 || echo "pip3 executable not found in PATH!"
           python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))" # Show where scripts like pip are
           ls -la "$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))")" || true # List contents of scripts dir
-
-          # Ensure pip is up-to-date before installing buildozer and p4a
-          python3 -m pip install --upgrade setuptools pip wheel
-          pip install buildozer cython
-          # --- IMPORTANT NEW LINE ---
-          pip install --upgrade python-for-android
-          # --------------------------
+          pip show python-for-android # Display installed version
         shell: bash
 
       - name: Add Google AI API Key to environment (if not already set)
@@ -247,7 +253,8 @@ jobs:
           buildozer init || true # Initialize if not already present
 
           # Build the APK
-          buildozer android debug
+          # Use -v to get more verbose output which might reveal the exact failure
+          buildozer android debug -v
         shell: bash
 
       - name: Upload APK artifact
