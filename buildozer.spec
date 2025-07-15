@@ -18,7 +18,7 @@ source.include_exts = py,png,jpg,kv,atlas,wav,json,txt
 version = 0.1
 
 # (list) List of modules to bundle with your application
-requirements = python3,kivy,google-generativeai,pillow,pyjnius,android,openssl,sqlite3
+requirements = python3,kivy,pillow,pyjnius,android,openssl,sqlite3,google-generativeai,google-api-python-client,google-auth,requests,urllib3,tqdm
 
 # (str) Presplash background color
 android.presplash_color = #fdfae6
