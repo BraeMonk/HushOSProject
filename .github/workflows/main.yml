@@ -40,7 +40,7 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install Buildozer and its dependencies (with aggressive P4A reinstall)
+      - name: Install Buildozer and its dependencies (with aggressive P4A reinstall from master)
         run: |
           echo "Updating apt-get and installing build dependencies..."
           sudo apt-get update
@@ -66,10 +66,11 @@ jobs:
           echo "Ensuring pip is up-to-date..."
           python3 -m pip install --upgrade setuptools pip wheel
 
-          echo "Removing and reinstalling buildozer, cython, and python-for-android for a clean slate..."
+          echo "Removing and reinstalling buildozer, cython, and python-for-android from master for a clean slate..."
           pip uninstall -y buildozer cython python-for-android || true
           pip install buildozer cython
-          pip install python-for-android # This will install the latest stable version
+          # Install python-for-android directly from the master branch
+          pip install git+https://github.com/kivy/python-for-android.git@master
 
           echo "Verifying perl, pip locations and python-for-android installation..."
           which perl || echo "perl not found in PATH after install!"
@@ -148,8 +149,6 @@ jobs:
             curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
             unzip cmdline-tools.zip
 
-            # The zip extracts into a "cmdline-tools" directory at its root
-            # Move contents of "cmdline-tools" to TARGET_CMDLINE_TOOLS_DIR
             if [ -d "./cmdline-tools" ]; then
               echo "Moving unzipped command-line tools from '$TEMP_UNZIP_DIR/cmdline-tools' to '$TARGET_CMDLINE_TOOLS_DIR'…"
               mkdir -p "$TARGET_CMDLINE_TOOLS_DIR"
@@ -165,12 +164,8 @@ jobs:
             rm -rf "$TEMP_UNZIP_DIR"
           fi
 
-          # Ensure the `latest` directory exists within cmdline-tools
-          # This is crucial as the downloaded zip may not contain "latest" directly at the root
-          # but rather expects you to create it and move the extracted contents (bin, lib, etc.) into it.
           if [ ! -d "$FINAL_CMDLINE_TOOLS_ROOT/bin" ]; then
               echo "Ensuring '$FINAL_CMDLINE_TOOLS_ROOT' structure is correct and creating 'latest' if needed..."
-              # Check if contents are directly under $TARGET_CMDLINE_TOOLS_DIR (i.e. 'bin', 'lib')
               if [ -d "$TARGET_CMDLINE_TOOLS_DIR/bin" ]; then
                   echo "Found 'bin' directly in '$TARGET_CMDLINE_TOOLS_DIR'. Moving to 'latest'..."
                   mkdir -p "$FINAL_CMDLINE_TOOLS_ROOT"
@@ -211,12 +206,8 @@ jobs:
           echo "$SDKMANAGER_LEGACY_DIR" >> $GITHUB_PATH
 
           echo "Accepting Android SDK licenses…"
-          # This step is crucial. sdkmanager won't work without accepting licenses.
-          # The expect command line utility is used to automate license acceptance.
-          # Install 'expect' if not already present
           sudo apt-get install -y expect
 
-          # Script to automatically accept licenses
           expect -c '
             set timeout 10
             spawn '"$SDKMANAGER_MODERN"' --licenses
@@ -224,19 +215,17 @@ jobs:
               "y/N" { send "y\r"; exp_continue }
               eof
             }
-          ' || true # Use || true to prevent job failure if licenses are already accepted or other minor issues
+          ' || true
 
           echo "Installing Android SDK build tools, platform-tools, and platform…"
           "$SDKMANAGER_MODERN" "platforms;android-33" "build-tools;$BUILD_TOOLS_VERSION" "platform-tools" || true
 
           echo "Downloading and unpacking NDK..."
           if [ ! -d "$NDK_INSTALL_PATH" ]; then
-              # Ensure the TEMP_UNZIP_DIR is created before curl attempts to write to it
               mkdir -p "$TEMP_UNZIP_DIR"
               curl -o "$TEMP_UNZIP_DIR/android-ndk.zip" "$NDK_URL"
               mkdir -p "$TEMP_UNZIP_DIR/ndk_unzip"
               unzip "$TEMP_UNZIP_DIR/android-ndk.zip" -d "$TEMP_UNZIP_DIR/ndk_unzip"
-              # NDK zip extracts into a directory named like 'android-ndk-r25b'
               mv "$TEMP_UNZIP_DIR/ndk_unzip/$NDK_DIR_NAME" "$HOME/.buildozer/android/platform/"
               rm -rf "$TEMP_UNZIP_DIR"
           else
@@ -249,11 +238,7 @@ jobs:
 
       - name: Build Kivy Android APK
         run: |
-          # Initialize buildozer
-          buildozer init || true # Initialize if not already present
-
-          # Build the APK
-          # Use -v to get more verbose output which might reveal the exact failure
+          buildozer init || true
           buildozer android debug -v
         shell: bash
 
