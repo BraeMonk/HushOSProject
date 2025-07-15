@@ -146,7 +146,7 @@ class JerryAI:
         self.chat_history = []; self.is_thinking = False
         self.conversation_log = ConversationLog(CONVERSATION_LOG_PATH)
         self.memory = JerryMemory(JERRY_MEMORY_PATH)
-        API_KEY = "AIzaSyB9_xVbsDjJN81reI73_KvqIOhXyKAsFNU"
+        API_KEY = os.getenv("SECRET_API_KEY")
         if genai and API_KEY != "YOUR_API_KEY_HERE":
             try:
                 genai.configure(api_key=API_KEY)
