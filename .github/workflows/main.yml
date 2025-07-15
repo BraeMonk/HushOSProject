@@ -12,7 +12,8 @@ on:
 
 jobs:
   build_android_apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # <--- CHANGE THIS LINE FROM ubuntu-latest
+                           # TO ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -189,15 +190,7 @@ jobs:
           else
             echo "Warning: Could not create symlink. Modern sdkmanager not found at '$SDKMANAGER_MODERN'."
             ls -la "$FINAL_CMDLINE_TOOLS_ROOT/bin/"
-          fi
-
-          echo "Ensuring SDKMANAGER path is correct: $SDKMANAGER_MODERN (modern)"
-          if [ ! -f "$SDKMANAGER_MODERN" ]; then
-            echo "Error: Modern sdkmanager not found at $SDKMANAGER_MODERN. Check paths or download."
-            ls -la "$FINAL_CMDLINE_TOOLS_ROOT/bin"
-            ls -la "$FINAL_CMDLINE_TOOLS_ROOT"
-            ls -la "$TARGET_CMDLINE_TOOLS_DIR"
-            exit 1
+            exit 1 # Exit if sdkmanager is not found where expected
           fi
 
           echo "Adding Android SDK tools to PATH for sdkmanager to be found."
