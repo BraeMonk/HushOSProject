@@ -333,39 +333,74 @@ class JerryScreen(Screen):
 class CheckinScreen(Screen):
     checkin_step = NumericProperty(0)
     bg_color = ListProperty([1,1,1,1])
+
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
         self.checkin_data = {}
         self.checkin_step = 0
         self.display_step()
+
     def display_step(self):
-        self.ids.content.clear_widgets()
-        steps = [("How are you feeling emotionally?", ["good", "ok", "bad"], "emotion"),("How is your body feeling?", ["energetic", "tired", "pain"], "physical"),("How is your mind today?", ["clear", "foggy", "overwhelmed"], "mental")]
-        if self.checkin_step >= len(steps): self.complete_checkin(); return
+        # This no longer rebuilds the whole screen. It just updates the
+        # widgets we defined in the .kv file.
+        
+        # First, clear only the container for the buttons
+        self.ids.checkin_button_layout.clear_widgets()
+
+        steps = [
+            ("How are you feeling emotionally?", ["good", "ok", "bad"], "emotion"),
+            ("How is your body feeling?", ["energetic", "tired", "pain"], "physical"),
+            ("How is your mind today?", ["clear", "foggy", "overwhelmed"], "mental")
+        ]
+        
+        if self.checkin_step >= len(steps):
+            self.complete_checkin()
+            return
+
         title, icons, color_key = steps[self.checkin_step]
+        
         app = App.get_running_app()
         self.bg_color = get_color_from_hex(app.theme.COLORS[color_key])
-        self.ids.content.add_widget(Label(text=title, font_size='24sp', color=get_color_from_hex(app.theme.COLORS['text_dark']), size_hint_y=None, height=dp(100)))
-        btn_frame = BoxLayout(orientation='horizontal', spacing=dp(20), size_hint_y=None, height=dp(150), padding=[dp(20), 0, dp(20), 0])
+        
+        # Update the title Label's text using its ID
+        self.ids.checkin_title_label.text = title
+        self.ids.checkin_title_label.color = get_color_from_hex(app.theme.COLORS['text_dark'])
+
+        # Now, create the buttons and add them to the button layout
         for icon_name in icons:
             item_frame = BoxLayout(orientation='vertical', size_hint_x=1/3)
             img_path = os.path.join(ASSETS_PATH, f"{icon_name}.png")
-            btn = Button(background_normal=img_path, background_down=img_path, size_hint=(None, None), size=(dp(80), dp(80)), border=(0,0,0,0), pos_hint={'center_x': 0.5})
+            
+            btn = Button(
+                background_normal=img_path, 
+                background_down=img_path, 
+                size_hint=(None, None), 
+                size=(dp(80), dp(80)), 
+                border=(0,0,0,0), 
+                pos_hint={'center_x': 0.5}
+            )
             btn.bind(on_press=lambda x, cat=color_key, choice=icon_name: self.next_step(cat, choice))
+            
             item_frame.add_widget(btn)
             item_frame.add_widget(Label(text=icon_name.capitalize(), color=get_color_from_hex(app.theme.COLORS['text_dark'])))
-            btn_frame.add_widget(item_frame)
-        self.ids.content.add_widget(btn_frame)
+            
+            # Add the newly created item_frame to the layout from the .kv file
+            self.ids.checkin_button_layout.add_widget(item_frame)
+
     def next_step(self, category, choice):
-        self.checkin_data[category] = choice; self.checkin_step += 1; self.display_step()
+        self.checkin_data[category] = choice
+        self.checkin_step += 1
+        self.display_step()
+
     def complete_checkin(self):
         app = App.get_running_app()
         summary = f"Emotionally feeling {self.checkin_data.get('emotion', 'N/A')}, physically {self.checkin_data.get('physical', 'N/A')}, mentally {self.checkin_data.get('mental', 'N/A')}."
         log_data = {"summary": summary, "details": self.checkin_data}
         app.entries_log.add_entry("Check-in", log_data)
-        app.jerry.feed("clarity", 50); app.jerry.add_xp(10)
+        app.jerry.feed("clarity", 50)
+        app.jerry.add_xp(10)
         self.manager.current = 'jerry'
-
+        
 class CBTScreen(Screen):
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
