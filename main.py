@@ -20,6 +20,8 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.image import Image as KivyImage
 from kivy.uix.togglebutton import ToggleButton
+# --- NEW: Import for CheckBox ---
+from kivy.uix.checkbox import CheckBox
 from kivy.properties import ObjectProperty, StringProperty, NumericProperty, ListProperty, BooleanProperty
 from kivy.clock import Clock
 from kivy.core.window import Window
@@ -28,7 +30,6 @@ from kivy.utils import get_color_from_hex, platform
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
-# --- NEW: Import for Navigation Drawer ---
 from kivy.uix.navigationdrawer import NavigationDrawer
 
 # --- AI & Media Dependencies ---
@@ -37,22 +38,54 @@ try:
     print("Google AI library found. Jerry's advanced AI is available.")
 except ImportError:
     genai = None
-    print("Warning: Google AI library not found. Run 'pip install google-generativeai'. Jerry will have basic responses.")
+    print("Warning: Google AI library not found. Jerry will have basic responses.")
 
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
 
-# --- GLOBAL DATA ---
+# --- GLOBAL DATA (with new CBT/DBT content) ---
 AFFIRMATIONS = [
     "Your feelings are valid, even the difficult ones.", "Be kind and patient with yourself today.",
     "Each breath is a new, gentle beginning.", "It's okay to rest; you are doing enough.",
     "You are resilient, and you can get through this moment.", "Allow yourself to simply be, without judgment."
 ]
 PLAYLIST = ["01 Morning Dew.wav", "02 Serenity.wav", "04 Enchanting Table.wav", "06 Moving On.wav", "13 Return Home.wav"]
-CBT_QUESTIONS = [{"question": "What situation triggered your emotional response?", "key": "situation"}, {"question": "What emotions are you feeling right now?", "key": "emotions"}, {"question": "What automatic thoughts went through your mind?", "key": "thoughts"}]
-COGNITIVE_DISTORTIONS = {}
-DBT_QUESTIONS = []
-DBT_SKILLS = {}
+
+CBT_QUESTIONS = [
+    {"question": "What was the situation or event that triggered the difficult feeling?", "key": "situation", "hint": "e.g., I had a disagreement with a friend."},
+    {"question": "What emotions did you feel? (e.g., sad, angry, anxious)", "key": "emotions", "hint": "List the primary emotions."},
+    {"question": "What were the automatic thoughts that went through your mind?", "key": "thoughts", "hint": "What did you immediately think or believe?"}
+]
+COGNITIVE_DISTORTIONS = {
+    "All-or-Nothing Thinking": "Viewing things in black-and-white categories.",
+    "Overgeneralization": "Seeing a single negative event as a never-ending pattern of defeat.",
+    "Mental Filter": "Picking out a single negative detail and dwelling on it exclusively.",
+    "Disqualifying the Positive": "Rejecting positive experiences by insisting they 'don't count'.",
+    "Jumping to Conclusions": "Making a negative interpretation despite no definite facts.",
+    "Mind Reading": "Concluding that someone is reacting negatively to you without evidence.",
+    "Fortune Telling": "Anticipating that things will turn out badly.",
+    "Magnification/Minimization": "Exaggerating the importance of negative things or shrinking positive things.",
+    "Emotional Reasoning": "Assuming that your negative emotions necessarily reflect the way things really are.",
+    "Should Statements": "Motivating yourself with 'shoulds' and 'shouldn'ts'.",
+    "Labeling": "An extreme form of overgeneralization; attaching a negative label to yourself.",
+    "Personalization": "Seeing yourself as the cause of some negative external event which you were not responsible for."
+}
+
+DBT_QUESTIONS = [
+    {"question": "Rate the intensity of your ANGER (0-5).", "key": "anger", "type": "rating"},
+    {"question": "Rate the intensity of your SADNESS (0-5).", "key": "sadness", "type": "rating"},
+    {"question": "Rate the intensity of your FEAR (0-5).", "key": "fear", "type": "rating"},
+    {"question": "Rate the intensity of your SHAME (0-5).", "key": "shame", "type": "rating"},
+    {"question": "Rate your urge for self-harm (0-5).", "key": "self_harm_urge", "type": "rating"},
+    {"question": "Rate your urge to use substances (0-5).", "key": "substance_urge", "type": "rating"},
+]
+DBT_SKILLS = {
+    "Mindfulness": ["Observe", "Describe", "Participate", "Non-judgmentally", "One-mindfully", "Effectively"],
+    "Distress Tolerance": ["TIP", "ACCEPTS", "Self-Soothe", "IMPROVE the moment", "Radical Acceptance"],
+    "Emotion Regulation": ["Check the Facts", "Opposite Action", "Problem Solving", "ABC PLEASE"],
+    "Interpersonal Effectiveness": ["DEAR MAN", "GIVE", "FAST"]
+}
+
 DAILY_THEMES = [
     {"navbar": "#ade6eb", "navbar_hover": "#8ac0d5", "background": "#fdfae6", "text_dark": "#4a4a4a", "text_light": "#4a4a4a", "accent": "#fcf8a7", "accent_dark": "#fbd7a5", "disabled": "#e0e0e0", "chat_bg": "#FFFFFF", "emotion": "#ade6eb", "physical": "#fcf8a7", "mental": "#fdfae6", "cbt_primary": "#ade6eb", "cbt_secondary": "#b8e0ea", "cbt_tertiary": "#c9e9f0", "cbt_quaternary": "#d9f3f5", "cbt_complete": "#fdfae6", "dbt_primary": "#c8a2e4", "dbt_secondary": "#d3b4ea", "dbt_tertiary": "#dfc9f0", "dbt_quaternary": "#eac3f5", "dbt_complete": "#e9e0f8", "clarity_bar": "#8ac0d5", "insight_bar": "#fbd7a5", "calm_bar": "#addcc7"},
     {"navbar": "#a2e4d3", "navbar_hover": "#7fc9b8", "background": "#e6f2e4", "text_dark": "#3d5a54", "text_light": "#3d5a54", "accent": "#7fc9b8", "accent_dark": "#6ab9a0", "disabled": "#d1e9d7", "chat_bg": "#FFFFFF", "emotion": "#a2e4d3", "physical": "#b4e9c5", "mental": "#e6f2e4", "cbt_primary": "#a2e4d3", "cbt_secondary": "#b0e9c8", "cbt_tertiary": "#beeddd", "cbt_quaternary": "#ccf2e2", "cbt_complete": "#e6f2e4", "dbt_primary": "#fec994", "dbt_secondary": "#f8d6a7", "dbt_tertiary": "#f9e0b7", "dbt_quaternary": "#fbe6c7", "dbt_complete": "#fff5ea", "clarity_bar": "#7fc9b8", "insight_bar": "#b4e9c5", "calm_bar": "#a2e4d3"},
@@ -197,7 +230,6 @@ class JerryAI:
         threading.Thread(target=_get_response_thread, daemon=True).start()
 
 # --- KIVY WIDGETS AND SCREENS ---
-# NEW: RootWidget is now the NavigationDrawer
 class RootWidget(NavigationDrawer):
     pass
 
@@ -367,17 +399,188 @@ class CheckinScreen(Screen):
         app.jerry.feed("clarity", 50); app.jerry.add_xp(10)
         app.change_screen('jerry')
 
-class CBTScreen(Screen):
-    def on_enter(self):
-        App.get_running_app().update_affirmation_banner(self.name)
-        self.ids.content.clear_widgets()
-        self.ids.content.add_widget(Label(text="CBT Screen - Under Construction", font_size='24sp'))
+# --- NEW: Base class for multi-step therapy flows ---
+class TherapyScreenBase(Screen):
+    flow_step = NumericProperty(0)
 
-class DBTScreen(Screen):
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
-        self.ids.content.clear_widgets()
-        self.ids.content.add_widget(Label(text="DBT Screen - Under Construction", font_size='24sp'))
+        self.flow_data = {}
+        self.flow_step = 0
+        self.questions = []
+        self.checklist = {}
+        self.entry_type = ""
+        self.setup_flow()
+        self.display_step()
+
+    def setup_flow(self):
+        # This method will be overridden by child classes (CBT/DBT)
+        pass
+
+    def display_step(self):
+        content_box = self.ids.content_box
+        content_box.clear_widgets()
+        
+        num_questions = len(self.questions)
+
+        # Are we on a question step?
+        if self.flow_step < num_questions:
+            self.display_question_step()
+        # Are we on the checklist step?
+        elif self.flow_step == num_questions:
+            self.display_checklist_step()
+        # Otherwise, something is wrong, complete the flow.
+        else:
+            self.complete_flow()
+
+    def display_question_step(self):
+        question_data = self.questions[self.flow_step]
+        question_text = question_data["question"]
+        question_key = question_data["key"]
+        
+        self.ids.title_label.text = question_text
+        self.ids.next_button.text = 'Next'
+
+        content_box = self.ids.content_box
+        
+        # Check if it's a rating question (for DBT)
+        if question_data.get("type") == "rating":
+            rating_box = GridLayout(cols=6, size_hint_y=None, height=dp(48))
+            for i in range(6): # 0-5
+                btn = ToggleButton(text=str(i), group=question_key, size_hint_y=None, height=dp(48))
+                # If there's a saved answer, set the button state
+                if self.flow_data.get(question_key) == str(i):
+                    btn.state = 'down'
+                btn.bind(on_press=lambda instance, val=str(i): self.set_rating_answer(question_key, val))
+                rating_box.add_widget(btn)
+            content_box.add_widget(rating_box)
+        else: # Standard text input question (for CBT)
+            text_input = TextInput(
+                id='current_answer',
+                text=self.flow_data.get(question_key, ''),
+                size_hint_y=None,
+                height=dp(150),
+                multiline=True,
+                hint_text=question_data.get("hint", "")
+            )
+            content_box.add_widget(text_input)
+
+    def display_checklist_step(self):
+        self.ids.title_label.text = f"Did any of these apply?"
+        self.ids.next_button.text = 'Finish'
+        
+        content_box = self.ids.content_box
+        # Retrieve the saved checklist items for this key
+        saved_checklist = self.flow_data.get('checklist', [])
+
+        for item, description in self.checklist.items():
+            line = BoxLayout(size_hint_y=None, height=dp(48))
+            chk = CheckBox(size_hint_x=None, width=dp(48))
+            # Check the box if it was saved previously
+            if item in saved_checklist:
+                chk.active = True
+            
+            # When the checkbox state changes, update the data
+            chk.bind(active=lambda instance, value, key=item: self.on_checkbox_active(key, value))
+            
+            label = Label(text=f"{item}", text_size=(self.width * 0.7, None), halign='left', valign='middle')
+            line.add_widget(chk)
+            line.add_widget(label)
+            content_box.add_widget(line)
+
+    def on_checkbox_active(self, key, value):
+        # Get the current list of checked items, or an empty list
+        checked_items = self.flow_data.get('checklist', [])
+        if value: # if checkbox is checked
+            if key not in checked_items:
+                checked_items.append(key)
+        else: # if checkbox is unchecked
+            if key in checked_items:
+                checked_items.remove(key)
+        self.flow_data['checklist'] = checked_items
+
+    def set_rating_answer(self, key, value):
+        self.flow_data[key] = value
+
+    def save_current_answer(self):
+        # Only save if it's a question step with a text input
+        if self.flow_step < len(self.questions):
+            question_key = self.questions[self.flow_step]["key"]
+            # Check if content_box has children before accessing
+            if self.ids.content_box.children:
+                text_input = self.ids.content_box.children[0]
+                if isinstance(text_input, TextInput):
+                    self.flow_data[question_key] = text_input.text.strip()
+            # For rating, it's saved on press, so no action needed here
+
+    def next_step(self):
+        self.save_current_answer()
+        self.flow_step += 1
+        
+        # Check if we are past the last step
+        if self.flow_step > len(self.questions):
+            self.complete_flow()
+        else:
+            self.display_step()
+
+    def prev_step(self):
+        if self.flow_step > 0:
+            self.save_current_answer()
+            self.flow_step -= 1
+            self.display_step()
+
+    def complete_flow(self):
+        app = App.get_running_app()
+        # Create a summary from the collected data
+        summary = ""
+        for key, value in self.flow_data.items():
+            summary += f"{key.replace('_', ' ').capitalize()}: {value}\n"
+        
+        log_data = {"summary": summary, "details": self.flow_data}
+        app.entries_log.add_entry(self.entry_type, log_data)
+        
+        # Give XP and feed Jerry
+        app.jerry.feed("insight", 50)
+        app.jerry.add_xp(25)
+        
+        app.change_screen('jerry')
+
+class CBTScreen(TherapyScreenBase):
+    def setup_flow(self):
+        self.questions = CBT_QUESTIONS
+        self.checklist = COGNITIVE_DISTORTIONS
+        self.entry_type = "CBT Entry"
+
+class DBTScreen(TherapyScreenBase):
+    def setup_flow(self):
+        self.questions = DBT_QUESTIONS
+        self.checklist = DBT_SKILLS
+        self.entry_type = "DBT Entry"
+    
+    # Override display_checklist_step for DBT's different data structure
+    def display_checklist_step(self):
+        self.ids.title_label.text = f"Which skills did you use?"
+        self.ids.next_button.text = 'Finish'
+        
+        content_box = self.ids.content_box
+        saved_checklist = self.flow_data.get('checklist', [])
+
+        for category, skills in self.checklist.items():
+            # Add a category header
+            content_box.add_widget(Label(text=f"[b]{category}[/b]", markup=True, size_hint_y=None, height=dp(40)))
+            # Add checkboxes for skills in that category
+            for skill in skills:
+                line = BoxLayout(size_hint_y=None, height=dp(48))
+                chk = CheckBox(size_hint_x=None, width=dp(48))
+                if skill in saved_checklist:
+                    chk.active = True
+                
+                chk.bind(active=lambda instance, value, key=skill: self.on_checkbox_active(key, value))
+                
+                label = Label(text=skill, text_size=(self.width * 0.7, None), halign='left', valign='middle')
+                line.add_widget(chk)
+                line.add_widget(label)
+                content_box.add_widget(line)
 
 class EntriesScreen(Screen):
     def on_enter(self):
