@@ -13,6 +13,7 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.properties import (ObjectProperty, OptionProperty, NumericProperty,
                              StringProperty, BooleanProperty, AliasProperty)
 from kivy.lang import Builder
+from kivy.clock import Clock
 
 # This KV string is now correctly structured, which will resolve the SyntaxError.
 Builder.load_string('''
@@ -105,8 +106,9 @@ class NavigationDrawer(StencilView):
             return True
 
         # Let child widgets of the panels receive the touch
-        if self.side_panel.collide_point(*touch.pos) or self.main_panel.collide_point(*touch.pos):
-             super(NavigationDrawer, self).on_touch_down(touch)
+        if self.side_panel and self.main_panel:
+            if self.side_panel.collide_point(*touch.pos) or self.main_panel.collide_point(*touch.pos):
+                 super(NavigationDrawer, self).on_touch_down(touch)
 
         # Handle touches to open/close the drawer
         if self.state == 'closed' and touch.x < self.touch_accept_width:
@@ -114,7 +116,7 @@ class NavigationDrawer(StencilView):
             self._touch = touch
             touch.grab(self)
             return True
-        elif self.state == 'open' and self.main_panel.collide_point(*touch.pos):
+        elif self.state == 'open' and self.main_panel and self.main_panel.collide_point(*touch.pos):
             self.set_state('closed')
             self._touch = touch
             touch.grab(self)
@@ -123,7 +125,7 @@ class NavigationDrawer(StencilView):
         return False
 
     def on_touch_move(self, touch):
-        if touch.grab_current is self and self._touch is touch:
+        if touch.grab_current is self and self._touch is touch and self.side_panel and self.main_panel:
             dist = touch.x - self._touch.x
             if self.state == 'open':
                 self.side_panel.x = min(0, -self.side_panel_width + dist)
@@ -134,7 +136,7 @@ class NavigationDrawer(StencilView):
         return super(NavigationDrawer, self).on_touch_move(touch)
 
     def on_touch_up(self, touch):
-        if touch.grab_current is self and self._touch is touch:
+        if touch.grab_current is self and self._touch is touch and self.side_panel:
             touch.ungrab(self)
             self._touch = None
             # Decide whether to open or close based on position
@@ -146,19 +148,22 @@ class NavigationDrawer(StencilView):
         return super(NavigationDrawer, self).on_touch_up(touch)
 
     def add_widget(self, widget, index=0, canvas=None):
-        # This logic is now greatly simplified.
-        # The main structure is built from KV. Any other widgets
-        # added later will go into the main_panel.
-        if 'side_panel' not in self.ids:
-            # This is the initial setup from KV, let it happen
+        # Fixed logic to handle the initialization phase properly
+        if len(self.children) < 3:
+            # During KV initialization, let the parent handle adding the core widgets
             super(NavigationDrawer, self).add_widget(widget, index, canvas)
         else:
-            # After setup, add subsequent widgets to the main panel
-            self.main_panel.add_widget(widget)
+            # After initialization, add widgets to main_panel if it exists
+            if self.main_panel is not None:
+                self.main_panel.add_widget(widget)
+            else:
+                # Fallback: schedule to add later when main_panel is available
+                Clock.schedule_once(lambda dt: self.main_panel.add_widget(widget) if self.main_panel else None)
 
     def remove_widget(self, widget):
-        if widget in [self.ids.side_panel, self.ids.main_panel, self.ids.join_image]:
+        if hasattr(self, 'ids') and widget in [self.ids.get('side_panel'), self.ids.get('main_panel'), self.ids.get('join_image')]:
             super(NavigationDrawer, self).remove_widget(widget)
-        else:
+        elif self.main_panel is not None:
             self.main_panel.remove_widget(widget)
-
+        else:
+            super(NavigationDrawer, self).remove_widget(widget)
