@@ -2,8 +2,11 @@
 #:import get_color_from_hex kivy.utils.get_color_from_hex
 #:import dp kivy.metrics.dp
 #:import FadeTransition kivy.uix.screenmanager.FadeTransition
+#:import NavigationDrawer kivy.uix.navigationdrawer.NavigationDrawer
 
-# Custom button for the bottom navigation bar
+# --- Custom Buttons ---
+
+# Button for the bottom navigation bar
 <NavButton@ToggleButton>:
     background_color: 0,0,0,0 # Transparent background
     background_normal: ''
@@ -19,98 +22,169 @@
             size: self.size
             pos: self.pos
 
+# Button for the new side navigation drawer
+<NavDrawerButton@Button>:
+    size_hint_y: None
+    height: dp(56)
+    background_color: 0,0,0,0
+    background_normal: ''
+    on_press: app.change_screen(self.screen_name)
+    text_size: self.width - dp(32), None # Add padding
+    halign: 'left'
+    valign: 'middle'
+    color: get_color_from_hex(app.theme.COLORS['text_dark'])
+
+# --- Root Widget: The Navigation Layout ---
+
 <RootWidget>:
-    orientation: 'vertical'
-    canvas.before:
-        Color:
-            rgba: get_color_from_hex(app.theme.COLORS['background'])
-        Rectangle:
-            pos: self.pos
-            size: self.size
-            
-    # Top bar for showing current screen title
+    id: nav_drawer
+    side_panel_width: min(dp(280), Window.width * 0.7) # Responsive width
+    anim_type: 'slide_above_anim'
+
+    # --- 1. The Side Panel (Navigation Drawer Content) ---
     BoxLayout:
-        id: top_bar
-        size_hint_y: None
-        height: dp(56)
+        id: side_panel
+        orientation: 'vertical'
+        padding: dp(8)
+        spacing: dp(8)
         canvas.before:
             Color:
-                rgba: get_color_from_hex(app.theme.COLORS['navbar'])
-            Rectangle:
-                pos: self.pos
-                size: self.size
-        Label:
-            id: top_bar_title
-            text: 'HushOS'
-            font_size: '24sp'
-            color: get_color_from_hex(app.theme.COLORS['text_light'])
-
-    # Main content area
-    ScreenManager:
-        id: sm
-        transition: FadeTransition(duration=0.2)
-        # Screens are added here
-        SplashScreen:
-            name: 'splash'
-        JerryScreen:
-            name: 'jerry'
-        CheckinScreen:
-            name: 'checkin'
-        EntriesScreen:
-            name: 'entries'
-        HistoryScreen:
-            name: 'history'
-        HushScreen:
-            name: 'hush'
-        CBTScreen:
-            name: 'cbt'
-        DBTScreen:
-            name: 'dbt'
-
-    # Affirmation Banner (now part of the root layout)
-    Label:
-        id: affirmation_banner
-        size_hint_y: None
-        height: 0 # Hidden by default
-        text: ""
-        canvas.before:
-            Color:
-                rgba: get_color_from_hex(app.theme.COLORS['accent'])
-            Rectangle:
-                pos: self.pos
-                size: self.size
-        color: get_color_from_hex(app.theme.COLORS['text_dark'])
-        text_size: self.width - dp(20), None
-        halign: 'center'
-        valign: 'middle'
-
-    # Bottom Navigation Bar
-    BoxLayout:
-        id: nav_bar
-        size_hint_y: None
-        height: dp(60)
-        canvas.before:
-            Color:
-                rgba: get_color_from_hex(app.theme.COLORS['navbar'])
+                rgba: get_color_from_hex(app.theme.COLORS['background'])
             Rectangle:
                 pos: self.pos
                 size: self.size
         
-        NavButton:
-            text: 'Home'
-            screen_name: 'jerry'
-            state: 'down' # Start on the home screen
-        NavButton:
-            text: 'Check-in'
-            screen_name: 'checkin'
-        NavButton:
-            text: 'Entries'
-            screen_name: 'entries'
-        NavButton:
-            text: 'Hush'
-            screen_name: 'hush'
+        Label:
+            text: "HushOS Tools"
+            font_size: '20sp'
+            size_hint_y: None
+            height: dp(48)
+            color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        
+        # Add buttons for the other screens here
+        NavDrawerButton:
+            text: "Conversation History"
+            screen_name: "history"
+        NavDrawerButton:
+            text: "CBT Worksheet"
+            screen_name: "cbt"
+        NavDrawerButton:
+            text: "DBT Skills"
+            screen_name: "dbt"
+        
+        # Spacer to push everything else down
+        Widget:
 
-# --- Screen Definitions ---
+        Label:
+            text: "Version 1.0"
+            font_size: '12sp'
+            size_hint_y: None
+            height: dp(24)
+            color: get_color_from_hex(app.theme.COLORS['text_dark'])
+
+
+    # --- 2. The Main Application Content ---
+    BoxLayout:
+        id: main_content
+        orientation: 'vertical'
+        canvas.before:
+            Color:
+                rgba: get_color_from_hex(app.theme.COLORS['background'])
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        
+        # Top bar for showing current screen title
+        BoxLayout:
+            id: top_bar
+            size_hint_y: None
+            height: dp(56)
+            padding: dp(8)
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex(app.theme.COLORS['navbar'])
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            
+            Button:
+                text: 'Menu' # You can replace this with an icon
+                size_hint_x: None
+                width: dp(56)
+                on_press: nav_drawer.set_state('toggle')
+
+            Label:
+                id: top_bar_title
+                text: 'HushOS'
+                font_size: '24sp'
+                color: get_color_from_hex(app.theme.COLORS['text_light'])
+
+        # Main content area
+        ScreenManager:
+            id: sm
+            transition: FadeTransition(duration=0.2)
+            # Screens are added here
+            SplashScreen:
+                name: 'splash'
+            JerryScreen:
+                name: 'jerry'
+            CheckinScreen:
+                name: 'checkin'
+            EntriesScreen:
+                name: 'entries'
+            HistoryScreen:
+                name: 'history'
+            HushScreen:
+                name: 'hush'
+            CBTScreen:
+                name: 'cbt'
+            DBTScreen:
+                name: 'dbt'
+
+        # Affirmation Banner (now part of the root layout)
+        Label:
+            id: affirmation_banner
+            size_hint_y: None
+            height: 0 # Hidden by default
+            text: ""
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex(app.theme.COLORS['accent'])
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            text_size: self.width - dp(20), None
+            halign: 'center'
+            valign: 'middle'
+
+        # Bottom Navigation Bar
+        BoxLayout:
+            id: nav_bar
+            size_hint_y: None
+            height: dp(60)
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex(app.theme.COLORS['navbar'])
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            
+            NavButton:
+                text: 'Home'
+                screen_name: 'jerry'
+                state: 'down' # Start on the home screen
+            NavButton:
+                text: 'Check-in'
+                screen_name: 'checkin'
+            NavButton:
+                text: 'Entries'
+                screen_name: 'entries'
+            NavButton:
+                text: 'Hush'
+                screen_name: 'hush'
+
+# --- Screen Definitions (Largely the same, but check for any minor changes) ---
 
 <SplashScreen>:
     canvas.before:
@@ -215,17 +289,14 @@
         padding: dp(20)
         spacing: dp(20)
         
-        # We define the static parts of the layout here
-        # and give them IDs so the Python code can find them.
         Label:
             id: checkin_title_label
             font_size: '24sp'
             color: get_color_from_hex(app.theme.COLORS['text_dark'])
             size_hint_y: None
             height: dp(100)
-            text: "Loading..." # Placeholder text
+            text: "Loading..."
 
-        # This layout will hold the dynamic image buttons
         BoxLayout:
             id: checkin_button_layout
             orientation: 'horizontal'
@@ -233,8 +304,6 @@
             size_hint_y: None
             height: dp(150)
             padding: [dp(20), 0, dp(20), 0]
-            # Python will add the buttons here
-
 
 <EntriesScreen>:
     BoxLayout:
@@ -258,7 +327,6 @@
                 padding: dp(10), dp(10)
 
 <HistoryScreen>:
-    # This screen is not in the nav bar, but can be accessed via chat
     BoxLayout:
         orientation: 'vertical'
         padding: dp(10)
