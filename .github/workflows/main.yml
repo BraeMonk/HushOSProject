@@ -97,6 +97,10 @@ jobs:
         run: echo "${{ secrets.SECRET_API_KEY }}" > .env_api_key_temp
         shell: bash
 
+      - name: Create API key file for packaging
+        run: echo "${{ secrets.SECRET_API_KEY }}" > api_key.txt
+        shell: bash
+
       - name: Force correct buildozer.spec settings
         run: |
           echo "Checking buildozer.spec settings…"
