@@ -216,14 +216,7 @@ jobs:
           echo "Accepting Android SDK licenses…"
           sudo apt-get install -y expect
 
-          expect -c '
-            set timeout 10
-            spawn '"$SDKMANAGER_MODERN"' --licenses
-            expect {
-              "y/N" { send "y\r"; exp_continue }
-              eof
-            }
-          ' || true
+          yes | "$SDKMANAGER_MODERN" --licenses > /dev/null || true
 
           echo "Installing Android SDK build tools, platform-tools, and platform…"
           "$SDKMANAGER_MODERN" "platforms;android-33" "build-tools;$BUILD_TOOLS_VERSION" "platform-tools" || true
