@@ -2,55 +2,41 @@
 """
 Navigation Drawer
 =================
-
 """
 __all__ = ('NavigationDrawer', )
 
 from kivy.properties import ObjectProperty, AliasProperty, OptionProperty, \
-    NumericProperty, StringProperty, BooleanProperty
+    NumericProperty, StringProperty, BooleanProperty, ListProperty
 from kivy.uix.stencilview import StencilView
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.animation import Animation
 from kivy.lang import Builder
 
+# Corrected KV language string with proper indentation and structure
 Builder.load_string('''
 <NavigationDrawer>:
-    _side_panel: side_panel
-    _main_panel: main_panel
-    _join_image: join_image
-    side_panel:
-        id: side_panel
-    main_panel:
-        id: main_panel
-    join_image:
-        id: join_image
+    # This is the main layout rule for the NavigationDrawer.
+    # The children (side_panel, main_panel, join_image) are defined here.
+    # The ObjectProperties in the Python class will be automatically
+    # linked to these widgets via their ids.
 
-<NavigationDrawer>:
-    canvas:
-        Color:
-            rgba: self.separator_color
-        Rectangle:
-            pos: self.separator_pos
-            size: self.separator_image_width, self.height
     side_panel:
         id: side_panel
-        x: root.x - (1 - root.side_panel_init_offset) * \
-           root.side_panel_width
+        x: root.x - (1 - root.side_panel_init_offset) * root.side_panel_width
         y: root.y
         width: root.side_panel_width
         height: root.height
-        opacity: root.opacity if root.fade_max_opacity == 1 \
-                 else root._anim_alpha
+        opacity: root.opacity if root.fade_max_opacity == 1 else root._anim_alpha
         canvas:
             Color:
                 rgba: 1, 1, 1, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
+
     main_panel:
         id: main_panel
-        x: root.x + root.side_panel_width * root.side_panel_init_offset \
-           if root.state == 'open' else root.x
+        x: root.x + root.side_panel_width * root.side_panel_init_offset if root.state == 'open' else root.x
         y: root.y
         width: root.width
         height: root.height
@@ -60,13 +46,12 @@ Builder.load_string('''
             Rectangle:
                 pos: self.pos
                 size: self.size
+
     Image:
         id: join_image
         source: root.separator_image
         mipmap: False
-        x: (main_panel.x - root.separator_image_width) \
-           if root.side_panel_positioning == 'left' \
-           else (main_panel.x + main_panel.width)
+        x: (main_panel.x - root.separator_image_width) if root.side_panel_positioning == 'left' else (main_panel.x + main_panel.width)
         y: root.y
         width: root.separator_image_width
         height: root.height
@@ -77,7 +62,6 @@ Builder.load_string('''
 
 class NavigationDrawer(StencilView):
 
-    # Internal
     _main_panel = ObjectProperty()
     _side_panel = ObjectProperty()
     _join_image = ObjectProperty()
@@ -88,7 +72,6 @@ class NavigationDrawer(StencilView):
     main_panel = ObjectProperty(None, allownone=True)
     join_image = ObjectProperty(None, allownone=True)
 
-    # Public
     state = OptionProperty('closed', options=('open', 'closed'))
     touch_accept_width = NumericProperty('14dp')
     side_panel_width = NumericProperty('250dp')
@@ -120,12 +103,16 @@ class NavigationDrawer(StencilView):
             return self.right - self.side_panel_width
 
     def _set_side_panel_width(self, *args):
-        if self.side_panel_positioning == 'left':
-            self.side_panel.x = self.x - \
-                (1 - self.side_panel_init_offset) * self.side_panel_width
+        if self.state == 'closed':
+            if self.side_panel_positioning == 'left':
+                self.side_panel.x = self.x - \
+                    (1 - self.side_panel_init_offset) * self.side_panel_width
+            else:
+                self.side_panel.x = self.right - \
+                    self.side_panel_init_offset * self.side_panel_width
         else:
-            self.side_panel.x = self.right - \
-                self.side_panel_init_offset * self.side_panel_width
+            self.side_panel.x = self._get_side_panel_final_x()
+
 
     def _set_alpha(self, *args):
         self.side_panel.opacity = self._anim_alpha
@@ -154,20 +141,20 @@ class NavigationDrawer(StencilView):
     def on_side_panel(self, *args):
         if self.side_panel:
             self.remove_widget(self.side_panel)
-        if self._side_panel:
-            self.add_widget(self._side_panel)
+        if self.ids.side_panel:
+            self.add_widget(self.ids.side_panel)
 
     def on_main_panel(self, *args):
         if self.main_panel:
             self.remove_widget(self.main_panel)
-        if self._main_panel:
-            self.add_widget(self._main_panel)
+        if self.ids.main_panel:
+            self.add_widget(self.ids.main_panel)
 
     def on_join_image(self, *args):
         if self.join_image:
             self.remove_widget(self.join_image)
-        if self._join_image:
-            self.add_widget(self._join_image)
+        if self.ids.join_image:
+            self.add_widget(self.ids.join_image)
 
     def set_state(self, state='toggle'):
         if state == 'toggle':
@@ -180,6 +167,7 @@ class NavigationDrawer(StencilView):
 
     def on_touch_down(self, touch):
         if not self.collide_point(touch.x, touch.y):
+            self._touch_started_in_panel = False
             return False
         if self.disabled:
             return True
@@ -199,6 +187,7 @@ class NavigationDrawer(StencilView):
                     self.set_state('open')
                     self._touch_started_in_panel = True
                     return True
+        self._touch_started_in_panel = False
         return super(NavigationDrawer, self).on_touch_down(touch)
 
     def on_touch_move(self, touch):
@@ -213,39 +202,28 @@ class NavigationDrawer(StencilView):
         return super(NavigationDrawer, self).on_touch_up(touch)
 
     def add_widget(self, widget, index=0, canvas=None):
-        if widget == self.side_panel or widget == self.main_panel or \
-           widget == self.join_image:
-            return super(NavigationDrawer, self).add_widget(widget, index,
-                                                            canvas)
-        if not self.main_panel:
+        if self.main_panel is None:
             if 'main_panel' in self.ids:
                 self.main_panel = self.ids.main_panel
             else:
                 self.main_panel = RelativeLayout()
-        if not self.side_panel:
+        if self.side_panel is None:
             if 'side_panel' in self.ids:
                 self.side_panel = self.ids.side_panel
             else:
                 self.side_panel = RelativeLayout()
-        if not self.join_image:
-            if 'join_image' in self.ids:
-                self.join_image = self.ids.join_image
-            else:
-                self.join_image = Image()
 
-        if self.main_panel.parent:
+        if widget not in [self.main_panel, self.side_panel, self.join_image]:
             self.main_panel.add_widget(widget)
         else:
-            if not self.side_panel.parent:
-                self.side_panel.add_widget(widget)
+            super(NavigationDrawer, self).add_widget(widget, index, canvas)
 
     def remove_widget(self, widget):
-        if widget != self.side_panel and widget != self.main_panel and \
-           widget != self.join_image:
-            if widget.parent == self.side_panel:
-                self.side_panel.remove_widget(widget)
-            if widget.parent == self.main_panel:
+        if widget not in [self.main_panel, self.side_panel, self.join_image]:
+            if self.main_panel:
                 self.main_panel.remove_widget(widget)
+            if self.side_panel:
+                self.side_panel.remove_widget(widget)
         else:
             super(NavigationDrawer, self).remove_widget(widget)
 
