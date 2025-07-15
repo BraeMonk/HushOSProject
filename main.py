@@ -140,18 +140,22 @@ class JerryCompanion:
     def level_up(self):
         self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
-class JerryAI:
-    def __init__(self, companion, app_controller):
-        self.jerry = companion; self.app = app_controller; self.model = None
-        self.chat_history = []; self.is_thinking = False
-        self.conversation_log = ConversationLog(CONVERSATION_LOG_PATH)
-        self.memory = JerryMemory(JERRY_MEMORY_PATH)
-        API_KEY = os.getenv("SECRET_API_KEY")
-        if genai and API_KEY != "YOUR_API_KEY_HERE":
-            try:
-                genai.configure(api_key=API_KEY)
-                self.model = genai.GenerativeModel('gemini-1.5-flash')
-            except Exception as e: print(f"AI configuration failed: {e}")
+# Inside your JerryAI class __init__ method
+API_KEY = None
+try:
+    # The api_key.txt file will be in the app's root directory
+    with open("api_key.txt", "r") as f:
+        API_KEY = f.read().strip()
+except FileNotFoundError:
+    print("ERROR: api_key.txt not found. AI will not be configured.")
+
+if genai and API_KEY:
+    try:
+        genai.configure(api_key=API_KEY)
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
+    except Exception as e:
+        print(f"AI configuration failed: {e}")
+        
     def get_system_prompt(self):
         base_prompt = ("You are Jerry, a gentle, compassionate, and wise companion...")
         memory_data = self.memory.load_memory()
