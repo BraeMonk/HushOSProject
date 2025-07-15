@@ -66,9 +66,12 @@ jobs:
           python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))" # Show where scripts like pip are
           ls -la "$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))")" || true # List contents of scripts dir
 
-          # Ensure pip is up-to-date before installing buildozer
+          # Ensure pip is up-to-date before installing buildozer and p4a
           python3 -m pip install --upgrade setuptools pip wheel
           pip install buildozer cython
+          # --- IMPORTANT NEW LINE ---
+          pip install --upgrade python-for-android
+          # --------------------------
         shell: bash
 
       - name: Add Google AI API Key to environment (if not already set)
