@@ -275,4 +275,33 @@ jobs:
           echo "=== Contents of bin directory (if exists) ==="
           ls -la bin/ 2>/dev/null || echo "bin/ directory does not exist"
           echo "=== Contents of .buildozer directory ==="
-          find .buildozer -name "*.apk" -type f 2>/dev/null ||.
+          find .buildozer -name "*.apk" -type f 2>/dev/null || echo "No APK files found in .buildozer"
+        shell: bash
+
+      - name: Copy APK to bin directory (if found elsewhere)
+        run: |
+          echo "Ensuring bin directory exists..."
+          mkdir -p bin
+          
+          echo "Looking for APK files and copying to bin..."
+          # Find all APK files and copy them to bin directory
+          find . -name "*.apk" -type f -not -path "./bin/*" | while read apk_file; do
+            echo "Found APK: $apk_file"
+            cp "$apk_file" bin/
+            echo "Copied $(basename "$apk_file") to bin/"
+          done
+          
+          echo "Final contents of bin directory:"
+          ls -la bin/
+        shell: bash
+
+      - name: Wait for file system sync
+        run: sleep 5
+        shell: bash
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hush-os-apk
+          path: bin/*.apk
+          if-no-files-found: error # This will make the build fail if the APK is missing.
