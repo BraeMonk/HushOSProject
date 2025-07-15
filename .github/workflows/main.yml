@@ -82,6 +82,17 @@ jobs:
           pip show python-for-android # Display installed version
         shell: bash
 
+      ## --- NEW STEP TO INSTALL YOUR DEPENDENCIES ---
+      - name: Install Python dependencies from requirements.txt
+        run: |
+          if [ -f requirements.txt ]; then
+            echo "Found requirements.txt. Installing packages..."
+            pip install -r requirements.txt
+          else
+            echo "requirements.txt not found. Skipping package installation."
+          fi
+        shell: bash
+
       - name: Add Google AI API Key to environment (if not already set)
         run: echo "${{ secrets.SECRET_API_KEY }}" > .env_api_key_temp
         shell: bash
@@ -264,52 +275,4 @@ jobs:
           echo "=== Contents of bin directory (if exists) ==="
           ls -la bin/ 2>/dev/null || echo "bin/ directory does not exist"
           echo "=== Contents of .buildozer directory ==="
-          find .buildozer -name "*.apk" -type f 2>/dev/null || echo "No APK files found in .buildozer"
-          echo "=== Checking for dist directory ==="
-          ls -la dist/ 2>/dev/null || echo "dist/ directory does not exist"
-          echo "=== Checking buildozer android platform build outputs ==="
-          find .buildozer/android/platform/build-* -name "*.apk" -type f 2>/dev/null || echo "No APK files found in build outputs"
-        shell: bash
-
-      - name: Copy APK to bin directory (if found elsewhere)
-        run: |
-          echo "Ensuring bin directory exists..."
-          mkdir -p bin
-          
-          echo "Looking for APK files and copying to bin..."
-          # Find all APK files and copy them to bin directory
-          find . -name "*.apk" -type f -not -path "./bin/*" | while read apk_file; do
-            echo "Found APK: $apk_file"
-            cp "$apk_file" bin/
-            echo "Copied $(basename "$apk_file") to bin/"
-          done
-          
-          echo "Final contents of bin directory:"
-          ls -la bin/
-        shell: bash
-
-      - name: Wait for file system sync
-        run: sleep 5
-        shell: bash
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: hush-os-apk
-          path: |
-            bin/*.apk
-            dist/*.apk
-            .buildozer/android/platform/build-*/build/outputs/apk/debug/*.apk
-            .buildozer/android/platform/build/build/outputs/apk/debug/*.apk
-          if-no-files-found: warn
-
-      - name: Upload build logs (for debugging)
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: build-logs
-          path: |
-            .buildozer/android/platform/build-*/build/outputs/logs/
-            .buildozer/android/platform/build/build/outputs/logs/
-            .buildozer/logs/
-          if-no-files-found: ignore
+          find .buildozer -name "*.apk" -type f 2>/dev/null ||.
