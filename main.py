@@ -20,7 +20,6 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.image import Image as KivyImage
 from kivy.uix.togglebutton import ToggleButton
-# --- NEW: Import for CheckBox ---
 from kivy.uix.checkbox import CheckBox
 from kivy.properties import ObjectProperty, StringProperty, NumericProperty, ListProperty, BooleanProperty
 from kivy.clock import Clock
@@ -38,7 +37,7 @@ try:
     print("Google AI library found. Jerry's advanced AI is available.")
 except ImportError:
     genai = None
-    print("Warning: Google AI library not found. Jerry will have basic responses.")
+    print("Warning: Google AI library not found. Run 'pip install google-generativeai'. Jerry will have basic responses.")
 
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
@@ -508,9 +507,9 @@ class TherapyScreenBase(Screen):
             question_key = self.questions[self.flow_step]["key"]
             # Check if content_box has children before accessing
             if self.ids.content_box.children:
-                text_input = self.ids.content_box.children[0]
-                if isinstance(text_input, TextInput):
-                    self.flow_data[question_key] = text_input.text.strip()
+                widget = self.ids.content_box.children[0]
+                if isinstance(widget, TextInput):
+                    self.flow_data[question_key] = widget.text.strip()
             # For rating, it's saved on press, so no action needed here
 
     def next_step(self):
@@ -655,8 +654,9 @@ class HushOSApp(App):
         self.current_track_index = 0
         self.play_music()
 
-        # The KV file now loads the RootWidget (NavigationDrawer)
-        return Builder.load_file('hushos.kv')
+        # --- THIS IS THE CORRECT WAY ---
+        # Kivy automatically loads the corresponding .kv file.
+        return RootWidget()
 
     def on_pause(self):
         print("App is pausing...")
