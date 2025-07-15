@@ -1,4 +1,4 @@
-name: Build Kivy Android APK
+name: Build HushOS APK
 
 on:
   push:
@@ -295,7 +295,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kivy-app-apk
+          name: hush-os-apk
           path: |
             bin/*.apk
             dist/*.apk
