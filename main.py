@@ -28,6 +28,8 @@ from kivy.utils import get_color_from_hex, platform
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
+# --- NEW: Import for Navigation Drawer ---
+from kivy.uix.navigationdrawer import NavigationDrawer
 
 # --- AI & Media Dependencies ---
 try:
@@ -37,9 +39,7 @@ except ImportError:
     genai = None
     print("Warning: Google AI library not found. Run 'pip install google-generativeai'. Jerry will have basic responses.")
 
-# --- PATHS & BASIC SETUP (Corrected) ---
-# Asset path is relative to the app's location, so it's safe to define globally.
-# All other paths that depend on the user's device storage are now handled inside the App's build() method.
+# --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
 
 # --- GLOBAL DATA ---
@@ -197,7 +197,8 @@ class JerryAI:
         threading.Thread(target=_get_response_thread, daemon=True).start()
 
 # --- KIVY WIDGETS AND SCREENS ---
-class RootWidget(BoxLayout):
+# NEW: RootWidget is now the NavigationDrawer
+class RootWidget(NavigationDrawer):
     pass
 
 class JerryAnimator(FloatLayout):
@@ -306,7 +307,8 @@ class JerryScreen(Screen):
         app.ai.get_response(user_text, self.handle_ai_response)
     def handle_ai_response(self, response):
         if response.startswith("ACTION:"):
-            self.manager.current = response.split(":")[1]
+            app = App.get_running_app()
+            app.change_screen(response.split(":")[1])
         else:
             self.add_message("Jerry", response, is_typing=True)
     def add_message(self, speaker, message, is_typing=False):
@@ -333,74 +335,38 @@ class JerryScreen(Screen):
 class CheckinScreen(Screen):
     checkin_step = NumericProperty(0)
     bg_color = ListProperty([1,1,1,1])
-
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
         self.checkin_data = {}
         self.checkin_step = 0
         self.display_step()
-
     def display_step(self):
-        # This no longer rebuilds the whole screen. It just updates the
-        # widgets we defined in the .kv file.
-        
-        # First, clear only the container for the buttons
         self.ids.checkin_button_layout.clear_widgets()
-
-        steps = [
-            ("How are you feeling emotionally?", ["good", "ok", "bad"], "emotion"),
-            ("How is your body feeling?", ["energetic", "tired", "pain"], "physical"),
-            ("How is your mind today?", ["clear", "foggy", "overwhelmed"], "mental")
-        ]
-        
-        if self.checkin_step >= len(steps):
-            self.complete_checkin()
-            return
-
+        steps = [("How are you feeling emotionally?", ["good", "ok", "bad"], "emotion"),("How is your body feeling?", ["energetic", "tired", "pain"], "physical"),("How is your mind today?", ["clear", "foggy", "overwhelmed"], "mental")]
+        if self.checkin_step >= len(steps): self.complete_checkin(); return
         title, icons, color_key = steps[self.checkin_step]
-        
         app = App.get_running_app()
         self.bg_color = get_color_from_hex(app.theme.COLORS[color_key])
-        
-        # Update the title Label's text using its ID
         self.ids.checkin_title_label.text = title
         self.ids.checkin_title_label.color = get_color_from_hex(app.theme.COLORS['text_dark'])
-
-        # Now, create the buttons and add them to the button layout
         for icon_name in icons:
             item_frame = BoxLayout(orientation='vertical', size_hint_x=1/3)
             img_path = os.path.join(ASSETS_PATH, f"{icon_name}.png")
-            
-            btn = Button(
-                background_normal=img_path, 
-                background_down=img_path, 
-                size_hint=(None, None), 
-                size=(dp(80), dp(80)), 
-                border=(0,0,0,0), 
-                pos_hint={'center_x': 0.5}
-            )
+            btn = Button(background_normal=img_path, background_down=img_path, size_hint=(None, None), size=(dp(80), dp(80)), border=(0,0,0,0), pos_hint={'center_x': 0.5})
             btn.bind(on_press=lambda x, cat=color_key, choice=icon_name: self.next_step(cat, choice))
-            
             item_frame.add_widget(btn)
             item_frame.add_widget(Label(text=icon_name.capitalize(), color=get_color_from_hex(app.theme.COLORS['text_dark'])))
-            
-            # Add the newly created item_frame to the layout from the .kv file
             self.ids.checkin_button_layout.add_widget(item_frame)
-
     def next_step(self, category, choice):
-        self.checkin_data[category] = choice
-        self.checkin_step += 1
-        self.display_step()
-
+        self.checkin_data[category] = choice; self.checkin_step += 1; self.display_step()
     def complete_checkin(self):
         app = App.get_running_app()
         summary = f"Emotionally feeling {self.checkin_data.get('emotion', 'N/A')}, physically {self.checkin_data.get('physical', 'N/A')}, mentally {self.checkin_data.get('mental', 'N/A')}."
         log_data = {"summary": summary, "details": self.checkin_data}
         app.entries_log.add_entry("Check-in", log_data)
-        app.jerry.feed("clarity", 50)
-        app.jerry.add_xp(10)
-        self.manager.current = 'jerry'
-        
+        app.jerry.feed("clarity", 50); app.jerry.add_xp(10)
+        app.change_screen('jerry')
+
 class CBTScreen(Screen):
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
@@ -453,7 +419,8 @@ class HushScreen(Screen):
     def update_timer(self, dt):
         self.timer_seconds -= 1
         if self.timer_seconds <= 0:
-            self.timer_event.cancel(); self.manager.current = 'jerry'
+            self.timer_event.cancel()
+            App.get_running_app().change_screen('jerry')
     def get_timer_text(self):
         mins, secs = divmod(self.timer_seconds, 60)
         return f"{int(mins):02d}:{int(secs):02d}"
@@ -465,7 +432,7 @@ class HushScreen(Screen):
 # --- MAIN APP CLASS ---
 class HushOSApp(App):
     def build(self):
-        # --- NEW PATH SETUP ---
+        # --- PATH SETUP ---
         user_data_dir = self.user_data_dir
         logs_path = os.path.join(user_data_dir, "logs")
         jerry_state_path = os.path.join(logs_path, "jerry_state.json")
@@ -475,7 +442,7 @@ class HushOSApp(App):
         
         os.makedirs(logs_path, exist_ok=True)
         
-        # --- Initialize classes with correct paths ---
+        # --- Initialize classes ---
         self.theme = self.get_daily_theme()
         self.jerry = JerryCompanion(jerry_state_path)
         self.ai = JerryAI(self.jerry, self, conversation_log_path, jerry_memory_path)
@@ -485,24 +452,25 @@ class HushOSApp(App):
         self.current_track_index = 0
         self.play_music()
 
-        return RootWidget()
+        # The KV file now loads the RootWidget (NavigationDrawer)
+        return Builder.load_file('hushos.kv')
 
     def on_pause(self):
-        # This is called when the app is backgrounded.
-        # It's good practice to pause processes like music or animations.
         print("App is pausing...")
         if self.sound and self.sound.state == 'play':
             self.sound.stop()
-            self.root.ids.sm.get_screen('jerry').ids.animator.stop()
-
-        return True  # Must return True to allow the app to pause
+        # Find animator if the screen exists
+        jerry_screen = self.root.ids.sm.get_screen('jerry')
+        if jerry_screen:
+            jerry_screen.ids.animator.stop()
+        return True
 
     def on_resume(self):
-        # This is called when the app is brought back to the foreground.
         print("Welcome Back!")
-        # You can choose to automatically restart music here if you want.
         self.play_music()
-        pass
+        jerry_screen = self.root.ids.sm.get_screen('jerry')
+        if jerry_screen and self.root.ids.sm.current == 'jerry':
+             jerry_screen.ids.animator.start()
 
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
@@ -526,10 +494,24 @@ class HushOSApp(App):
         return Theme()
 
     def change_screen(self, screen_name):
-        self.root.ids.sm.current = screen_name
+        sm = self.root.ids.sm
+        # Deselect all bottom nav buttons
+        nav_bar = self.root.ids.main_content.ids.nav_bar
+        for button in nav_bar.children:
+            if isinstance(button, ToggleButton):
+                # Check if the button's screen_name is the one we are navigating to
+                if button.screen_name == screen_name:
+                    button.state = 'down'
+                else:
+                    button.state = 'normal'
+
+        sm.current = screen_name
+        # Close the drawer after changing screen
+        self.root.set_state('close')
+
 
     def update_affirmation_banner(self, screen_name):
-        banner = self.root.ids.affirmation_banner
+        banner = self.root.ids.main_content.ids.affirmation_banner
         if screen_name == 'jerry':
             banner.height = 0
         else:
