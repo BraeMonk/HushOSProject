@@ -422,13 +422,10 @@ class TherapyScreenBase(Screen):
         
         num_questions = len(self.questions)
 
-        # Are we on a question step?
         if self.flow_step < num_questions:
             self.display_question_step()
-        # Are we on the checklist step?
         elif self.flow_step == num_questions:
             self.display_checklist_step()
-        # Otherwise, something is wrong, complete the flow.
         else:
             self.complete_flow()
 
@@ -442,18 +439,16 @@ class TherapyScreenBase(Screen):
 
         content_box = self.ids.content_box
         
-        # Check if it's a rating question (for DBT)
         if question_data.get("type") == "rating":
             rating_box = GridLayout(cols=6, size_hint_y=None, height=dp(48))
-            for i in range(6): # 0-5
+            for i in range(6):
                 btn = ToggleButton(text=str(i), group=question_key, size_hint_y=None, height=dp(48))
-                # If there's a saved answer, set the button state
                 if self.flow_data.get(question_key) == str(i):
                     btn.state = 'down'
                 btn.bind(on_press=lambda instance, val=str(i): self.set_rating_answer(question_key, val))
                 rating_box.add_widget(btn)
             content_box.add_widget(rating_box)
-        else: # Standard text input question (for CBT)
+        else:
             text_input = TextInput(
                 id='current_answer',
                 text=self.flow_data.get(question_key, ''),
@@ -469,17 +464,14 @@ class TherapyScreenBase(Screen):
         self.ids.next_button.text = 'Finish'
         
         content_box = self.ids.content_box
-        # Retrieve the saved checklist items for this key
         saved_checklist = self.flow_data.get('checklist', [])
 
         for item, description in self.checklist.items():
             line = BoxLayout(size_hint_y=None, height=dp(48))
             chk = CheckBox(size_hint_x=None, width=dp(48))
-            # Check the box if it was saved previously
             if item in saved_checklist:
                 chk.active = True
             
-            # When the checkbox state changes, update the data
             chk.bind(active=lambda instance, value, key=item: self.on_checkbox_active(key, value))
             
             label = Label(text=f"{item}", text_size=(self.width * 0.7, None), halign='left', valign='middle')
@@ -488,12 +480,11 @@ class TherapyScreenBase(Screen):
             content_box.add_widget(line)
 
     def on_checkbox_active(self, key, value):
-        # Get the current list of checked items, or an empty list
         checked_items = self.flow_data.get('checklist', [])
-        if value: # if checkbox is checked
+        if value:
             if key not in checked_items:
                 checked_items.append(key)
-        else: # if checkbox is unchecked
+        else:
             if key in checked_items:
                 checked_items.remove(key)
         self.flow_data['checklist'] = checked_items
@@ -502,21 +493,17 @@ class TherapyScreenBase(Screen):
         self.flow_data[key] = value
 
     def save_current_answer(self):
-        # Only save if it's a question step with a text input
         if self.flow_step < len(self.questions):
             question_key = self.questions[self.flow_step]["key"]
-            # Check if content_box has children before accessing
             if self.ids.content_box.children:
                 widget = self.ids.content_box.children[0]
                 if isinstance(widget, TextInput):
                     self.flow_data[question_key] = widget.text.strip()
-            # For rating, it's saved on press, so no action needed here
 
     def next_step(self):
         self.save_current_answer()
         self.flow_step += 1
         
-        # Check if we are past the last step
         if self.flow_step > len(self.questions):
             self.complete_flow()
         else:
@@ -530,7 +517,6 @@ class TherapyScreenBase(Screen):
 
     def complete_flow(self):
         app = App.get_running_app()
-        # Create a summary from the collected data
         summary = ""
         for key, value in self.flow_data.items():
             summary += f"{key.replace('_', ' ').capitalize()}: {value}\n"
@@ -538,7 +524,6 @@ class TherapyScreenBase(Screen):
         log_data = {"summary": summary, "details": self.flow_data}
         app.entries_log.add_entry(self.entry_type, log_data)
         
-        # Give XP and feed Jerry
         app.jerry.feed("insight", 50)
         app.jerry.add_xp(25)
         
@@ -556,7 +541,6 @@ class DBTScreen(TherapyScreenBase):
         self.checklist = DBT_SKILLS
         self.entry_type = "DBT Entry"
     
-    # Override display_checklist_step for DBT's different data structure
     def display_checklist_step(self):
         self.ids.title_label.text = f"Which skills did you use?"
         self.ids.next_button.text = 'Finish'
@@ -565,9 +549,7 @@ class DBTScreen(TherapyScreenBase):
         saved_checklist = self.flow_data.get('checklist', [])
 
         for category, skills in self.checklist.items():
-            # Add a category header
             content_box.add_widget(Label(text=f"[b]{category}[/b]", markup=True, size_hint_y=None, height=dp(40)))
-            # Add checkboxes for skills in that category
             for skill in skills:
                 line = BoxLayout(size_hint_y=None, height=dp(48))
                 chk = CheckBox(size_hint_x=None, width=dp(48))
@@ -634,7 +616,6 @@ class HushScreen(Screen):
 # --- MAIN APP CLASS ---
 class HushOSApp(App):
     def build(self):
-        # --- PATH SETUP ---
         user_data_dir = self.user_data_dir
         logs_path = os.path.join(user_data_dir, "logs")
         jerry_state_path = os.path.join(logs_path, "jerry_state.json")
@@ -644,7 +625,6 @@ class HushOSApp(App):
         
         os.makedirs(logs_path, exist_ok=True)
         
-        # --- Initialize classes ---
         self.theme = self.get_daily_theme()
         self.jerry = JerryCompanion(jerry_state_path)
         self.ai = JerryAI(self.jerry, self, conversation_log_path, jerry_memory_path)
@@ -654,16 +634,18 @@ class HushOSApp(App):
         self.current_track_index = 0
         self.play_music()
 
-        # --- THIS IS THE CORRECT WAY ---
-        # Kivy automatically loads the corresponding .kv file.
+        # Kivy automatically loads the 'hushos.kv' file that matches the app class name.
+        # This is the correct and stable way to build the app.
         return RootWidget()
 
     def on_pause(self):
         print("App is pausing...")
         if self.sound and self.sound.state == 'play':
             self.sound.stop()
-        # Find animator if the screen exists
-        jerry_screen = self.root.ids.sm.get_screen('jerry')
+        
+        # Correctly access the screen manager
+        sm = self.root.ids.main_content.ids.sm
+        jerry_screen = sm.get_screen('jerry')
         if jerry_screen:
             jerry_screen.ids.animator.stop()
         return True
@@ -671,8 +653,11 @@ class HushOSApp(App):
     def on_resume(self):
         print("Welcome Back!")
         self.play_music()
-        jerry_screen = self.root.ids.sm.get_screen('jerry')
-        if jerry_screen and self.root.ids.sm.current == 'jerry':
+        
+        # Correctly access the screen manager
+        sm = self.root.ids.main_content.ids.sm
+        jerry_screen = sm.get_screen('jerry')
+        if jerry_screen and sm.current == 'jerry':
              jerry_screen.ids.animator.start()
 
     def on_start(self):
@@ -680,7 +665,8 @@ class HushOSApp(App):
         Clock.schedule_once(self.go_to_splash)
 
     def go_to_splash(self, dt):
-        self.root.ids.sm.current = 'splash'
+        # Correctly access the screen manager
+        self.root.ids.main_content.ids.sm.current = 'splash'
 
     def on_stop(self):
         self.ai.end_session()
@@ -697,23 +683,22 @@ class HushOSApp(App):
         return Theme()
 
     def change_screen(self, screen_name):
-        sm = self.root.ids.sm
-        # Deselect all bottom nav buttons
+        # Correctly access the screen manager and nav bar
+        sm = self.root.ids.main_content.ids.sm
         nav_bar = self.root.ids.main_content.ids.nav_bar
+        
         for button in nav_bar.children:
             if isinstance(button, ToggleButton):
-                # Check if the button's screen_name is the one we are navigating to
                 if button.screen_name == screen_name:
                     button.state = 'down'
                 else:
                     button.state = 'normal'
 
         sm.current = screen_name
-        # Close the drawer after changing screen
         self.root.set_state('close')
 
-
     def update_affirmation_banner(self, screen_name):
+        # Correctly access the affirmation banner
         banner = self.root.ids.main_content.ids.affirmation_banner
         if screen_name == 'jerry':
             banner.height = 0
