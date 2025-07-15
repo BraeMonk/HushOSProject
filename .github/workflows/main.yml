@@ -83,7 +83,7 @@ jobs:
         shell: bash
 
       - name: Add Google AI API Key to environment (if not already set)
-        run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp
+        run: echo "${{ secrets.SECRET_API_KEY }}" > .env_api_key_temp
         shell: bash
 
       - name: Force correct buildozer.spec settings
