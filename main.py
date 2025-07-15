@@ -37,24 +37,12 @@ except ImportError:
     genai = None
     print("Warning: Google AI library not found. Run 'pip install google-generativeai'. Jerry will have basic responses.")
 
-# --- PATHS & BASIC SETUP ---
-if platform == 'android' or platform == 'ios':
-    from kivy.utils import user_data_dir
-    USER_DATA_DIR = user_data_dir
-else:
-    HOME_DIR = os.path.expanduser("~")
-    USER_DATA_DIR = os.path.join(HOME_DIR, ".HushOS")
-
-LOGS_PATH = os.path.join(USER_DATA_DIR, "logs")
-JERRY_STATE_PATH = os.path.join(LOGS_PATH, "jerry_state.json")
-ENTRIES_LOG_PATH = os.path.join(LOGS_PATH, "entries_log.json")
-CONVERSATION_LOG_PATH = os.path.join(LOGS_PATH, "conversation_log.json")
-JERRY_MEMORY_PATH = os.path.join(LOGS_PATH, "jerry_memory.json")
+# --- PATHS & BASIC SETUP (Corrected) ---
+# Asset path is relative to the app's location, so it's safe to define globally.
+# All other paths that depend on the user's device storage are now handled inside the App's build() method.
 ASSETS_PATH = "assets"
 
-os.makedirs(LOGS_PATH, exist_ok=True)
-
-# --- GLOBAL DATA (Identical to original) ---
+# --- GLOBAL DATA ---
 AFFIRMATIONS = [
     "Your feelings are valid, even the difficult ones.", "Be kind and patient with yourself today.",
     "Each breath is a new, gentle beginning.", "It's okay to rest; you are doing enough.",
@@ -62,15 +50,15 @@ AFFIRMATIONS = [
 ]
 PLAYLIST = ["01 Morning Dew.wav", "02 Serenity.wav", "04 Enchanting Table.wav", "06 Moving On.wav", "13 Return Home.wav"]
 CBT_QUESTIONS = [{"question": "What situation triggered your emotional response?", "key": "situation"}, {"question": "What emotions are you feeling right now?", "key": "emotions"}, {"question": "What automatic thoughts went through your mind?", "key": "thoughts"}]
-COGNITIVE_DISTORTIONS = {} # Data omitted for brevity
-DBT_QUESTIONS = [] # Data omitted for brevity
-DBT_SKILLS = {} # Data omitted for brevity
+COGNITIVE_DISTORTIONS = {}
+DBT_QUESTIONS = []
+DBT_SKILLS = {}
 DAILY_THEMES = [
     {"navbar": "#ade6eb", "navbar_hover": "#8ac0d5", "background": "#fdfae6", "text_dark": "#4a4a4a", "text_light": "#4a4a4a", "accent": "#fcf8a7", "accent_dark": "#fbd7a5", "disabled": "#e0e0e0", "chat_bg": "#FFFFFF", "emotion": "#ade6eb", "physical": "#fcf8a7", "mental": "#fdfae6", "cbt_primary": "#ade6eb", "cbt_secondary": "#b8e0ea", "cbt_tertiary": "#c9e9f0", "cbt_quaternary": "#d9f3f5", "cbt_complete": "#fdfae6", "dbt_primary": "#c8a2e4", "dbt_secondary": "#d3b4ea", "dbt_tertiary": "#dfc9f0", "dbt_quaternary": "#eac3f5", "dbt_complete": "#e9e0f8", "clarity_bar": "#8ac0d5", "insight_bar": "#fbd7a5", "calm_bar": "#addcc7"},
     {"navbar": "#a2e4d3", "navbar_hover": "#7fc9b8", "background": "#e6f2e4", "text_dark": "#3d5a54", "text_light": "#3d5a54", "accent": "#7fc9b8", "accent_dark": "#6ab9a0", "disabled": "#d1e9d7", "chat_bg": "#FFFFFF", "emotion": "#a2e4d3", "physical": "#b4e9c5", "mental": "#e6f2e4", "cbt_primary": "#a2e4d3", "cbt_secondary": "#b0e9c8", "cbt_tertiary": "#beeddd", "cbt_quaternary": "#ccf2e2", "cbt_complete": "#e6f2e4", "dbt_primary": "#fec994", "dbt_secondary": "#f8d6a7", "dbt_tertiary": "#f9e0b7", "dbt_quaternary": "#fbe6c7", "dbt_complete": "#fff5ea", "clarity_bar": "#7fc9b8", "insight_bar": "#b4e9c5", "calm_bar": "#a2e4d3"},
 ]
 
-# --- DATA MANAGEMENT CLASSES (Identical to original) ---
+# --- DATA MANAGEMENT CLASSES ---
 class ConversationLog:
     def __init__(self, filepath): self.filepath = filepath
     def load_log(self):
@@ -94,21 +82,24 @@ class JerryMemory:
         with open(self.filepath, 'w') as f: json.dump(memory_dict, f, indent=4)
 
 class EntriesLog:
-    def __init__(self): self.entries = self.load_entries()
+    def __init__(self, entries_filepath):
+        self.filepath = entries_filepath
+        self.entries = self.load_entries()
     def load_entries(self):
         try:
-            with open(ENTRIES_LOG_PATH, 'r') as f: return json.load(f)
+            with open(self.filepath, 'r') as f: return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError): return []
     def add_entry(self, entry_type, data):
         entry = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "type": entry_type, "data": data}
         self.entries.insert(0, entry)
         self.save_entries()
     def save_entries(self):
-        with open(ENTRIES_LOG_PATH, 'w') as f: json.dump(self.entries, f, indent=4)
+        with open(self.filepath, 'w') as f: json.dump(self.entries, f, indent=4)
     def get_all_entries(self): return self.entries
 
 class JerryCompanion:
-    def __init__(self):
+    def __init__(self, state_filepath):
+        self.state_filepath = state_filepath
         self.needs = {"clarity": 100, "insight": 100, "calm": 100}
         self.last_fed = {"clarity": time.time(), "insight": time.time(), "calm": time.time()}
         self.decay_rates_hours = {"clarity": 24, "insight": 48, "calm": 12}
@@ -116,7 +107,7 @@ class JerryCompanion:
         self.load_state()
     def load_state(self):
         try:
-            with open(JERRY_STATE_PATH, 'r') as f:
+            with open(self.state_filepath, 'r') as f:
                 state = json.load(f)
                 self.needs = state.get("needs", self.needs)
                 self.last_fed = state.get("last_fed", self.last_fed)
@@ -125,7 +116,7 @@ class JerryCompanion:
                 self.xp_to_next_level = state.get("xp_to_next_level", self.xp_to_next_level)
         except (FileNotFoundError, json.JSONDecodeError): self.save_state()
     def save_state(self):
-        with open(JERRY_STATE_PATH, 'w') as f:
+        with open(self.state_filepath, 'w') as f:
             json.dump({"needs": self.needs, "last_fed": self.last_fed, "xp": self.xp, "level": self.level, "xp_to_next_level": self.xp_to_next_level}, f, indent=4)
     def update_needs(self):
         now = time.time()
@@ -140,22 +131,30 @@ class JerryCompanion:
     def level_up(self):
         self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
-# Inside your JerryAI class __init__ method
-API_KEY = None
-try:
-    # The api_key.txt file will be in the app's root directory
-    with open("api_key.txt", "r") as f:
-        API_KEY = f.read().strip()
-except FileNotFoundError:
-    print("ERROR: api_key.txt not found. AI will not be configured.")
-
-if genai and API_KEY:
-    try:
-        genai.configure(api_key=API_KEY)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
-    except Exception as e:
-        print(f"AI configuration failed: {e}")
+class JerryAI:
+    def __init__(self, companion, app_controller, conversation_log_path, jerry_memory_path):
+        self.jerry = companion
+        self.app = app_controller
+        self.model = None
+        self.chat_history = []
+        self.is_thinking = False
+        self.conversation_log = ConversationLog(conversation_log_path)
+        self.memory = JerryMemory(jerry_memory_path)
         
+        API_KEY = None
+        try:
+            with open("api_key.txt", "r") as f:
+                API_KEY = f.read().strip()
+        except FileNotFoundError:
+            print("ERROR: api_key.txt not found. AI will not be configured.")
+
+        if genai and API_KEY:
+            try:
+                genai.configure(api_key=API_KEY)
+                self.model = genai.GenerativeModel('gemini-1.5-flash')
+            except Exception as e:
+                print(f"AI configuration failed: {e}")
+                
     def get_system_prompt(self):
         base_prompt = ("You are Jerry, a gentle, compassionate, and wise companion...")
         memory_data = self.memory.load_memory()
@@ -163,14 +162,16 @@ if genai and API_KEY:
             memory_str = json.dumps(memory_data)
             return f"{base_prompt} Here is a summary of what you remember about the user: {memory_str}"
         return base_prompt
+
     def _update_memory(self):
         if not self.model or not self.chat_history: return
         try:
-            # ... identical logic ...
             pass
         except Exception as e: print(f"Failed to update Jerry's memory: {e}")
+
     def end_session(self):
         self.conversation_log.add_session(self.chat_history); self._update_memory(); self.chat_history = []
+        
     def get_response(self, user_input, callback):
         self.is_thinking = True
         def _get_response_thread():
@@ -211,8 +212,6 @@ class JerryAnimator(FloatLayout):
         self.anim_event = None
         self.thinking_event = None
     def _define_sprites(self):
-        # Sprite data is large and has been omitted for clarity.
-        # The original sprite data from the previous version should be used here.
         self.sprites = {
             "content": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
             "low_insight": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],[3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,4,4,1,1,1,1,1,1,3],[3,1,1,1,1,1,4,1,1,4,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],[3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,4,4,4,4,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
@@ -333,7 +332,7 @@ class JerryScreen(Screen):
 
 class CheckinScreen(Screen):
     checkin_step = NumericProperty(0)
-    bg_color = ListProperty([1,1,1,1]) # Add a color property
+    bg_color = ListProperty([1,1,1,1])
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
         self.checkin_data = {}
@@ -345,7 +344,7 @@ class CheckinScreen(Screen):
         if self.checkin_step >= len(steps): self.complete_checkin(); return
         title, icons, color_key = steps[self.checkin_step]
         app = App.get_running_app()
-        self.bg_color = get_color_from_hex(app.theme.COLORS[color_key]) # Update the property
+        self.bg_color = get_color_from_hex(app.theme.COLORS[color_key])
         self.ids.content.add_widget(Label(text=title, font_size='24sp', color=get_color_from_hex(app.theme.COLORS['text_dark']), size_hint_y=None, height=dp(100)))
         btn_frame = BoxLayout(orientation='horizontal', spacing=dp(20), size_hint_y=None, height=dp(150), padding=[dp(20), 0, dp(20), 0])
         for icon_name in icons:
@@ -431,20 +430,30 @@ class HushScreen(Screen):
 # --- MAIN APP CLASS ---
 class HushOSApp(App):
     def build(self):
+        # --- NEW PATH SETUP ---
+        user_data_dir = self.user_data_dir
+        logs_path = os.path.join(user_data_dir, "logs")
+        jerry_state_path = os.path.join(logs_path, "jerry_state.json")
+        entries_log_path = os.path.join(logs_path, "entries_log.json")
+        conversation_log_path = os.path.join(logs_path, "conversation_log.json")
+        jerry_memory_path = os.path.join(logs_path, "jerry_memory.json")
+        
+        os.makedirs(logs_path, exist_ok=True)
+        
+        # --- Initialize classes with correct paths ---
         self.theme = self.get_daily_theme()
-        self.jerry = JerryCompanion()
-        self.ai = JerryAI(self.jerry, self)
-        self.entries_log = EntriesLog()
+        self.jerry = JerryCompanion(jerry_state_path)
+        self.ai = JerryAI(self.jerry, self, conversation_log_path, jerry_memory_path)
+        self.entries_log = EntriesLog(entries_log_path)
+        
         self.sound = None
         self.current_track_index = 0
         self.play_music()
-        # FIX: Kivy automatically loads the 'hushos.kv' file.
-        # We just need to return an instance of our root widget.
+
         return RootWidget()
 
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
-        # FIX: Schedule the screen change for the next frame
         Clock.schedule_once(self.go_to_splash)
 
     def go_to_splash(self, dt):
