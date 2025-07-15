@@ -250,8 +250,6 @@ jobs:
       - name: Build Kivy Android APK
         run: |
           buildozer init || true
-          echo "Cleaning Buildozer Cache..."
-          buildozer android clean
           echo "Starting buildozer android debug..."
           buildozer android debug --verbose
           BUILD_EXIT_CODE=$?
