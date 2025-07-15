@@ -214,6 +214,27 @@
         orientation: 'vertical'
         padding: dp(20)
         spacing: dp(20)
+        
+        # We define the static parts of the layout here
+        # and give them IDs so the Python code can find them.
+        Label:
+            id: checkin_title_label
+            font_size: '24sp'
+            color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            size_hint_y: None
+            height: dp(100)
+            text: "Loading..." # Placeholder text
+
+        # This layout will hold the dynamic image buttons
+        BoxLayout:
+            id: checkin_button_layout
+            orientation: 'horizontal'
+            spacing: dp(20)
+            size_hint_y: None
+            height: dp(150)
+            padding: [dp(20), 0, dp(20), 0]
+            # Python will add the buttons here
+
 
 <EntriesScreen>:
     BoxLayout:
