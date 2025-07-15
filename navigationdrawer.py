@@ -2,6 +2,9 @@
 """
 Navigation Drawer
 =================
+This file now only contains the Python logic. The visual layout is handled
+by the corresponding navigationdrawer.kv file, which Kivy loads automatically.
+This prevents the indentation errors that were causing the crash.
 """
 __all__ = ('NavigationDrawer', )
 
@@ -10,54 +13,8 @@ from kivy.properties import ObjectProperty, AliasProperty, OptionProperty, \
 from kivy.uix.stencilview import StencilView
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.animation import Animation
-from kivy.lang import Builder
-
-# Corrected KV language string with proper indentation and structure
-Builder.load_string('''
-<NavigationDrawer>:
-    # This is the main layout rule for the NavigationDrawer.
-    # The children (side_panel, main_panel, join_image) are defined here.
-    # The ObjectProperties in the Python class will be automatically
-    # linked to these widgets via their ids.
-
-    side_panel:
-        id: side_panel
-        x: root.x - (1 - root.side_panel_init_offset) * root.side_panel_width
-        y: root.y
-        width: root.side_panel_width
-        height: root.height
-        opacity: root.opacity if root.fade_max_opacity == 1 else root._anim_alpha
-        canvas:
-            Color:
-                rgba: 1, 1, 1, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
-
-    main_panel:
-        id: main_panel
-        x: root.x + root.side_panel_width * root.side_panel_init_offset if root.state == 'open' else root.x
-        y: root.y
-        width: root.width
-        height: root.height
-        canvas:
-            Color:
-                rgba: 1, 1, 1, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
-
-    Image:
-        id: join_image
-        source: root.separator_image
-        mipmap: False
-        x: (main_panel.x - root.separator_image_width) if root.side_panel_positioning == 'left' else (main_panel.x + main_panel.width)
-        y: root.y
-        width: root.separator_image_width
-        height: root.height
-        allow_stretch: True
-        keep_ratio: False
-''')
+# Builder is no longer needed here, as the kv file is loaded automatically
+# from kivy.lang import Builder
 
 
 class NavigationDrawer(StencilView):
