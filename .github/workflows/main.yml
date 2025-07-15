@@ -243,7 +243,7 @@ jobs:
         run: |
           buildozer init || true
           echo "Starting buildozer android debug..."
-          buildozer android debug -v
+          buildozer android debug --verbose
           BUILD_EXIT_CODE=$?
           echo "Buildozer exit code: $BUILD_EXIT_CODE"
           if [ $BUILD_EXIT_CODE -ne 0 ]; then
