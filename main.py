@@ -452,6 +452,23 @@ class HushOSApp(App):
 
         return RootWidget()
 
+    def on_pause(self):
+        # This is called when the app is backgrounded.
+        # It's good practice to pause processes like music or animations.
+        print("App is pausing...")
+        if self.sound and self.sound.state == 'play':
+            self.sound.stop()
+            self.root.ids.sm.get_screen('jerry').ids.animator.stop()
+
+        return True  # Must return True to allow the app to pause
+
+    def on_resume(self):
+        # This is called when the app is brought back to the foreground.
+        print("Welcome Back!")
+        # You can choose to automatically restart music here if you want.
+        self.play_music()
+        pass
+
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
         Clock.schedule_once(self.go_to_splash)
