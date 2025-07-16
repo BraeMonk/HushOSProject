@@ -671,9 +671,27 @@ class HushScreen(Screen):
         self.timer_active = False; self.timer_seconds = 180
     def on_leave(self): self.reset_timer()
 
-# --- MAIN APP CLASS ---
+import os
+import json # <-- Import the json library
+
+# ... (rest of your imports)
+
 class HushOSApp(App):
     def build(self):
+        # --- Load API Key from secrets.json ---
+        api_key = None
+        try:
+            with open("config.json") as f:
+                secrets = json.load(f)
+                api_key = secrets.get("SECRET_API_KEY")
+        except FileNotFoundError:
+            print("!!! config.json not found. Jerry will be in basic mode.")
+        except json.JSONDecodeError:
+            print("!!! Could not decode config.json. Jerry will be in basic mode.")
+        except Exception as e:
+            print(f"!!! An error occurred loading the API key: {e}")
+
+
         user_data_dir = self.user_data_dir
         logs_path = os.path.join(user_data_dir, "logs")
         jerry_state_path = os.path.join(logs_path, "jerry_state.json")
@@ -685,16 +703,25 @@ class HushOSApp(App):
         
         self.theme = self.get_daily_theme()
         self.jerry = JerryCompanion(jerry_state_path)
-        self.ai = JerryAI(self.jerry, self, conversation_log_path, jerry_memory_path)
+
+        # --- Pass the loaded API key to the JerryAI constructor ---
+        self.ai = JerryAI(
+            jerry=self.jerry,
+            app=self,
+            conversation_log_path=conversation_log_path,
+            jerry_memory_path=jerry_memory_path,
+            api_key=api_key  # <-- Pass the key here
+        )
+        
         self.entries_log = EntriesLog(entries_log_path)
         
         self.sound = None
         self.current_track_index = 0
         self.play_music()
 
-        # Kivy automatically loads the 'hushos.kv' file that matches the app class name.
-        # This is the correct and stable way to build the app.
         return RootWidget()
+    
+    # ... (rest of your HushOSApp class))
 
     def on_pause(self):
         print("App is pausing...")
