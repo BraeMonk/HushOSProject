@@ -377,15 +377,25 @@ class SplashScreen(Screen):
 
 class JerryScreen(Screen):
     def on_enter(self):
-        self.ids.animator.start()
+        # Schedule the animation to start on the next frame.
+        # This gives the layout engine time to calculate widget sizes.
+        Clock.schedule_once(self.start_animation)
+        
+        # The rest of the setup can still happen immediately.
         self.update_ui()
         self.ids.chat_log.text = ""
         self.add_message("Jerry", "It's good to see you again.")
         self.ids.user_entry.focus = True
         App.get_running_app().update_affirmation_banner(self.name)
+
+    def start_animation(self, dt):
+        """This method is now called after the screen's layout is stable."""
+        self.ids.animator.start()
+
     def on_leave(self):
         self.ids.animator.stop()
         App.get_running_app().ai.end_session()
+        
     def update_ui(self):
         jerry = App.get_running_app().jerry
         jerry.update_needs()
