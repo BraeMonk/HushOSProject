@@ -48,22 +48,44 @@
         orientation: 'vertical'
         size_hint: 1, 1
 
+        # TOP BAR
         BoxLayout:
             size_hint_y: None
-            height: dp(50)
-            padding: dp(10)
-            spacing: dp(10)
+            height: dp(56)
+            padding: dp(8)
+            spacing: dp(8)
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex(app.theme.COLORS['navbar']) if app else (0.7, 0.9, 1, 1)
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
             Button:
-                text: "\u2630"
+                text: "\u2630" # Hamburger menu icon
                 size_hint_x: None
                 width: dp(50)
                 on_press: root.toggle_drawer()
+                background_color: 0, 0, 0, 0
+                font_size: '24sp'
             Label:
                 text: "HushOS Tools"
                 font_size: '20sp'
 
+        # AFFIRMATION BANNER (was missing)
+        Label:
+            id: affirmation_banner
+            size_hint_y: None
+            height: 0 # Hidden by default
+            text_size: self.width - dp(20), None
+            valign: 'middle'
+            halign: 'center'
+
         ScreenManager:
             id: sm
+            current: 'splash' # Start on the splash screen
+            # ADDED SplashScreen
+            SplashScreen:
+                name: 'splash'
             JerryScreen:
                 name: 'jerry'
             CheckinScreen:
@@ -79,6 +101,7 @@
             HushScreen:
                 name: 'hush'
 
+    # NAVIGATION DRAWER
     BoxLayout:
         id: drawer
         orientation: 'vertical'
@@ -95,6 +118,7 @@
 
         TitleLabel:
             text: "Menu"
+            padding: dp(16), dp(16)
 
         NavDrawerButton:
             text: "Jerry"
@@ -118,7 +142,7 @@
             text: "Hush"
             screen_name: 'hush'
 
-        Widget:
+        Widget: # Spacer
         Label:
             text: "Version 1.0"
             font_size: '12sp'
@@ -127,6 +151,11 @@
             color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
 
 # --- Screen Layout Definitions ---
+
+<SplashScreen@BaseScreen>:
+    Label:
+        text: 'HushOS'
+        font_size: '48sp'
 
 <JerryScreen@BaseScreen>:
     BoxLayout:
@@ -175,18 +204,20 @@
                 height: self.texture_size[1]
                 text_size: self.width, None
                 padding: dp(10), dp(10)
-        BoxLayout:
-            size_hint_y: None
-            height: dp(48)
-            TextInput:
-                id: user_entry
-                multiline: False
-                on_text_validate: root.send_message()
-            Button:
-                text: 'Send'
-                size_hint_x: None
-                width: dp(80)
-                on_press: root.send_message()
+    BoxLayout:
+        size_hint_y: None
+        height: dp(48)
+        padding: dp(4)
+        TextInput:
+            id: user_entry
+            multiline: False
+            on_text_validate: root.send_message()
+        Button:
+            id: send_button # <-- THIS ID WAS MISSING
+            text: 'Send'
+            size_hint_x: None
+            width: dp(80)
+            on_press: root.send_message()
 
 <CheckinScreen@BaseScreen>:
     BoxLayout:
@@ -250,13 +281,9 @@
         Label:
             text: "Your Journal Entries"
             font_size: '24sp'
-        ScrollView:
-            Label:
-                id: entries_log
-                markup: True
-                size_hint_y: None
-                height: self.texture_size[1]
-                text_size: self.width - dp(20), None
+        # CORRECTED: Use the custom BodyScrollView
+        BodyScrollView:
+            id: entries_log
 
 <HistoryScreen@BaseScreen>:
     BoxLayout:
@@ -265,13 +292,9 @@
         Label:
             text: "Conversation History"
             font_size: '24sp'
-        ScrollView:
-            Label:
-                id: history_log
-                markup: True
-                size_hint_y: None
-                height: self.texture_size[1]
-                text_size: self.width - dp(20), None
+        # CORRECTED: Use the custom BodyScrollView
+        BodyScrollView:
+            id: history_log
 
 <HushScreen@BaseScreen>:
     BoxLayout:
@@ -283,10 +306,10 @@
             font_size: '24sp'
         Label:
             id: timer_label
-            text: "00:00"
+            text: root.get_timer_text()
             font_size: '48sp'
         Button:
-            text: "Start Timer"
+            text: "Start Timer" if not root.timer_active else "Stop Timer"
             size_hint_y: None
             height: dp(50)
-            on_press: root.start_timer()
+            on_press: root.start_stop_timer()
