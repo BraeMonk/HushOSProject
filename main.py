@@ -645,29 +645,45 @@ class DBTScreen(TherapyScreenBase):
 class EntriesScreen(Screen):
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
-        self.ids.entries_log.text = ""
+        
+        # Corrected access to the Label's text property
+        log_label = self.ids.entries_log.ids.body_text
+        log_label.text = "" 
+        
         entries = App.get_running_app().entries_log.get_all_entries()
-        if not entries: self.ids.entries_log.text = "No entries yet."
+        if not entries:
+            log_label.text = "No entries yet."
         else:
+            full_text = []
             for entry in entries:
                 title = f"[b][{entry['type']}] - {entry['timestamp']}[/b]\n"
                 summary = f"{entry['data']['summary']}\n\n"
-                self.ids.entries_log.text += title + summary
+                full_text.append(title + summary)
+            # It's more efficient to build the string and set it once
+            log_label.text = "".join(full_text)
 
 class HistoryScreen(Screen):
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
-        self.ids.history_log.text = ""
+        
+        # Corrected access to the Label's text property
+        log_label = self.ids.history_log.ids.body_text
+        log_label.text = ""
+        
         convo_log = App.get_running_app().ai.conversation_log.load_log()
-        if not convo_log: self.ids.history_log.text = "No conversation history."
+        if not convo_log:
+            log_label.text = "No conversation history."
         else:
+            full_text = []
             for session in convo_log:
-                self.ids.history_log.text += f"[b]Session: {session['timestamp']}[/b]\n"
+                full_text.append(f"[b]Session: {session['timestamp']}[/b]\n")
                 for message in session['conversation']:
                     speaker = "Jerry" if message['role'] == 'model' else 'You'
                     text = message['parts'][0] if isinstance(message['parts'], list) else message['parts']
-                    self.ids.history_log.text += f"[b]{speaker}:[/b] {text}\n"
-                self.ids.history_log.text += "\n"
+                    full_text.append(f"[b]{speaker}:[/b] {text}\n")
+                full_text.append("\n")
+            # Set the full text at the end
+            log_label.text = "".join(full_text)
 
 class HushScreen(Screen):
     timer_seconds = NumericProperty(180)
