@@ -287,8 +287,21 @@ class JerryAI:
             self.chat_history = [] # Reset for the next session
             
 # --- KIVY WIDGETS AND SCREENS ---
-class RootWidget(NavigationDrawer):
-    pass
+from kivy.animation import Animation
+
+class RootWidget(FloatLayout):
+    def toggle_drawer(self):
+        drawer = self.ids.drawer
+        if not self.drawer_open:
+            Animation(x=0, d=0.3).start(drawer)
+            self.drawer_open = True
+        else:
+            Animation(x=-drawer.width, d=0.3).start(drawer)
+            self.drawer_open = False
+
+    def change_screen(self, screen_name):
+        self.ids.sm.current = screen_name
+        self.toggle_drawer()
 
 class JerryAnimator(FloatLayout):
     anim_frame = NumericProperty(0)
