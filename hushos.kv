@@ -51,6 +51,7 @@
     side_panel_width: min(dp(280), Window.width * 0.7)
     anim_type: 'slide_above_anim'
 
+    # --- 1. The Side Panel (Navigation Drawer Content) ---
     side_panel:
         BoxLayout:
             orientation: 'vertical'
@@ -62,9 +63,11 @@
                 Rectangle:
                     pos: self.pos
                     size: self.size
+
             TitleLabel:
                 text: "HushOS Tools"
                 font_size: '20sp' # Override base font size
+
             NavDrawerButton:
                 text: "Jerry"
                 screen_name: 'jerry'
@@ -86,6 +89,7 @@
             NavDrawerButton:
                 text: "Hush"
                 screen_name: 'hush'
+
             Widget: # Spacer
             Label:
                 text: "Version 1.0"
@@ -94,9 +98,11 @@
                 height: dp(24)
                 color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
 
+    # --- 2. The Main Panel (Where All Screens Live) ---
     main_panel:
         BoxLayout:
             orientation: 'vertical'
+
             Label:
                 id: affirmation_banner
                 size_hint_y: None
@@ -112,6 +118,7 @@
                 text_size: self.width - dp(20), None
                 halign: 'center'
                 valign: 'middle'
+
             ScreenManager:
                 id: sm
                 SplashScreen:
