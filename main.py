@@ -425,7 +425,7 @@ class JerryScreen(Screen):
         app = App.get_running_app()
         speaker_color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
         self.ids.chat_log.text += f"[b][color={speaker_color_hex}]{speaker}: [/color][/b]"
-        if is_typing and app.ai.model:
+        if is_typing and app.ai.client:
             Clock.schedule_once(lambda dt, m=message: self.type_out_message(m))
         else:
             self.ids.chat_log.text += f"{message}\n\n"
@@ -802,21 +802,6 @@ class HushOSApp(App):
             def __init__(self):
                 self.COLORS = DAILY_THEMES[datetime.now().weekday() % len(DAILY_THEMES)]
         return Theme()
-
-    def change_screen(self, screen_name):
-        # Correctly access the screen manager and nav bar
-        sm = self.root.ids.sm
-        nav_bar = self.root.ids.nav_bar
-        
-        for button in nav_bar.children:
-            if isinstance(button, ToggleButton):
-                if button.screen_name == screen_name:
-                    button.state = 'down'
-                else:
-                    button.state = 'normal'
-
-        sm.current = screen_name
-        self.root.set_state('close')
 
     def update_affirmation_banner(self, screen_name):
         # Correctly access the affirmation banner
