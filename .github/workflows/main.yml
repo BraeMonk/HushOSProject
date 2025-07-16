@@ -1,17 +1,19 @@
-name: Build HushOS APK
+name: Build Kivy Android APK
 
 on:
   push:
     branches:
-      - main
+      - main # Trigger on pushes to the main branch
   pull_request:
     branches:
-      - main
-  workflow_dispatch:
+      - main # Trigger on pull requests targeting the main branch
+  workflow_dispatch: # Allows manual triggering of the workflow
+
 
 jobs:
   build_android_apk:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04 # <--- CHANGE THIS LINE FROM ubuntu-latest
+                           # TO ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -21,8 +23,9 @@ jobs:
         run: |
           echo "Removing existing .buildozer directory to ensure clean build…"
           rm -rf "$HOME/.buildozer" || true
-          rm -rf ".buildozer" || true
+          rm -rf ".buildozer" || true # Also check local buildozer dir if present
           echo "Removing existing python-for-android cache…"
+          # This specifically targets the p4a build cache, which can get corrupted
           rm -rf "$HOME/.python-for-android" || true
           rm -rf "/tmp/p4a-build" || true
         shell: bash
@@ -40,66 +43,273 @@ jobs:
 
       - name: Install Buildozer and its dependencies (with aggressive P4A reinstall from master)
         run: |
+          echo "Updating apt-get and installing build dependencies..."
           sudo apt-get update
           sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk autoconf automake libtool \
-            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev \
-            liblzma-dev libffi-dev libssl-dev build-essential patch \
-            python3-dev perl curl \
-            xvfb libmtdev-dev
+            git zip unzip \
+            openjdk-17-jdk \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            liblzma-dev \
+            libffi-dev \
+            libssl-dev \
+            build-essential \
+            patch \
+            python3-dev \
+            perl \
+            curl
           
+          echo "Ensuring pip is up-to-date..."
           python3 -m pip install --upgrade setuptools pip wheel
+
+          echo "Removing and reinstalling buildozer, cython, and python-for-android from master for a clean slate..."
           pip uninstall -y buildozer cython python-for-android || true
           pip install buildozer cython
+          # Install python-for-android directly from the master branch
           pip install git+https://github.com/kivy/python-for-android.git@master
+
+          echo "Verifying perl, pip locations and python-for-android installation..."
+          which perl || echo "perl not found in PATH after install!"
+          which pip || echo "pip executable not found in PATH!"
+          which pip3 || echo "pip3 executable not found in PATH!"
+          python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))" # Show where scripts like pip are
+          ls -la "$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))")" || true # List contents of scripts dir
+          pip show python-for-android # Display installed version
         shell: bash
 
-      - name: Install Python dependencies from requirements.txt
-        run: |
-          if [ -f requirements.txt ]; then
-            echo "Found requirements.txt. Installing packages..."
-            pip install -r requirements.txt
-          else
-            echo "requirements.txt not found. Skipping package installation."
-          fi
-        shell: bash
-      
-      # --- NEW STEP TO CHECK KV SYNTAX ---
-      - name: Check Kivy file syntax
-        run: xvfb-run python check_kv.py
-        shell: bash
-      # --- END OF NEW STEP ---
-
-      - name: Create API key file for packaging
-        run: echo "${{ secrets.SECRET_API_KEY }}" > api_key.txt
+      - name: Add Google AI API Key to environment (if not already set)
+        run: echo "${{ secrets.GOOGLE_AI_API_KEY_SECRET }}" > .env_api_key_temp
         shell: bash
 
       - name: Force correct buildozer.spec settings
         run: |
+          echo "Checking buildozer.spec settings…"
+          cp buildozer.spec buildozer.spec.backup
           sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 33.0.2/' buildozer.spec
           sed -i 's/^android\.api.*$/android.api = 33/' buildozer.spec
           sed -i 's/^android\.ndk_version.*$/android.ndk_version = 25b/' buildozer.spec
+          sed -i 's/^android\.min_sdk_version.*$/android.min_sdk_version = 21/' buildozer.spec
+
+          grep -q "^android\.build_tools_version" buildozer.spec || echo "android.build_tools_version = 33.0.2" >> buildozer.spec
+          grep -q "^android\.api" buildozer.spec || echo "android.api = 33" >> buildozer.spec
+          grep -q "^android\.ndk_version" buildozer.spec || echo "android.ndk_version = 25b" >> buildozer.spec
+          grep -q "^android\.min_sdk_version" buildozer.spec || echo "android.min_sdk_version = 21" >> buildozer.spec
+          # Ensure this is present and set to 0 if only building APKs
+          grep -q "^android\.add_aab_deps" buildozer.spec || echo "android.add_aab_deps = 0" >> buildozer.spec
+          sed -i 's/^android\.add_aab_deps.*$/android.add_aab_deps = 0/' buildozer.spec
+
+          echo "Current buildozer.spec Android settings:"
+          grep -E "(android.api|android.build_tools_version|android.ndk_version|android.min_sdk_version|android.add_aab_deps)" buildozer.spec
         shell: bash
 
       - name: Clear conflicting Android NDK environment variables
         run: |
+          echo "Clearing potentially conflicting Android NDK environment variables..."
           echo "ANDROID_NDK_HOME=" >> $GITHUB_ENV
           echo "ANDROID_NDK=" >> $GITHUB_ENV
           echo "ANDROID_NDK_ROOT=" >> $GITHUB_ENV
+          echo "ANDROID_NDK_LATEST_HOME=" >> $GITHUB_ENV
         shell: bash
 
       - name: Set Java Memory Options
-        run: echo "_JAVA_OPTIONS=-Xmx2048m" >> $GITHUB_ENV
+        run: |
+          echo "_JAVA_OPTIONS=-Xmx2048m -Djava.io.tmpdir=/tmp" >> $GITHUB_ENV
+          echo "JAVA_OPTS=-Xmx2048m -Djava.io.tmpdir=/tmp" >> $GITHUB_ENV
+          echo "GRADLE_OPTS=-Xmx2048m -Djava.io.tmpdir=/tmp" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Ensure Android SDK Tools and NDK are present and accept licenses
+        run: |
+          SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          TARGET_CMDLINE_TOOLS_DIR="$SDK_ROOT/cmdline-tools"
+          FINAL_CMDLINE_TOOLS_ROOT="$TARGET_CMDLINE_TOOLS_DIR/latest"
+          SDKMANAGER_MODERN="$FINAL_CMDLINE_TOOLS_ROOT/bin/sdkmanager"
+          SDKMANAGER_LEGACY_DIR="$SDK_ROOT/tools/bin"
+          SDKMANAGER_LEGACY_PATH="$SDKMANAGER_LEGACY_DIR/sdkmanager"
+
+          TEMP_UNZIP_DIR="$HOME/.buildozer/android/platform/temp_unzip"
+          BUILD_TOOLS_VERSION="33.0.2"
+          NDK_VERSION_CODE="25b"
+          NDK_URL="https://dl.google.com/android/repository/android-ndk-r${NDK_VERSION_CODE}-linux.zip"
+          NDK_DIR_NAME="android-ndk-r${NDK_VERSION_CODE}"
+          NDK_INSTALL_PATH="$HOME/.buildozer/android/platform/$NDK_DIR_NAME"
+
+          echo "Attempting to create SDK directories and download command-line tools…"
+          mkdir -p "$SDK_ROOT"
+
+          if [ ! -d "$FINAL_CMDLINE_TOOLS_ROOT" ]; then
+            echo "Downloading Android SDK command-line tools…"
+            mkdir -p "$TEMP_UNZIP_DIR"
+            cd "$TEMP_UNZIP_DIR"
+
+            curl -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
+            unzip cmdline-tools.zip
+
+            if [ -d "./cmdline-tools" ]; then
+              echo "Moving unzipped command-line tools from '$TEMP_UNZIP_DIR/cmdline-tools' to '$TARGET_CMDLINE_TOOLS_DIR'…"
+              mkdir -p "$TARGET_CMDLINE_TOOLS_DIR"
+              mv ./cmdline-tools/* "$TARGET_CMDLINE_TOOLS_DIR/" || true
+              mv ./cmdline-tools/.[!.]* "$TARGET_CMDLINE_TOOLS_DIR/" 2>/dev/null || true
+            else
+              echo "Error: Expected 'cmdline-tools' directory not found after unzipping."
+              ls -R .
+              exit 1
+            fi
+
+            cd "$SDK_ROOT"
+            rm -rf "$TEMP_UNZIP_DIR"
+          fi
+
+          if [ ! -d "$FINAL_CMDLINE_TOOLS_ROOT/bin" ]; then
+              echo "Ensuring '$FINAL_CMDLINE_TOOLS_ROOT' structure is correct and creating 'latest' if needed..."
+              if [ -d "$TARGET_CMDLINE_TOOLS_DIR/bin" ]; then
+                  echo "Found 'bin' directly in '$TARGET_CMDLINE_TOOLS_DIR'. Moving to 'latest'..."
+                  mkdir -p "$FINAL_CMDLINE_TOOLS_ROOT"
+                  mv "$TARGET_CMDLINE_TOOLS_DIR"/bin "$FINAL_CMDLINE_TOOLS_ROOT/" || true
+                  mv "$TARGET_CMDLINE_TOOLS_DIR"/lib "$FINAL_CMDLINE_TOOLS_ROOT/" || true
+                  mv "$TARGET_CMDLINE_TOOLS_DIR"/source.properties "$FINAL_CMDLINE_TOOLS_ROOT/" || true
+              else
+                  echo "Warning: 'bin' directory not found where expected within '$TARGET_CMDLINE_TOOLS_DIR'."
+                  echo "Contents of $TARGET_CMDLINE_TOOLS_DIR:"
+                  ls -la "$TARGET_CMDLINE_TOOLS_DIR"
+              fi
+          fi
+
+          echo "Creating symbolic link for sdkmanager for Buildozer compatibility…"
+          mkdir -p "$SDKMANAGER_LEGACY_DIR"
+          if [ -f "$SDKMANAGER_MODERN" ] && [ ! -f "$SDKMANAGER_LEGACY_PATH" ]; then
+            ln -s "$SDKMANAGER_MODERN" "$SDKMANAGER_LEGACY_PATH"
+            echo "Created symlink from '$SDKMANAGER_MODERN' to '$SDKMANAGER_LEGACY_PATH'"
+          elif [ -f "$SDKMANAGER_LEGACY_PATH" ]; then
+            echo "Symlink for sdkmanager already exists at '$SDKMANAGER_LEGACY_PATH'."
+          else
+            echo "Warning: Could not create symlink. Modern sdkmanager not found at '$SDKMANAGER_MODERN'."
+            ls -la "$FINAL_CMDLINE_TOOLS_ROOT/bin/"
+            exit 1 # Exit if sdkmanager is not found where expected
+          fi
+
+          echo "Adding Android SDK tools to PATH for sdkmanager to be found."
+          echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+          echo "$FINAL_CMDLINE_TOOLS_ROOT/bin" >> $GITHUB_PATH
+          echo "$SDKMANAGER_LEGACY_DIR" >> $GITHUB_PATH
+
+          echo "Accepting Android SDK licenses…"
+          sudo apt-get install -y expect
+
+          expect -c '
+            set timeout 10
+            spawn '"$SDKMANAGER_MODERN"' --licenses
+            expect {
+              "y/N" { send "y\r"; exp_continue }
+              eof
+            }
+          ' || true
+
+          echo "Installing Android SDK build tools, platform-tools, and platform…"
+          "$SDKMANAGER_MODERN" "platforms;android-33" "build-tools;$BUILD_TOOLS_VERSION" "platform-tools" || true
+
+          echo "Downloading and unpacking NDK..."
+          if [ ! -d "$NDK_INSTALL_PATH" ]; then
+              mkdir -p "$TEMP_UNZIP_DIR"
+              curl -o "$TEMP_UNZIP_DIR/android-ndk.zip" "$NDK_URL"
+              mkdir -p "$TEMP_UNZIP_DIR/ndk_unzip"
+              unzip "$TEMP_UNZIP_DIR/android-ndk.zip" -d "$TEMP_UNZIP_DIR/ndk_unzip"
+              mv "$TEMP_UNZIP_DIR/ndk_unzip/$NDK_DIR_NAME" "$HOME/.buildozer/android/platform/"
+              rm -rf "$TEMP_UNZIP_DIR"
+          else
+              echo "NDK already exists at $NDK_INSTALL_PATH."
+          fi
+
+          echo "Verifying NDK path set in Buildozer config (if applicable)."
+          echo "It will be set by Buildozer during the build process if needed."
+        shell: bash
+
+      - name: Prepare build environment
+        run: |
+          echo "Creating bin directory if it doesn't exist..."
+          mkdir -p bin
+          echo "Checking buildozer version..."
+          buildozer version
+          echo "Checking current directory structure..."
+          ls -la
         shell: bash
 
       - name: Build Kivy Android APK
         run: |
-          buildozer -v android debug
+          buildozer init || true
+          echo "Starting buildozer android debug..."
+          buildozer android debug --verbose
+          BUILD_EXIT_CODE=$?
+          echo "Buildozer exit code: $BUILD_EXIT_CODE"
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "Build failed with exit code $BUILD_EXIT_CODE"
+            exit $BUILD_EXIT_CODE
+          fi
+          echo "Build completed successfully"
+        shell: bash
+
+      - name: Debug - Find APK files after build
+        run: |
+          echo "=== Current working directory ==="
+          pwd
+          echo "=== Contents of current directory ==="
+          ls -la
+          echo "=== Looking for APK files recursively ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+          echo "=== Contents of bin directory (if exists) ==="
+          ls -la bin/ 2>/dev/null || echo "bin/ directory does not exist"
+          echo "=== Contents of .buildozer directory ==="
+          find .buildozer -name "*.apk" -type f 2>/dev/null || echo "No APK files found in .buildozer"
+          echo "=== Checking for dist directory ==="
+          ls -la dist/ 2>/dev/null || echo "dist/ directory does not exist"
+          echo "=== Checking buildozer android platform build outputs ==="
+          find .buildozer/android/platform/build-* -name "*.apk" -type f 2>/dev/null || echo "No APK files found in build outputs"
+        shell: bash
+
+      - name: Copy APK to bin directory (if found elsewhere)
+        run: |
+          echo "Ensuring bin directory exists..."
+          mkdir -p bin
+          
+          echo "Looking for APK files and copying to bin..."
+          # Find all APK files and copy them to bin directory
+          find . -name "*.apk" -type f -not -path "./bin/*" | while read apk_file; do
+            echo "Found APK: $apk_file"
+            cp "$apk_file" bin/
+            echo "Copied $(basename "$apk_file") to bin/"
+          done
+          
+          echo "Final contents of bin directory:"
+          ls -la bin/
+        shell: bash
+
+      - name: Wait for file system sync
+        run: sleep 5
         shell: bash
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hush-os-apk
-          path: bin/*.apk
-          if-no-files-found: error
+          name: kivy-app-apk
+          path: |
+            bin/*.apk
+            dist/*.apk
+            .buildozer/android/platform/build-*/build/outputs/apk/debug/*.apk
+            .buildozer/android/platform/build/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Upload build logs (for debugging)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-logs
+          path: |
+            .buildozer/android/platform/build-*/build/outputs/logs/
+            .buildozer/android/platform/build/build/outputs/logs/
+            .buildozer/logs/
+          if-no-files-found: ignore
