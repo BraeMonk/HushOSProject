@@ -85,48 +85,48 @@
         screen_name: 'hush'
         Widget:
         Label:
-            text: "Version 1.0"
-            font_size: '12sp'
-            size_hint_y: None
-            height: dp(24)
-            color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+        text: "Version 1.0"
+        font_size: '12sp'
+        size_hint_y: None
+        height: dp(24)
+        color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
 
     main_panel:
         BoxLayout:
         orientation: 'vertical'
         Label:
-            id: affirmation_banner
-            size_hint_y: None
-            height: 0
-            text: ""
-            canvas.before:
-            Color:
-            rgba: app.theme.COLORS['accent'] if app else (.8,.8,.8,1)
-            Rectangle:
-            pos: self.pos
-            size: self.size
-            color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
-            text_size: self.width - dp(20), None
-            halign: 'center'
-            valign: 'middle'
-            ScreenManager:
-                id: sm
-                SplashScreen:
-                    name: 'splash'
-                JerryScreen:
-                    name: 'jerry'
-                CheckinScreen:
-                    name: 'checkin'
-                CBTScreen:
-                    name: 'cbt'
-                DBTScreen:
-                    name: 'dbt'
-                EntriesScreen:
-                    name: 'entries'
-                HistoryScreen:
-                    name: 'history'
-                HushScreen:
-                    name: 'hush'
+        id: affirmation_banner
+        size_hint_y: None
+        height: 0
+        text: ""
+        canvas.before:
+        Color:
+        rgba: app.theme.COLORS['accent'] if app else (.8,.8,.8,1)
+        Rectangle:
+        pos: self.pos
+        size: self.size
+        color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+        text_size: self.width - dp(20), None
+        halign: 'center'
+        valign: 'middle'
+        ScreenManager:
+        id: sm
+        SplashScreen:
+            name: 'splash'
+        JerryScreen:
+            name: 'jerry'
+        CheckinScreen:
+            name: 'checkin'
+        CBTScreen:
+            name: 'cbt'
+        DBTScreen:
+            name: 'dbt'
+        EntriesScreen:
+            name: 'entries'
+        HistoryScreen:
+            name: 'history'
+        HushScreen:
+            name: 'hush'
 
 # --- Screen Layout Definitions ---
 
