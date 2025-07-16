@@ -163,40 +163,98 @@ class JerryCompanion:
     def level_up(self):
         self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
+# --- AI & Media Dependencies ---
+try:
+    from google_ai_client import GoogleAIClient
+    GOOGLE_AI_AVAILABLE = True
+except ImportError:
+    GOOGLE_AI_AVAILABLE = False
+    print("Warning: Google AI client not found. Jerry will have basic responses.")
+
 class JerryAI:
-    def __init__(self, api_key=None):
+    def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
+        """
+        Initializes the JerryAI component.
+
+        Args:
+            jerry: An instance of the JerryCompanion class.
+            app: The main application instance (HushOSApp).
+            conversation_log_path (str): Filepath for storing conversation logs.
+            jerry_memory_path (str): Filepath for storing AI memory.
+            api_key (str, optional): The API key for the Google AI service. Defaults to None.
+        """
+        self.jerry = jerry
+        self.app = app
+        self.conversation_log = ConversationLog(conversation_log_path)
+        self.memory = JerryMemory(jerry_memory_path)
         self.api_key = api_key
         self.client = None
-        
-        if GOOGLE_AI_AVAILABLE and api_key:
+        self.is_thinking = False
+        self.chat_history = []  # To store the current session's conversation
+
+        if GOOGLE_AI_AVAILABLE and self.api_key:
             try:
-                self.client = GoogleAIClient(api_key)
-                print("Jerry AI initialized with Google AI support")
+                self.client = GoogleAIClient(api_key=self.api_key)
+                print("Jerry AI initialized with Google AI support.")
             except Exception as e:
                 print(f"Failed to initialize Google AI client: {e}")
                 self.client = None
         else:
-            print("Jerry AI initialized in basic mode")
-    
-    def get_response(self, user_input):
-        """Get AI response from user input"""
-        if self.client:
-            try:
-                # Use the Google AI client
-                response = self.client.generate_content(
-                    model_name="gemini-1.5-flash",
-                    prompt=f"You are Jerry, a helpful AI assistant. Respond to: {user_input}",
-                    max_tokens=1000
-                )
-                return response
-            except Exception as e:
-                print(f"Google AI error: {e}")
-                return self.get_fallback_response(user_input)
-        else:
-            return self.get_fallback_response(user_input)
-    
+            if not GOOGLE_AI_AVAILABLE:
+                print("Jerry AI initialized in basic mode (google_ai_client not found).")
+            else:
+                print("Jerry AI initialized in basic mode (no API key provided).")
+
+    def get_response(self, user_input, callback):
+        """
+        Gets a response for the user's input, running the AI call in a separate thread
+        to avoid blocking the UI.
+
+        Args:
+            user_input (str): The text input from the user.
+            callback (function): The function to call with the AI's response.
+        """
+        self.is_thinking = True
+        self.chat_history.append({"role": "user", "parts": [user_input]})
+
+        def get_response_thread():
+            if self.client:
+                try:
+                    # The prompt can be more sophisticated, including history or context
+                    full_prompt = f"You are Jerry, a friendly and supportive AI companion. A user says: '{user_input}'. Respond in a gentle, caring, and brief manner."
+                    
+                    response = self.client.generate_content(
+                        model="gemini-1.5-flash",
+                        prompt=full_prompt
+                    )
+                    
+                    # Assuming the response object has a 'text' attribute
+                    ai_response = response.text.strip()
+                    
+                except Exception as e:
+                    print(f"Google AI error: {e}")
+                    ai_response = self.get_fallback_response(user_input)
+            else:
+                ai_response = self.get_fallback_response(user_input)
+
+            self.chat_history.append({"role": "model", "parts": [ai_response]})
+            # Schedule the callback on the main Kivy thread
+            Clock.schedule_once(lambda dt: callback(ai_response))
+            self.is_thinking = False
+
+        # Run the AI call in a separate thread
+        threading.Thread(target=get_response_thread).start()
+
     def get_fallback_response(self, user_input):
-        """Basic responses when Google AI is not available"""
+        """
+        Provides basic, keyword-based responses when the Google AI service is not available.
+
+        Args:
+            user_input (str): The user's input, converted to lowercase.
+
+        Returns:
+            str: A predefined fallback response.
+        """
         user_input = user_input.lower()
         
         # Simple keyword-based responses
@@ -205,7 +263,7 @@ class JerryAI:
         elif "how are you" in user_input:
             return "I'm doing well, thank you for asking! How can I help you today?"
         elif "what can you do" in user_input:
-            return "I can help answer questions and have conversations. I'm in basic mode, so my responses are limited."
+            return "I can help answer questions and have conversations. In basic mode, my responses are limited."
         elif "weather" in user_input:
             return "I can't check the weather right now, but I hope it's nice where you are!"
         elif "time" in user_input:
@@ -219,6 +277,15 @@ class JerryAI:
         else:
             return "I'm running in basic mode, so my responses are limited. But I'm here to help however I can!"
 
+    def end_session(self):
+        """
+        Ends the current chat session and saves the conversation to the log.
+        """
+        if self.chat_history:
+            print("Session ended. Saving conversation to log.")
+            self.conversation_log.add_session(self.chat_history)
+            self.chat_history = [] # Reset for the next session
+            
 # --- KIVY WIDGETS AND SCREENS ---
 class RootWidget(NavigationDrawer):
     pass
