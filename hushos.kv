@@ -5,7 +5,6 @@
 #:import StringProperty kivy.properties.StringProperty
 
 # --- Reusable Component & Base Class Definitions ---
-# By defining templates here, we avoid repeating code in every screen.
 
 <NavDrawerButton@Button>:
     screen_name: ''
@@ -20,7 +19,6 @@
     color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
 
 <BaseScreen@Screen>:
-    # All screens that use this template will automatically get this background.
     canvas.before:
         Color:
             rgba: app.theme.COLORS['background'] if app else (.9,.9,.9,1)
@@ -29,29 +27,27 @@
             size: self.size
 
 <TitleLabel@Label>:
-    # A standard title label for our screens.
     font_size: '24sp'
     size_hint_y: None
-    height: self.texture_size[1] # Automatically adjust height to text
+    height: self.texture_size[1]
     color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
 
 <BodyScrollView@ScrollView>:
-    # A standard scrolling view for logs or long text.
     Label:
         id: body_text
         markup: True
         size_hint_y: None
         height: self.texture_size[1]
-        text_size: self.width - dp(20), None # Add padding
+        text_size: self.width - dp(20), None
         color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
 
 # --- Root Widget Definition ---
+
 <RootWidget>:
     id: nav_drawer
     side_panel_width: min(dp(280), Window.width * 0.7)
     anim_type: 'slide_above_anim'
 
-    # --- 1. The Side Panel (Navigation Drawer Content) ---
     side_panel:
         BoxLayout:
             orientation: 'vertical'
@@ -63,11 +59,9 @@
                 Rectangle:
                     pos: self.pos
                     size: self.size
-
             TitleLabel:
                 text: "HushOS Tools"
-                font_size: '20sp' # Override base font size
-
+                font_size: '20sp'
             NavDrawerButton:
                 text: "Jerry"
                 screen_name: 'jerry'
@@ -89,8 +83,7 @@
             NavDrawerButton:
                 text: "Hush"
                 screen_name: 'hush'
-
-            Widget: # Spacer
+            Widget:
             Label:
                 text: "Version 1.0"
                 font_size: '12sp'
@@ -98,11 +91,9 @@
                 height: dp(24)
                 color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
 
-    # --- 2. The Main Panel (Where All Screens Live) ---
     main_panel:
         BoxLayout:
             orientation: 'vertical'
-
             Label:
                 id: affirmation_banner
                 size_hint_y: None
@@ -118,7 +109,6 @@
                 text_size: self.width - dp(20), None
                 halign: 'center'
                 valign: 'middle'
-
             ScreenManager:
                 id: sm
                 SplashScreen:
@@ -139,9 +129,8 @@
                     name: 'hush'
 
 # --- Screen Layout Definitions ---
-# Note how much cleaner these are now.
 
-<SplashScreen>: # Doesn't use BaseScreen, has a unique background
+<SplashScreen>:
     canvas.before:
         Color:
             rgba: app.theme.COLORS['navbar'] if app else (.2,.2,.6,1)
@@ -154,7 +143,7 @@
         bold: True
         color: app.theme.COLORS['text_light'] if app else (1,1,1,1)
 
-<JerryScreen@BaseScreen>: # Inherits the standard background
+<JerryScreen@BaseScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(10)
@@ -223,7 +212,7 @@
                 width: dp(80)
                 on_press: root.send_message()
 
-<CheckinScreen>: # Has a dynamic background, so it doesn't use BaseScreen
+<CheckinScreen>:
     canvas.before:
         Color:
             rgba: root.bg_color if root.bg_color else (.9,.9,.9,1)
@@ -248,30 +237,25 @@
             height: dp(150)
             padding: [dp(20), 0, dp(20), 0]
 
-# --- Corrected Screen Layouts ---
-
-<EntriesScreen@BaseScreen>: # Inherits background
+<EntriesScreen@BaseScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(10)
         TitleLabel:
             text: 'Your Entries'
         BodyScrollView:
-            # The id now belongs to the ScrollView itself.
-            # The Label with id: body_text is created automatically.
             id: entries_log
 
-<HistoryScreen@BaseScreen>: # Inherits background
+<HistoryScreen@BaseScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(10)
         TitleLabel:
             text: 'Conversation History'
         BodyScrollView:
-            # Same correction here.
             id: history_log
 
-<HushScreen@BaseScreen>: # Inherits background
+<HushScreen@BaseScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
@@ -292,7 +276,7 @@
             size_hint_y: None
             height: dp(50)
 
-<TherapyScreenBase>: # Base class for CBT/DBT, defines its own background
+<TherapyScreenBase>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
@@ -305,7 +289,7 @@
                 size: self.size
         TitleLabel:
             id: title_label
-            font_size: '22sp' # Override base font size
+            font_size: '22sp'
             halign: 'center'
         ScrollView:
             id: content_scroll
@@ -332,5 +316,6 @@
                 text: 'Next'
                 on_press: root.next_step()
 
-<CBTScreen@TherapyScreenBase>: # Inherits everything from TherapyScreenBase
-<DBTScreen@TherapyScreenBase>: # Inherits everything from TherapyScreenBase
+<CBTScreen@TherapyScreenBase>:
+
+<DBTScreen@TherapyScreenBase>:
