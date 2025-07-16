@@ -33,11 +33,11 @@ from navigationdrawer import NavigationDrawer
 
 # --- AI & Media Dependencies ---
 try:
-    import google.generativeai as genai
-    print("Google AI library found. Jerry's advanced AI is available.")
+    from google_ai_client import GoogleAIClient
+    GOOGLE_AI_AVAILABLE = True
 except ImportError:
-    genai = None
-    print("Warning: Google AI library not found. Run 'pip install google-generativeai'. Jerry will have basic responses.")
+    GOOGLE_AI_AVAILABLE = False
+    print("Warning: Google AI client not found. Jerry will have basic responses.")
 
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
@@ -164,69 +164,60 @@ class JerryCompanion:
         self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
 class JerryAI:
-    def __init__(self, companion, app_controller, conversation_log_path, jerry_memory_path):
-        self.jerry = companion
-        self.app = app_controller
-        self.model = None
-        self.chat_history = []
-        self.is_thinking = False
-        self.conversation_log = ConversationLog(conversation_log_path)
-        self.memory = JerryMemory(jerry_memory_path)
+    def __init__(self, api_key=None):
+        self.api_key = api_key
+        self.client = None
         
-        API_KEY = None
-        try:
-            with open("api_key.txt", "r") as f:
-                API_KEY = f.read().strip()
-        except FileNotFoundError:
-            print("ERROR: api_key.txt not found. AI will not be configured.")
-
-        if genai and API_KEY:
+        if GOOGLE_AI_AVAILABLE and api_key:
             try:
-                genai.configure(api_key=API_KEY)
-                self.model = genai.GenerativeModel('gemini-1.5-flash')
+                self.client = GoogleAIClient(api_key)
+                print("Jerry AI initialized with Google AI support")
             except Exception as e:
-                print(f"AI configuration failed: {e}")
-                
-    def get_system_prompt(self):
-        base_prompt = ("You are Jerry, a gentle, compassionate, and wise companion...")
-        memory_data = self.memory.load_memory()
-        if memory_data:
-            memory_str = json.dumps(memory_data)
-            return f"{base_prompt} Here is a summary of what you remember about the user: {memory_str}"
-        return base_prompt
-
-    def _update_memory(self):
-        if not self.model or not self.chat_history: return
-        try:
-            pass
-        except Exception as e: print(f"Failed to update Jerry's memory: {e}")
-
-    def end_session(self):
-        self.conversation_log.add_session(self.chat_history); self._update_memory(); self.chat_history = []
+                print(f"Failed to initialize Google AI client: {e}")
+                self.client = None
+        else:
+            print("Jerry AI initialized in basic mode")
+    
+    def get_response(self, user_input):
+        """Get AI response from user input"""
+        if self.client:
+            try:
+                # Use the Google AI client
+                response = self.client.generate_content(
+                    model_name="gemini-1.5-flash",
+                    prompt=f"You are Jerry, a helpful AI assistant. Respond to: {user_input}",
+                    max_tokens=1000
+                )
+                return response
+            except Exception as e:
+                print(f"Google AI error: {e}")
+                return self.get_fallback_response(user_input)
+        else:
+            return self.get_fallback_response(user_input)
+    
+    def get_fallback_response(self, user_input):
+        """Basic responses when Google AI is not available"""
+        user_input = user_input.lower()
         
-    def get_response(self, user_input, callback):
-        self.is_thinking = True
-        def _get_response_thread():
-            user_input_lower = user_input.lower().strip()
-            action_map = {"check-in":"checkin", "check in":"checkin", "cbt":"cbt", "untangle":"cbt", "dbt":"dbt", "skill":"dbt", "hush":"hush", "peace":"hush", "entries":"entries", "log":"entries", "history":"history", "memory":"history"}
-            for keyword, action in action_map.items():
-                if keyword in user_input_lower:
-                    Clock.schedule_once(lambda dt: callback(f"ACTION:{action}")); self.is_thinking = False; return
-            if self.model:
-                try:
-                    chat = self.model.start_chat(history=[{'role':'user', 'parts':[self.get_system_prompt()]}]+self.chat_history)
-                    response = chat.send_message(user_input)
-                    jerry_response = response.text.strip()
-                    self.chat_history.append({'role': 'user', 'parts': [user_input]})
-                    self.chat_history.append({'role': 'model', 'parts': [jerry_response]})
-                    Clock.schedule_once(lambda dt: callback(jerry_response))
-                except Exception as e:
-                    Clock.schedule_once(lambda dt: callback("I'm having a little trouble thinking right now."))
-                    print(f"AI Error: {e}")
-            else:
-                Clock.schedule_once(lambda dt: callback(random.choice(["Tell me more.", "I hear you.", "That's valid."])))
-            self.is_thinking = False
-        threading.Thread(target=_get_response_thread, daemon=True).start()
+        # Simple keyword-based responses
+        if "hello" in user_input or "hi" in user_input:
+            return "Hello! I'm Jerry, your AI assistant. I'm running in basic mode right now."
+        elif "how are you" in user_input:
+            return "I'm doing well, thank you for asking! How can I help you today?"
+        elif "what can you do" in user_input:
+            return "I can help answer questions and have conversations. I'm in basic mode, so my responses are limited."
+        elif "weather" in user_input:
+            return "I can't check the weather right now, but I hope it's nice where you are!"
+        elif "time" in user_input:
+            return "I don't have access to the current time in basic mode."
+        elif "help" in user_input:
+            return "I'm here to help! Ask me anything and I'll do my best to assist you."
+        elif "thank you" in user_input or "thanks" in user_input:
+            return "You're welcome! Is there anything else I can help you with?"
+        elif "goodbye" in user_input or "bye" in user_input:
+            return "Goodbye! Have a great day!"
+        else:
+            return "I'm running in basic mode, so my responses are limited. But I'm here to help however I can!"
 
 # --- KIVY WIDGETS AND SCREENS ---
 class RootWidget(NavigationDrawer):
