@@ -45,7 +45,8 @@ jobs:
             git zip unzip openjdk-17-jdk autoconf automake libtool \
             pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev \
             liblzma-dev libffi-dev libssl-dev build-essential patch \
-            python3-dev perl curl
+            python3-dev perl curl \
+            xvfb libmtdev-dev
           
           python3 -m pip install --upgrade setuptools pip wheel
           pip uninstall -y buildozer cython python-for-android || true
@@ -65,7 +66,7 @@ jobs:
       
       # --- NEW STEP TO CHECK KV SYNTAX ---
       - name: Check Kivy file syntax
-        run: python check_kv.py
+        run: xvfb-run python check_kv.py
         shell: bash
       # --- END OF NEW STEP ---
 
