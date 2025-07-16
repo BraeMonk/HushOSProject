@@ -241,6 +241,8 @@
             height: dp(150)
             padding: [dp(20), 0, dp(20), 0]
 
+# --- Corrected Screen Layouts ---
+
 <EntriesScreen@BaseScreen>: # Inherits background
     BoxLayout:
         orientation: 'vertical'
@@ -248,10 +250,9 @@
         TitleLabel:
             text: 'Your Entries'
         BodyScrollView:
-            Label:
-                id: entries_log
-                # Get the rest of the properties from BodyScrollView's Label
-                text: ""
+            # The id now belongs to the ScrollView itself.
+            # The Label with id: body_text is created automatically.
+            id: entries_log
 
 <HistoryScreen@BaseScreen>: # Inherits background
     BoxLayout:
@@ -260,9 +261,8 @@
         TitleLabel:
             text: 'Conversation History'
         BodyScrollView:
-            Label:
-                id: history_log
-                text: ""
+            # Same correction here.
+            id: history_log
 
 <HushScreen@BaseScreen>: # Inherits background
     BoxLayout:
