@@ -50,46 +50,46 @@
 
     side_panel:
         BoxLayout:
-        orientation: 'vertical'
-        padding: dp(8)
-        spacing: dp(8)
-        canvas.before:
-            Color:
-                rgba: app.theme.COLORS['background'] if app else (.9, .9, .9, 1)
-            Rectangle:
-                pos: self.pos
-                size: self.size
-        TitleLabel:
-            text: "HushOS Tools"
-            font_size: '20sp'
-        NavDrawerButton:
-            text: "Jerry"
-            screen_name: 'jerry'
-        NavDrawerButton:
-            text: "Check-in"
-            screen_name: 'checkin'
-        NavDrawerButton:
-            text: "Conversation History"
-            screen_name: 'history'
-        NavDrawerButton:
-            text: "CBT Worksheet"
-            screen_name: 'cbt'
-        NavDrawerButton:
-            text: "DBT Skills Log"
-            screen_name: 'dbt'
-        NavDrawerButton:
-            text: "All Entries"
-            screen_name: 'entries'
-        NavDrawerButton:
-            text: "Hush"
-            screen_name: 'hush'
-        Widget:
-        Label:
-            text: "Version 1.0"
-            font_size: '12sp'
-            size_hint_y: None
-            height: dp(24)
-            color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+            orientation: 'vertical'
+            padding: dp(8)
+            spacing: dp(8)
+            canvas.before:
+                Color:
+                    rgba: app.theme.COLORS['background'] if app else (.9, .9, .9, 1)
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            TitleLabel:
+                text: "HushOS Tools"
+                font_size: '20sp'
+            NavDrawerButton:
+                text: "Jerry"
+                screen_name: 'jerry'
+            NavDrawerButton:
+                text: "Check-in"
+                screen_name: 'checkin'
+            NavDrawerButton:
+                text: "Conversation History"
+                screen_name: 'history'
+            NavDrawerButton:
+                text: "CBT Worksheet"
+                screen_name: 'cbt'
+            NavDrawerButton:
+                text: "DBT Skills Log"
+                screen_name: 'dbt'
+            NavDrawerButton:
+                text: "All Entries"
+                screen_name: 'entries'
+            NavDrawerButton:
+                text: "Hush"
+                screen_name: 'hush'
+            Widget:
+            Label:
+                text: "Version 1.0"
+                font_size: '12sp'
+                size_hint_y: None
+                height: dp(24)
+                color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
 
     main_panel:
         BoxLayout:
