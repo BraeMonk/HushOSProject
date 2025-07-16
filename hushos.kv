@@ -43,90 +43,113 @@
 
 # --- Root Widget Definition ---
 
-<RootWidget@NavigationLayout>:
-    id: nav_drawer
-    side_panel_width: min(dp(280), Window.width * 0.7)
-    anim_type: 'slide_above_anim'
+<RootWidget@FloatLayout>:
+    drawer_open: False
 
-    side_panel:
+    # Main Content Area
+    BoxLayout:
+        id: main_area
+        orientation: 'vertical'
+        pos: 0, 0
+        size_hint: 1, 1
+
         BoxLayout:
-            orientation: 'vertical'
-            padding: dp(8)
-            spacing: dp(8)
+            size_hint_y: None
+            height: dp(50)
+            padding: dp(10)
+            spacing: dp(10)
+            Button:
+                text: "☰"
+                size_hint_x: None
+                width: dp(50)
+                on_press: root.toggle_drawer()
+            Label:
+                text: "HushOS Tools"
+                font_size: '20sp'
+
+        Label:
+            id: affirmation_banner
+            size_hint_y: None
+            height: 0
+            text: ""
             canvas.before:
                 Color:
-                    rgba: app.theme.COLORS['background'] if app else (0.9, 0.9, 0.9, 1)
+                    rgba: app.theme.COLORS['accent'] if app else (0.8, 0.8, 0.8, 1)
                 Rectangle:
                     pos: self.pos
                     size: self.size
-            TitleLabel:
-                text: "HushOS Tools"
-                font_size: '20sp'
-            NavDrawerButton:
-                text: "Jerry"
-                screen_name: 'jerry'
-            NavDrawerButton:
-                text: "Check-in"
-                screen_name: 'checkin'
-            NavDrawerButton:
-                text: "Conversation History"
-                screen_name: 'history'
-            NavDrawerButton:
-                text: "CBT Worksheet"
-                screen_name: 'cbt'
-            NavDrawerButton:
-                text: "DBT Skills Log"
-                screen_name: 'dbt'
-            NavDrawerButton:
-                text: "All Entries"
-                screen_name: 'entries'
-            NavDrawerButton:
-                text: "Hush"
-                screen_name: 'hush'
-            Widget:
-            Label:
-                text: "Version 1.0"
-                font_size: '12sp'
-                size_hint_y: None
-                height: dp(24)
-                color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
+            color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
+            text_size: self.width - dp(20), None
+            halign: 'center'
+            valign: 'middle'
 
-    main_panel:
-        BoxLayout:
-            orientation: 'vertical'
-            Label:
-                id: affirmation_banner
-                size_hint_y: None
-                height: 0
-                text: ""
-                canvas.before:
-                    Color:
-                        rgba: app.theme.COLORS['accent'] if app else (0.8, 0.8, 0.8, 1)
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
-                color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
-                text_size: self.width - dp(20), None
-                halign: 'center'
-                valign: 'middle'
-            ScreenManager:
-                id: sm
-                SplashScreen:
-                    name: 'splash'
-                JerryScreen:
-                    name: 'jerry'
-                CheckinScreen:
-                    name: 'checkin'
-                CBTScreen:
-                    name: 'cbt'
-                DBTScreen:
-                    name: 'dbt'
-                EntriesScreen:
-                    name: 'entries'
-                HistoryScreen:
-                    name: 'history'
-                HushScreen:
-                    name: 'hush'
+        ScreenManager:
+            id: sm
+            SplashScreen:
+                name: 'splash'
+            JerryScreen:
+                name: 'jerry'
+            CheckinScreen:
+                name: 'checkin'
+            CBTScreen:
+                name: 'cbt'
+            DBTScreen:
+                name: 'dbt'
+            EntriesScreen:
+                name: 'entries'
+            HistoryScreen:
+                name: 'history'
+            HushScreen:
+                name: 'hush'
+
+    # Sliding Drawer
+    BoxLayout:
+        id: drawer
+        orientation: 'vertical'
+        size_hint_x: None
+        width: dp(280)
+        pos_hint: {'x': -1, 'y': 0}
+        height: self.parent.height
+        canvas.before:
+            Color:
+                rgba: app.theme.COLORS['background'] if app else (0.9, 0.9, 0.9, 1)
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        TitleLabel:
+            text: "Menu"
+            font_size: '20sp'
+
+        NavDrawerButton:
+            text: "Jerry"
+            screen_name: 'jerry'
+        NavDrawerButton:
+            text: "Check-in"
+            screen_name: 'checkin'
+        NavDrawerButton:
+            text: "Conversation History"
+            screen_name: 'history'
+        NavDrawerButton:
+            text: "CBT Worksheet"
+            screen_name: 'cbt'
+        NavDrawerButton:
+            text: "DBT Skills Log"
+            screen_name: 'dbt'
+        NavDrawerButton:
+            text: "All Entries"
+            screen_name: 'entries'
+        NavDrawerButton:
+            text: "Hush"
+            screen_name: 'hush'
+        Widget:
+        Label:
+            text: "Version 1.0"
+            font_size: '12sp'
+            size_hint_y: None
+            height: dp(24)
+            color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
+
 
 # --- Screen Layout Definitions ---
 
