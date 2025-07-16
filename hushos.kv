@@ -10,18 +10,18 @@
     screen_name: ''
     size_hint_y: None
     height: dp(56)
-    background_color: (0, 0, 0, 0)
+    background_color: 0, 0, 0, 0
     background_normal: ''
     on_press: app.change_screen(self.screen_name)
     text_size: self.width - dp(32), None
     halign: 'left'
     valign: 'middle'
-    color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+    color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
 
 <BaseScreen@Screen>:
     canvas.before:
         Color:
-            rgba: app.theme.COLORS['background'] if app else (.9,.9,.9,1)
+            rgba: app.theme.COLORS['background'] if app else (0.9, 0.9, 0.9, 1)
         Rectangle:
             pos: self.pos
             size: self.size
@@ -30,7 +30,7 @@
     font_size: '24sp'
     size_hint_y: None
     height: self.texture_size[1]
-    color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+    color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
 
 <BodyScrollView@ScrollView>:
     Label:
@@ -39,7 +39,7 @@
         size_hint_y: None
         height: self.texture_size[1]
         text_size: self.width - dp(20), None
-        color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+        color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
 
 # --- Root Widget Definition ---
 
@@ -55,7 +55,7 @@
             spacing: dp(8)
             canvas.before:
                 Color:
-                    rgba: app.theme.COLORS['background'] if app else (.9, .9, .9, 1)
+                    rgba: app.theme.COLORS['background'] if app else (0.9, 0.9, 0.9, 1)
                 Rectangle:
                     pos: self.pos
                     size: self.size
@@ -89,7 +89,7 @@
                 font_size: '12sp'
                 size_hint_y: None
                 height: dp(24)
-                color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+                color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
 
     main_panel:
         BoxLayout:
@@ -101,11 +101,11 @@
                 text: ""
                 canvas.before:
                     Color:
-                        rgba: app.theme.COLORS['accent'] if app else (.8,.8,.8,1)
+                        rgba: app.theme.COLORS['accent'] if app else (0.8, 0.8, 0.8, 1)
                     Rectangle:
                         pos: self.pos
                         size: self.size
-                color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+                color: app.theme.COLORS['text_dark'] if app else (0, 0, 0, 1)
                 text_size: self.width - dp(20), None
                 halign: 'center'
                 valign: 'middle'
@@ -133,7 +133,7 @@
 <SplashScreen>:
     canvas.before:
         Color:
-            rgba: app.theme.COLORS['navbar'] if app else (.2,.2,.6,1)
+            rgba: app.theme.COLORS['navbar'] if app else (0.2, 0.2, 0.6, 1)
         Rectangle:
             pos: self.pos
             size: self.size
@@ -141,7 +141,7 @@
         text: "Hush OS"
         font_size: '60sp'
         bold: True
-        color: app.theme.COLORS['text_light'] if app else (1,1,1,1)
+        color: app.theme.COLORS['text_light'] if app else (1, 1, 1, 1)
 
 <JerryScreen@BaseScreen>:
     BoxLayout:
@@ -186,7 +186,7 @@
         ScrollView:
             canvas.before:
                 Color:
-                    rgba: app.theme.COLORS['chat_bg'] if app else (1,1,1,1)
+                    rgba: app.theme.COLORS['chat_bg'] if app else (1, 1, 1, 1)
                 Rectangle:
                     pos: self.pos
                     size: self.size
@@ -215,7 +215,7 @@
 <CheckinScreen>:
     canvas.before:
         Color:
-            rgba: root.bg_color if root.bg_color else (.9,.9,.9,1)
+            rgba: root.bg_color if root.bg_color else (0.9, 0.9, 0.9, 1)
         Rectangle:
             pos: self.pos
             size: self.size
@@ -235,7 +235,7 @@
             spacing: dp(20)
             size_hint_y: None
             height: dp(150)
-            padding: [dp(20), 0, dp(20), 0]
+            padding: dp(20), 0, dp(20), 0
 
 <EntriesScreen@BaseScreen>:
     BoxLayout:
@@ -283,7 +283,7 @@
         spacing: dp(15)
         canvas.before:
             Color:
-                rgba: app.theme.COLORS['background'] if app else (.9,.9,.9,1)
+                rgba: app.theme.COLORS['background'] if app else (0.9, 0.9, 0.9, 1)
             Rectangle:
                 pos: self.pos
                 size: self.size
