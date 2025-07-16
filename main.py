@@ -702,7 +702,7 @@ class HushOSApp(App):
             self.sound.stop()
         
         # Correctly access the screen manager
-        sm = self.root.ids.main_content.ids.sm
+        sm = self.root.ids.sm
         jerry_screen = sm.get_screen('jerry')
         if jerry_screen:
             jerry_screen.ids.animator.stop()
@@ -713,7 +713,7 @@ class HushOSApp(App):
         self.play_music()
         
         # Correctly access the screen manager
-        sm = self.root.ids.main_content.ids.sm
+        sm = self.root.ids.sm
         jerry_screen = sm.get_screen('jerry')
         if jerry_screen and sm.current == 'jerry':
              jerry_screen.ids.animator.start()
@@ -723,8 +723,7 @@ class HushOSApp(App):
         Clock.schedule_once(self.go_to_splash)
 
     def go_to_splash(self, dt):
-        # Correctly access the screen manager
-        self.root.ids.main_content.ids.sm.current = 'splash'
+        self.root.ids.sm.current = 'splash'
 
     def on_stop(self):
         self.ai.end_session()
@@ -742,8 +741,8 @@ class HushOSApp(App):
 
     def change_screen(self, screen_name):
         # Correctly access the screen manager and nav bar
-        sm = self.root.ids.main_content.ids.sm
-        nav_bar = self.root.ids.main_content.ids.nav_bar
+        sm = self.root.ids.sm
+        nav_bar = self.root.ids.nav_bar
         
         for button in nav_bar.children:
             if isinstance(button, ToggleButton):
@@ -757,7 +756,7 @@ class HushOSApp(App):
 
     def update_affirmation_banner(self, screen_name):
         # Correctly access the affirmation banner
-        banner = self.root.ids.main_content.ids.affirmation_banner
+        banner = self.root.ids.affirmation_banner
         if screen_name == 'jerry':
             banner.height = 0
         else:
