@@ -1,3 +1,9 @@
+import os
+
+# --- IMPORTANT: This must be the very first Kivy-related import ---
+# Tell Kivy not to create a window, which is essential for a headless environment.
+os.environ['KIVY_NO_WINDOW'] = '1'
+
 from kivy.lang import Builder
 import sys
 
@@ -7,7 +13,7 @@ try:
     # Attempt to load the .kv file
     Builder.load_file('hushos.kv')
     # If it succeeds, print a success message
-    print("✅ SUCCESS: hushos.kv syntax is OK!")
+    print("\n✅ SUCCESS: hushos.kv syntax is OK!")
     sys.exit(0) # Exit with a success code
 
 except Exception as e:
