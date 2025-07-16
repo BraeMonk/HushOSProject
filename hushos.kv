@@ -75,6 +75,68 @@
                 height: dp(24)
                 color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
 
+# --- Root Widget: The Application's Foundation ---
+<RootWidget>:
+    id: nav_drawer
+    side_panel_width: min(dp(280), Window.width * 0.7)
+    anim_type: 'slide_above_anim'
+
+<RootWidget>:
+    id: nav_drawer
+    side_panel_width: min(dp(280), Window.width * 0.7)
+    anim_type: 'slide_above_anim'
+
+    # --- 1. The Side Panel (Navigation Drawer Content) ---
+    side_panel:
+        BoxLayout:
+            orientation: 'vertical'
+            padding: dp(8)
+            spacing: dp(8)
+            canvas.before:
+                Color:
+                    rgba: app.theme.COLORS['background'] if app else (.9, .9, .9, 1)
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            Label:
+                text: "HushOS Tools"
+                font_size: '20sp'
+                size_hint_y: None
+                height: dp(48)
+                color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+
+            NavDrawerButton:
+                text: "Jerry"
+                screen_name: 'jerry'
+            NavDrawerButton:
+                text: "Check-in"
+                screen_name: 'checkin'
+            NavDrawerButton:
+                text: "Conversation History"
+                screen_name: 'history'
+            NavDrawerButton:
+                text: "CBT Worksheet"
+                screen_name: 'cbt'
+            NavDrawerButton:
+                text: "DBT Skills Log"
+                screen_name: 'dbt'
+            NavDrawerButton:
+                text: "All Entries"
+                screen_name: 'entries'
+            NavDrawerButton:
+                text: "Hush"
+                screen_name: 'hush'
+
+            Widget: # Spacer
+
+            Label:
+                text: "Version 1.0"
+                font_size: '12sp'
+                size_hint_y: None
+                height: dp(24)
+                color: app.theme.COLORS['text_dark'] if app else (0,0,0,1)
+
     # --- 2. The Main Panel (Where All Screens Live) ---
     main_panel:
         BoxLayout:
@@ -98,7 +160,6 @@
 
             ScreenManager:
                 id: sm
-                # All screens are defined within this single ScreenManager
                 SplashScreen:
                     name: 'splash'
                 JerryScreen:
