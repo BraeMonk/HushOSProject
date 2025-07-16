@@ -9,7 +9,7 @@ from datetime import datetime
 
 # --- Kivy and App Dependencies ---
 from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition, NoTransition
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -357,12 +357,23 @@ class JerryAnimator(FloatLayout):
                         elif p == 4: Color(*feature_c)
                         Rectangle(pos=(x * pixel_size + offset_x, self.height - (y+1) * pixel_size - offset_y), size=(pixel_size, pixel_size))
 
-# --- SCREEN CLASSES ---
 class SplashScreen(Screen):
     def on_enter(self):
         Clock.schedule_once(self.go_to_jerry, 2)
+
     def go_to_jerry(self, dt):
-        if self.manager: self.manager.current = 'jerry'
+        if self.manager:
+            # Store the original transition
+            original_transition = self.manager.transition
+
+            # Temporarily use NoTransition to prevent the FBO error
+            self.manager.transition = NoTransition()
+
+            # Switch to the 'jerry' screen
+            self.manager.current = 'jerry'
+
+            # Restore the original transition for all future screen changes
+            self.manager.transition = original_transition
 
 class JerryScreen(Screen):
     def on_enter(self):
