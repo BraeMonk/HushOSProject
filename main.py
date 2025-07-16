@@ -773,6 +773,11 @@ class HushOSApp(App):
     
     # ... (rest of your HushOSApp class))
 
+    def safe_update_ui(self):
+    current = self.root.ids.sm.current_screen
+    if hasattr(current, 'update_ui'):
+        current.update_ui()
+
     def on_pause(self):
         print("App is pausing...")
         if self.sound and self.sound.state == 'play':
