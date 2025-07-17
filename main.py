@@ -30,6 +30,7 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
+from kivy.uix.navigationdrawer import NavigationLayout
 
 # --- AI & Media Dependencies ---
 try:
@@ -229,17 +230,9 @@ class JerryAI:
             self.chat_history = []
 
 # --- KIVY WIDGETS AND SCREENS ---
-class RootWidget(FloatLayout):
-    drawer_open = BooleanProperty(False)
-
-    def toggle_drawer(self):
-        drawer = self.ids.drawer
-        if not self.drawer_open:
-            Animation(x=0, d=0.3, t='out_quad').start(drawer)
-            self.drawer_open = True
-        else:
-            Animation(x=-drawer.width, d=0.3, t='out_quad').start(drawer)
-            self.drawer_open = False
+# This replaces your old RootWidget(FloatLayout) class
+class RootWidget(NavigationLayout):
+    pass
 
 class JerryAnimator(FloatLayout):
     anim_frame = NumericProperty(0)
@@ -750,11 +743,14 @@ class HushOSApp(App):
                 self.COLORS = DAILY_THEMES[datetime.now().weekday() % len(DAILY_THEMES)]
         return Theme()
 
-    def change_screen(self, screen_name):
-        sm = self.root.ids.sm
-        if sm.current != screen_name:
-            sm.current = screen_name
-        self.root.toggle_drawer()
+    # In your HushOSApp class, replace the old method with this one
+def change_screen(self, screen_name):
+    sm = self.root.ids.sm
+    if sm.current != screen_name:
+        sm.current = screen_name
+    # This closes the drawer after a selection is made
+    self.root.toggle_nav_drawer()
+
 
     def update_affirmation_banner(self, screen_name):
         banner = self.root.ids.affirmation_banner
