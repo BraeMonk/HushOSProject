@@ -332,21 +332,32 @@ class SplashScreen(Screen):
 
 class JerryScreen(Screen):
     def on_enter(self):
-        Clock.schedule_once(self.start_animation)
+        """
+        Called when the screen is entered. We schedule all UI setup for the
+        next frame to ensure all widgets from the .kv file are loaded.
+        """
+        Clock.schedule_once(self.setup_screen)
+
+    def setup_screen(self, dt):
+        """
+        This method runs on the next frame after on_enter, ensuring the
+        UI is fully loaded and self.ids is populated.
+        """
         self.update_ui()
-        if not self.ids.chat_log.text: # Only add welcome message if chat is empty
+        self.ids.animator.start()
+
+        # The rest of the setup logic also moves here
+        if not self.ids.chat_log.text:
              self.add_message("Jerry", "It's good to see you again.")
         self.ids.user_entry.focus = True
         App.get_running_app().update_affirmation_banner(self.name)
 
-    def start_animation(self, dt):
-        self.ids.animator.start()
-
     def on_leave(self):
         self.ids.animator.stop()
+        # The end_session call was missing, let's add it back
         App.get_running_app().ai.end_session()
-        
-    def update_ui(self):
+
+    def update_ui(self, *args): # Added *args to accept the clock's dt argument if passed
         jerry = App.get_running_app().jerry
         jerry.update_needs()
         self.ids.clarity_bar.value = jerry.needs['clarity']
@@ -354,7 +365,7 @@ class JerryScreen(Screen):
         self.ids.calm_bar.value = jerry.needs['calm']
         self.ids.level_label.text = f"Level {jerry.level} ({jerry.xp}/{jerry.xp_to_next_level} XP)"
         self.ids.xp_bar.value = (jerry.xp / jerry.xp_to_next_level) * 100
-        
+
     def send_message(self):
         app = App.get_running_app()
         if app.ai.is_thinking: return
@@ -366,16 +377,16 @@ class JerryScreen(Screen):
         self.ids.send_button.disabled = True
         self.ids.animator.show_thinking_sprite()
         app.ai.get_response(user_text, self.handle_ai_response)
-        
+
     def handle_ai_response(self, response):
         if response.startswith("ACTION:"):
             App.get_running_app().root.ids.sm.current = response.split(":")[1].strip()
         else:
             self.add_message("Jerry", response, is_typing=True)
-            
+
     def add_message(self, speaker, message, is_typing=False):
         app = App.get_running_app()
-        speaker_color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
+        speaker__color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
         self.ids.chat_log.text += f"[b][color={speaker_color_hex}]{speaker}: [/color][/b]"
         if is_typing and app.ai.client:
             Clock.schedule_once(lambda dt, m=message: self.type_out_message(m))
@@ -383,7 +394,7 @@ class JerryScreen(Screen):
             self.ids.chat_log.text += f"{message}\n\n"
             self.ids.user_entry.disabled = False
             self.ids.send_button.disabled = False
-            
+
     def type_out_message(self, message, index=0):
         if index < len(message):
             self.ids.chat_log.text += message[index]
