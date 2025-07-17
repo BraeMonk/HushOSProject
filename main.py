@@ -767,20 +767,20 @@ def change_screen(self, screen_name):
                 affirmation = random.choice(AFFIRMATIONS)
             banner.text = affirmation
 
-    def play_music(self):
-        if self.sound: self.sound.stop()
-        track_name = PLAYLIST[self.current_track_index]
-        path = os.path.join(ASSETS_PATH, track_name)
-        if os.path.exists(path):
-            self.sound = SoundLoader.load(path)
-            if self.sound:
-                self.sound.volume = 0.3
-                self.sound.play()
-                self.sound.bind(on_stop=self.next_track)
+def play_music(self):
+    if self.sound: self.sound.stop()
+    track_name = PLAYLIST[self.current_track_index]
+    path = os.path.join(ASSETS_PATH, track_name)
+    if os.path.exists(path):
+        self.sound = SoundLoader.load(path)
+        if self.sound:
+            self.sound.volume = 0.3
+            self.sound.play()
+            self.sound.bind(on_stop=self.next_track)
                 
-    def next_track(self, *args):
-        self.current_track_index = (self.current_track_index + 1) % len(PLAYLIST)
-        self.play_music()
+def next_track(self, *args):
+    self.current_track_index = (self.current_track_index + 1) % len(PLAYLIST)
+    self.play_music()
 
 if __name__ == '__main__':
     HushOSApp().run()
