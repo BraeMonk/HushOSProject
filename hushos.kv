@@ -254,39 +254,11 @@
             Button:
                 text: "😡 Angry"
 
-<CBTScreen@BaseScreen>:
-    BoxLayout:
-        orientation: 'vertical'
-        padding: dp(20)
-        Label:
-            text: "CBT Thought Tracker"
-            font_size: '24sp'
-        TextInput:
-            hint_text: "Describe your thought..."
-            multiline: True
-            size_hint_y: None
-            height: dp(150)
-        Button:
-            text: "Save Entry"
-            size_hint_y: None
-            height: dp(50)
+<CBTScreen@TherapyScreenBase>:
+    # Inherits the correct layout, no extra rules needed
 
-<DBTScreen@BaseScreen>:
-    BoxLayout:
-        orientation: 'vertical'
-        padding: dp(20)
-        Label:
-            text: "DBT Skills Practice"
-            font_size: '24sp'
-        TextInput:
-            hint_text: "Which skill will you practice today?"
-            multiline: True
-            size_hint_y: None
-            height: dp(150)
-        Button:
-            text: "Log Skill"
-            size_hint_y: None
-            height: dp(50)
+<DBTScreen@TherapyScreenBase>:
+    # Inherits the correct layout, no extra rules needed
 
 <EntriesScreen@BaseScreen>:
     BoxLayout:
