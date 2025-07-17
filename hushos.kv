@@ -16,7 +16,9 @@
     valign: 'middle'
     color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
 
-<BaseScreen@Screen>:
+# This rule now applies a background to ANY screen that doesn't have one,
+# simplifying the rules below. This is a more robust way to define a base style.
+<Screen>:
     canvas.before:
         Color:
             rgba: get_color_from_hex(app.theme.COLORS['background']) if app else (0.53, 0.81, 0.98, 1)
@@ -75,14 +77,14 @@
         Label:
             id: affirmation_banner
             size_hint_y: None
-            height: 0 # Hidden by default
+            height: 0
             text_size: self.width - dp(20), None
             valign: 'middle'
             halign: 'center'
 
         ScreenManager:
             id: sm
-            current: 'splash' # Start on the splash screen
+            current: 'splash'
             SplashScreen:
                 name: 'splash'
             JerryScreen:
@@ -141,7 +143,7 @@
             text: "Hush"
             screen_name: 'hush'
 
-        Widget: # Spacer
+        Widget:
         Label:
             text: "Version 1.0"
             font_size: '12sp'
@@ -151,25 +153,25 @@
 
 # --- Screen Layout Definitions ---
 
-<SplashScreen@BaseScreen>:
+# These rules now just apply to the existing Python classes
+# without re-declaring them. This is the main fix.
+
+<SplashScreen>:
     Label:
         text: 'HushOS'
         font_size: '48sp'
 
-<JerryScreen@BaseScreen>:
+<JerryScreen>:
     BoxLayout:
         orientation: 'vertical'
-        
         BoxLayout:
             orientation: 'vertical'
             padding: dp(10)
             spacing: dp(10)
-
             JerryAnimator:
                 id: animator
                 size_hint_y: None
                 height: dp(120)
-            
             GridLayout:
                 cols: 2
                 size_hint_y: None
@@ -190,7 +192,6 @@
                 ProgressBar:
                     id: calm_bar
                     max: 100
-
             BoxLayout:
                 size_hint_y: None
                 height: dp(25)
@@ -201,7 +202,6 @@
                     size_hint_y: None
                     height: dp(10)
                     max: 100
-        
         ScrollView:
             size_hint: 1, 1
             Label:
@@ -211,7 +211,6 @@
                 height: self.texture_size[1]
                 text_size: self.width - dp(20), None
                 padding: dp(10), dp(10)
-        
         BoxLayout:
             size_hint_y: None
             height: dp(48)
@@ -228,9 +227,7 @@
                 width: dp(80)
                 on_press: root.send_message()
 
-# --- NEW, DYNAMIC LAYOUTS FOR INTERACTIVE SCREENS ---
-
-<TherapyScreenBase@BaseScreen>:
+<TherapyScreenBase>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
@@ -260,7 +257,7 @@
                 text: "Next"
                 on_press: root.next_step()
 
-<CheckinScreen@BaseScreen>:
+<CheckinScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
@@ -283,17 +280,15 @@
         Widget:
             size_hint_y: 0.2
 
-<CBTScreen@TherapyScreenBase>:
-    # This now correctly inherits the layout from TherapyScreenBase
-    # No extra rules needed!
+<CBTScreen>:
+    # This class is defined in Python and inherits from TherapyScreenBase
+    # Its visuals are entirely controlled by the TherapyScreenBase rule above.
+    # So we don't need a specific rule for it, but this placeholder can stay.
+    
+<DBTScreen>:
+    # Same as CBTScreen
 
-<DBTScreen@TherapyScreenBase>:
-    # This also correctly inherits the layout from TherapyScreenBase
-    # No extra rules needed!
-
-# --- Standard Log Screens ---
-
-<EntriesScreen@BaseScreen>:
+<EntriesScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
@@ -303,7 +298,7 @@
         BodyScrollView:
             id: entries_log
 
-<HistoryScreen@BaseScreen>:
+<HistoryScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
@@ -313,7 +308,7 @@
         BodyScrollView:
             id: history_log
 
-<HushScreen@BaseScreen>:
+<HushScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
