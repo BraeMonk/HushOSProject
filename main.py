@@ -621,7 +621,7 @@ class HushOSApp(App):
         jerry_memory_path = os.path.join(logs_path, "jerry_memory.json")
         
         self.theme = self.get_daily_theme()
-        self.jerry = JerryCompanion(jerry_-state_path)
+        self.jerry = JerryCompanion(jerry_state_path)
         self.ai = JerryAI(jerry=self.jerry, app=self, conversation_log_path=conversation_log_path, jerry_memory_path=jerry_memory_path, api_key=api_key)
         self.entries_log = EntriesLog(entries_log_path)
         
