@@ -748,7 +748,7 @@ def change_screen(self, screen_name):
     if sm.current != screen_name:
         sm.current = screen_name
     # This closes the drawer after a selection is made
-    self.root.toggle_nav_drawer()
+    self.root.ids.nav_drawer.set_state("close")
 
 
     def update_affirmation_banner(self, screen_name):
