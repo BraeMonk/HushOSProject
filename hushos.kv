@@ -43,113 +43,99 @@
 
 # --- Root Widget Definition ---
 
-<RootWidget@NavigationLayout>:
-    id: nav_layout
-    
-    # This is the side panel for the navigation drawer
-    BoxLayout:
-        id: drawer
-        orientation: 'vertical'
-        size_hint_x: None
-        width: dp(280)
-        canvas.before:
-            Color:
-                rgba: get_color_from_hex(app.theme.COLORS['background']) if app else (0.9, 0.9, 0.9, 1)
-            Rectangle:
-                pos: self.pos
-                size: self.size
+<RootWidget>:
+    MDNavigationLayout:
+        id: nav_layout
 
-        TitleLabel:
-            text: "Menu"
-            padding: dp(16), dp(16)
+        # --- Main content area ---
+        MDScreen:
+            BoxLayout:
+                orientation: 'vertical'
 
-        NavDrawerButton:
-            text: "Jerry"
-            screen_name: 'jerry'
-        NavDrawerButton:
-            text: "Check-in"
-            screen_name: 'checkin'
-        NavDrawerButton:
-            text: "CBT Worksheet"
-            screen_name: 'cbt'
-        NavDrawerButton:
-            text: "DBT Skills Log"
-            screen_name: 'dbt'
-        NavDrawerButton:
-            text: "All Entries"
-            screen_name: 'entries'
-        NavDrawerButton:
-            text: "Conversation History"
-            screen_name: 'history'
-        NavDrawerButton:
-            text: "Hush"
-            screen_name: 'hush'
+                # 1. The Top App Bar
+                MDTopAppBar:
+                    title: "HushOS Tools"
+                    left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+                    elevation: 4
 
-        Widget: # This is a spacer to push the version label to the bottom
-        Label:
-            text: "Version 1.0"
-            font_size: '12sp'
-            size_hint_y: None
-            height: dp(24)
-            color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
+                # 2. The Affirmation Banner
+                MDLabel:
+                    id: affirmation_banner
+                    size_hint_y: None
+                    height: 0
+                    text_size: self.width - dp(20), None
+                    valign: 'middle'
+                    halign: 'center'
 
-    # This is the main content area of the app
-    BoxLayout:
-        orientation: 'vertical'
-        size_hint: 1, 1
+                # 3. The Screen Manager (holds all your app's screens)
+                ScreenManager:
+                    id: sm
+                    SplashScreen:
+                        name: 'splash'
+                    JerryScreen:
+                        name: 'jerry'
+                    CheckinScreen:
+                        name: 'checkin'
+                    CBTScreen:
+                        name: 'cbt'
+                    DBTScreen:
+                        name: 'dbt'
+                    EntriesScreen:
+                        name: 'entries'
+                    HistoryScreen:
+                        name: 'history'
+                    HushScreen:
+                        name: 'hush'
+        
+        # --- The Navigation Drawer Panel ---
+        MDNavigationDrawer:
+            id: nav_drawer
+            radius: (0, 16, 16, 0)
 
-        # TOP BAR
-        BoxLayout:
-            size_hint_y: None
-            height: dp(56)
-            padding: dp(8)
-            spacing: dp(8)
-            canvas.before:
-                Color:
-                    rgba: get_color_from_hex(app.theme.COLORS['navbar']) if app else (0.7, 0.9, 1, 1)
-                Rectangle:
-                    pos: self.pos
-                    size: self.size
-            Button:
-                text: "\u2630" # Hamburger menu icon
-                size_hint_x: None
-                width: dp(50)
-                on_press: nav_layout.toggle_nav_drawer()
-                background_color: 0, 0, 0, 0
-                font_size: '24sp'
-            Label:
-                text: "HushOS"
-                font_size: '20sp'
+            # This is the content for the drawer that we just filled out
+            MDNavigationDrawerMenu:
 
-        # AFFIRMATION BANNER
-        Label:
-            id: affirmation_banner
-            size_hint_y: None
-            height: 0 # Hidden by default
-            text_size: self.width - dp(20), None
-            valign: 'middle'
-            halign: 'center'
+                MDNavigationDrawerHeader:
+                    title: "Menu"
+                    spacing: "4dp"
+                    padding: "12dp", 0, 0, "8dp"
 
-        # SCREEN MANAGER
-        ScreenManager:
-            id: sm
-            # The initial screen is set from the on_start method in main.py
-            SplashScreen:
-                name: 'splash'
-            JerryScreen:
-                name: 'jerry'
-            CheckinScreen:
-                name: 'checkin'
-            CBTScreen:
-                name: 'cbt'
-            DBTScreen:
-                name: 'dbt'
-            EntriesScreen:
-                name: 'entries'
-            HistoryScreen:
-                name: 'history'
-            HushScreen:
-                name: 'hush'
+                NavDrawerItem:
+                    text: "Jerry"
+                    icon: "robot-happy-outline"
+                    screen_name: 'jerry'
+                NavDrawerItem:
+                    text: "Check-in"
+                    icon: "emoticon-happy-outline"
+                    screen_name: 'checkin'
+                NavDrawerItem:
+                    text: "CBT Worksheet"
+                    icon: "notebook-edit-outline"
+                    screen_name: 'cbt'
+                NavDrawerItem:
+                    text: "DBT Skills Log"
+                    icon: "notebook-check-outline"
+                    screen_name: 'dbt'
+                NavDrawerItem:
+                    text: "All Entries"
+                    icon: "book-open-variant"
+                    screen_name: 'entries'
+                NavDrawerItem:
+                    text: "Conversation History"
+                    icon: "history"
+                    screen_name: 'history'
+                NavDrawerItem:
+                    text: "Hush"
+                    icon: "timer-sand"
+                    screen_name: 'hush'
+                
+                MDNavigationDrawerDivider:
+
+                MDLabel:
+                    text: "Version 1.0"
+                    font_style: "Caption"
+                    halign: "center"
+                    padding_y: "12dp"
 
 # --- Screen Layout Definitions ---
 
