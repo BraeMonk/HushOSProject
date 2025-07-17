@@ -9,6 +9,7 @@ from datetime import datetime
 
 # --- Kivy and App Dependencies ---
 from kivymd.app import MDApp
+from kivymd.uix.navigationdrawer import MDNavigationLayout
 from kivy.animation import Animation
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition, NoTransition
 from kivy.uix.boxlayout import BoxLayout
@@ -230,7 +231,7 @@ class JerryAI:
 
 # --- KIVY WIDGETS AND SCREENS ---
 # This replaces your old RootWidget(FloatLayout) class
-class RootWidget(NavigationLayout):
+class RootWidget(MDNavigationLayout):
     pass
 
 class JerryAnimator(FloatLayout):
