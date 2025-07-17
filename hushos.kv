@@ -3,19 +3,6 @@
 #:import dp kivy.metrics.dp
 
 # --- Reusable Component & Base Class Definitions ---
-
-<NavDrawerButton@Button>:
-    screen_name: ''
-    size_hint_y: None
-    height: dp(56)
-    background_color: 0, 0, 0, 0
-    background_normal: ''
-    on_press: app.change_screen(self.screen_name)
-    text_size: self.width - dp(32), None
-    halign: 'left'
-    valign: 'middle'
-    color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
-
 # This rule now applies a background to ANY screen that doesn't have one,
 # simplifying the rules below. This is a more robust way to define a base style.
 <Screen>:
@@ -50,7 +37,11 @@
             id: nav_drawer
             radius: (0, 16, 16, 0)
 
-            MDNavigationDrawerMenu:
+            MDBoxLayout:
+                orientation: 'vertical'
+                spacing: "8dp"
+                padding: "8dp"
+
                 MDNavigationDrawerHeader:
                     title: "Menu"
                     spacing: "4dp"
@@ -246,7 +237,7 @@
                 on_press: root.prev_step()
                 disabled: root.flow_step == 0
             MDFillRoundFlatButton:
-                id: next_nutton
+                id: next_button
                 text: "Next"
                 on_press: root.next_step()
 
