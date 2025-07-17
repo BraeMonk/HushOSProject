@@ -720,7 +720,9 @@ class HushOSApp(MDApp):
         
         self.sound = None
         self.current_track_index = 0
-        self.play_music() 
+        self.play_music()
+
+        return RootWidget()
 
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
