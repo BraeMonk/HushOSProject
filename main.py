@@ -406,9 +406,66 @@ class JerryScreen(Screen):
             self.ids.user_entry.focus = True
             self.ids.animator.start()
 
+# In main.py, replace 'class CheckinScreen(Screen): pass' with this:
+
 class CheckinScreen(Screen):
-    # This class seems okay, no major changes needed.
-    pass
+    checkin_step = NumericProperty(0)
+    
+    def on_enter(self):
+        App.get_running_app().update_affirmation_banner(self.name)
+        self.checkin_data = {}
+        self.checkin_step = 0
+        self.display_step()
+
+    def display_step(self):
+        self.ids.checkin_content.clear_widgets()
+        app = App.get_running_app()
+        theme = app.theme.COLORS
+
+        steps = [
+            ("How are you feeling emotionally?", ["Good", "Okay", "Bad"], "emotion"),
+            ("How is your body feeling?", ["Energetic", "Tired", "Pain"], "physical"),
+            ("How is your mind today?", ["Clear", "Foggy", "Overwhelmed"], "mental")
+        ]
+
+        if self.checkin_step >= len(steps):
+            self.complete_checkin()
+            return
+
+        title, choices, key = steps[self.checkin_step]
+        
+        self.ids.progress_bar.value = (self.checkin_step + 1) / len(steps) * 100
+        self.ids.checkin_title_label.text = title
+
+        button_layout = GridLayout(cols=1, spacing=dp(15), size_hint_y=None)
+        button_layout.bind(minimum_height=button_layout.setter('height'))
+
+        for choice in choices:
+            btn = Button(
+                text=choice,
+                size_hint_y=None,
+                height=dp(50),
+                background_color=get_color_from_hex(theme[key]),
+                background_normal=''
+            )
+            btn.bind(on_press=lambda x, cat=key, c=choice: self.next_step(cat, c))
+            button_layout.add_widget(btn)
+        
+        self.ids.checkin_content.add_widget(button_layout)
+
+    def next_step(self, category, choice):
+        self.checkin_data[category] = choice
+        self.checkin_step += 1
+        self.display_step()
+
+    def complete_checkin(self):
+        app = App.get_running_app()
+        summary = f"Emotionally feeling {self.checkin_data.get('emotion', 'N/A')}, physically {self.checkin_data.get('physical', 'N/A')}, mentally {self.checkin_data.get('mental', 'N/A')}."
+        log_data = {"summary": summary, "details": self.checkin_data}
+        app.entries_log.add_entry("Check-in", log_data)
+        app.jerry.feed("clarity", 50)
+        app.jerry.add_xp(10)
+        app.root.ids.sm.current = 'jerry'
 
 class TherapyScreenBase(Screen):
     flow_step = NumericProperty(0)
