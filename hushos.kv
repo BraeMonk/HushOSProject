@@ -47,45 +47,40 @@
     MDNavigationLayout:
         id: nav_layout
 
-        # --- Main content area ---
-        MDScreen:
-            BoxLayout:
-                orientation: 'vertical'
+        BoxLayout:
+            orientation: 'vertical'
 
-                # 1. The Top App Bar
-                MDTopAppBar:
-                    title: "HushOS Tools"
-                    left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
-                    elevation: 4
+            MDTopAppBar:
+                title: "HushOS Tools"
+                left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+                elevation: 4
 
-                # 2. The Affirmation Banner
-                MDLabel:
-                    id: affirmation_banner
-                    size_hint_y: None
-                    height: 0
-                    text_size: self.width - dp(20), None
-                    valign: 'middle'
-                    halign: 'center'
+            MDLabel:
+                id: affirmation_banner
+                size_hint_y: None
+                height: 0
+                text_size: self.width - dp(20), None
+                valign: 'middle'
+                halign: 'center'
 
-                # 3. The Screen Manager (holds all your app's screens)
-                ScreenManager:
-                    id: sm
-                    SplashScreen:
-                        name: 'splash'
-                    JerryScreen:
-                        name: 'jerry'
-                    CheckinScreen:
-                        name: 'checkin'
-                    CBTScreen:
-                        name: 'cbt'
-                    DBTScreen:
-                        name: 'dbt'
-                    EntriesScreen:
-                        name: 'entries'
-                    HistoryScreen:
-                        name: 'history'
-                    HushScreen:
-                        name: 'hush'
+            ScreenManager:
+                id: sm
+                SplashScreen:
+                    name: 'splash'
+                JerryScreen:
+                    name: 'jerry'
+                CheckinScreen:
+                    name: 'checkin'
+                CBTScreen:
+                    name: 'cbt'
+                DBTScreen:
+                    name: 'dbt'
+                EntriesScreen:
+                    name: 'entries'
+                HistoryScreen:
+                    name: 'history'
+                HushScreen:
+                    name: 'hush'
         
         # --- The Navigation Drawer Panel ---
         MDNavigationDrawer:
