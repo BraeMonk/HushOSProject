@@ -211,7 +211,10 @@ jobs:
           ' || true
 
           echo "Installing Android SDK build tools, platform-tools, and platform…"
-          "$SDKMANAGER_MODERN" "platforms;android-33" "build-tools;$BUILD_TOOLS_VERSION" "platform-tools" || true
+          "$SDKMANAGER_MODERN" "cmdline-tools;latest" "platforms;android-33" "build-tools;$BUILD_TOOLS_VERSION" "platform-tools" || true
+
+          echo "Fallback license acceptance just in case..."
+          yes | "$SDKMANAGER_MODERN" --licenses || true
 
           echo "Downloading and unpacking NDK..."
           if [ ! -d "$NDK_INSTALL_PATH" ]; then
