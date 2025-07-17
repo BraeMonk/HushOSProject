@@ -722,8 +722,9 @@ class HushOSApp(App):
 
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
+        self.root.ids.sm.current = 'splash'
         # The initial screen is now set in the KV file, so go_to_splash is not needed.
-
+        
     def on_stop(self):
         self.ai.end_session()
         self.jerry.save_state()
