@@ -8,7 +8,7 @@ import random
 from datetime import datetime
 
 # --- Kivy and App Dependencies ---
-from kivy.app import App
+from kivymd.app import MDApp
 from kivy.animation import Animation
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition, NoTransition
 from kivy.uix.boxlayout import BoxLayout
@@ -30,7 +30,6 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
-from kivy.uix.navigationdrawer import NavigationLayout
 
 # --- AI & Media Dependencies ---
 try:
@@ -681,7 +680,7 @@ class HushScreen(Screen):
     def on_leave(self):
         self.reset_timer()
 
-class HushOSApp(App):
+class HushOSApp(MDApp):
     def build(self):
         api_key = None
         try:
