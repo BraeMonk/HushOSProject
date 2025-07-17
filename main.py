@@ -240,10 +240,10 @@ class JerryAnimator(FloatLayout):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Defer accessing app properties until the app is running
         Clock.schedule_once(self._post_init)
         self.anim_event = None
         self.thinking_event = None
+        self.current_interval = None
 
     def _post_init(self, dt):
         self.app = App.get_running_app()
@@ -261,27 +261,39 @@ class JerryAnimator(FloatLayout):
         self.sprites["low_clarity"] = self.sprites["content"]
         
     def start(self):
-        if not hasattr(self, 'jerry'): return
+        if not hasattr(self, 'jerry'):
+            return
         self.stop()
         self.is_thinking = False
-        self.anim_event = Clock.schedule_interval(self.animate, 0.35)
-        
+        self.current_interval = 0.35
+        self.anim_event = Clock.schedule_interval(self.animate, self.current_interval)
+
     def stop(self):
-        if self.anim_event: self.anim_event.cancel(); self.anim_event = None
-        if self.thinking_event: self.thinking_event.cancel(); self.thinking_event = None
-        
+        if self.anim_event:
+            self.anim_event.cancel()
+            self.anim_event = None
+        if self.thinking_event:
+            self.thinking_event.cancel()
+            self.thinking_event = None
+
     def animate(self, dt):
         self.jerry.update_needs()
         needs = self.jerry.needs
         min_need = min(needs, key=needs.get)
         anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
         new_interval = 0.15 if anim_key == "low_calm" else 0.35
-        if self.anim_event and self.anim_event.timeout != new_interval:
-            self.anim_event.cancel()
+
+        if new_interval != self.current_interval:
+            if self.anim_event:
+                self.anim_event.cancel()
             self.anim_event = Clock.schedule_interval(self.animate, new_interval)
+            self.current_interval = new_interval
+
         frames = self.sprites[anim_key]
         self.anim_frame = (self.anim_frame + 1) % len(frames)
         self.draw_sprite(frames[self.anim_frame], anim_key)
+
+    # ... keep your existing show_thinking_sprite, animate_thinking, draw_sprite methods ...
         
     def show_thinking_sprite(self):
         self.stop(); self.is_thinking = True; self.anim_frame = 0
