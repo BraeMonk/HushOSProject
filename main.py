@@ -386,7 +386,7 @@ class JerryScreen(Screen):
 
     def add_message(self, speaker, message, is_typing=False):
         app = App.get_running_app()
-        speaker__color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
+        speaker_color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
         self.ids.chat_log.text += f"[b][color={speaker_color_hex}]{speaker}: [/color][/b]"
         if is_typing and app.ai.client:
             Clock.schedule_once(lambda dt, m=message: self.type_out_message(m))
