@@ -31,7 +31,6 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
-from navigationdrawer import NavigationDrawer
 
 # --- AI & Media Dependencies ---
 try:
