@@ -100,31 +100,31 @@
                     spacing: "4dp"
                     padding: "12dp", 0, 0, "8dp"
 
-                NavDrawerItem:
+                MDNavigationDrawerItem:
                     text: "Jerry"
                     icon: "robot-happy-outline"
                     screen_name: 'jerry'
-                NavDrawerItem:
+                MDNavigationDrawerItem:
                     text: "Check-in"
                     icon: "emoticon-happy-outline"
                     screen_name: 'checkin'
-                NavDrawerItem:
+                MDNavigationDrawerItem:
                     text: "CBT Worksheet"
                     icon: "notebook-edit-outline"
                     screen_name: 'cbt'
-                NavDrawerItem:
+                MDNavigationDrawerItem:
                     text: "DBT Skills Log"
                     icon: "notebook-check-outline"
                     screen_name: 'dbt'
-                NavDrawerItem:
+                MDNavigationDrawerItem:
                     text: "All Entries"
                     icon: "book-open-variant"
                     screen_name: 'entries'
-                NavDrawerItem:
+                MDNavigationDrawerItem:
                     text: "Conversation History"
                     icon: "history"
                     screen_name: 'history'
-                NavDrawerItem:
+                MDNavigationDrawerItem:
                     text: "Hush"
                     icon: "timer-sand"
                     screen_name: 'hush'
@@ -199,7 +199,7 @@
         # This ScrollView now takes up all the remaining vertical space
         ScrollView:
             size_hint_y: 1 
-            Label:
+            MDLabel:
                 id: chat_log
                 markup: True
                 size_hint_y: None
@@ -217,7 +217,7 @@
                 id: user_entry
                 multiline: False
                 on_text_validate: root.send_message()
-            Button:
+            MDFillRoundFlatButton:
                 id: send_button
                 text: 'Send'
                 size_hint_x: None
@@ -245,12 +245,12 @@
             size_hint_y: None
             height: dp(50)
             spacing: dp(10)
-            Button:
+            MDFillRoundFlatButton:
                 text: "Back"
                 on_press: root.prev_step()
                 disabled: root.flow_step == 0
             Button:
-                id: next_button
+                id: next_MDFillRoundFlatButton
                 text: "Next"
                 on_press: root.next_step()
 
@@ -317,7 +317,7 @@
             id: timer_label
             text: root.get_timer_text()
             font_size: '48sp'
-        Button:
+        MDFillRoundFlatButton:
             text: "Start Timer" if not root.timer_active else "Stop Timer"
             size_hint_y: None
             height: dp(50)
