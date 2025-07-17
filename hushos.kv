@@ -29,99 +29,99 @@
         color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
 
 <RootWidget>:
-    MDNavigationLayout:
-        id: nav_layout
+    id: nav_layout
 
-        # 1. The Navigation Drawer Panel (must be a direct child)
-        MDNavigationDrawer:
-            id: nav_drawer
-            radius: (0, 16, 16, 0)
+    # 1. The Navigation Drawer Panel (must be a direct child)
+    MDNavigationDrawer:
+        id: nav_drawer
+        radius: (0, 16, 16, 0)
 
-            MDBoxLayout:
+        MDBoxLayout:
+            orientation: 'vertical'
+            spacing: "8dp"
+            padding: "8dp"
+
+            MDNavigationDrawerHeader:
+                title: "Menu"
+                spacing: "4dp"
+                padding: "12dp", 0, 0, "8dp"
+
+            MDNavigationDrawerItem:
+                text: "Jerry"
+                icon: "robot-happy-outline"
+                screen_name: 'jerry'
+            MDNavigationDrawerItem:
+                text: "Check-in"
+                icon: "emoticon-happy-outline"
+                screen_name: 'checkin'
+            MDNavigationDrawerItem:
+                text: "CBT Worksheet"
+                icon: "notebook-edit-outline"
+                screen_name: 'cbt'
+            MDNavigationDrawerItem:
+                text: "DBT Skills Log"
+                icon: "notebook-check-outline"
+                screen_name: 'dbt'
+            MDNavigationDrawerItem:
+                text: "All Entries"
+                icon: "book-open-variant"
+                screen_name: 'entries'
+            MDNavigationDrawerItem:
+                text: "Conversation History"
+                icon: "history"
+                screen_name: 'history'
+            MDNavigationDrawerItem:
+                text: "Hush"
+                icon: "timer-sand"
+                screen_name: 'hush'
+
+            MDNavigationDrawerDivider:
+
+            MDLabel:  # <- Now properly inside the MDBoxLayout
+                text: "Version 1.0"
+                font_style: "Caption"
+                halign: "center"
+                padding_y: "12dp"
+
+    # 2. The ScreenManager (must be a direct child)
+    ScreenManager:
+        id: sm
+
+        # Splash screen with your top bar, banner, etc inside it
+        MDScreen:
+            name: 'splash'
+            BoxLayout:
                 orientation: 'vertical'
-                spacing: "8dp"
-                padding: "8dp"
 
-                MDNavigationDrawerHeader:
-                    title: "Menu"
-                    spacing: "4dp"
-                    padding: "12dp", 0, 0, "8dp"
+                MDTopAppBar:
+                    title: "HushOS Tools"
+                    left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+                    elevation: 4
 
-                MDNavigationDrawerItem:
-                    text: "Jerry"
-                    icon: "robot-happy-outline"
-                    screen_name: 'jerry'
-                MDNavigationDrawerItem:
-                    text: "Check-in"
-                    icon: "emoticon-happy-outline"
-                    screen_name: 'checkin'
-                MDNavigationDrawerItem:
-                    text: "CBT Worksheet"
-                    icon: "notebook-edit-outline"
-                    screen_name: 'cbt'
-                MDNavigationDrawerItem:
-                    text: "DBT Skills Log"
-                    icon: "notebook-check-outline"
-                    screen_name: 'dbt'
-                MDNavigationDrawerItem:
-                    text: "All Entries"
-                    icon: "book-open-variant"
-                    screen_name: 'entries'
-                MDNavigationDrawerItem:
-                    text: "Conversation History"
-                    icon: "history"
-                    screen_name: 'history'
-                MDNavigationDrawerItem:
-                    text: "Hush"
-                    icon: "timer-sand"
-                    screen_name: 'hush'
+                MDLabel:
+                    id: affirmation_banner
+                    size_hint_y: None
+                    height: 0
+                    text_size: self.width - dp(20), None
+                    valign: 'middle'
+                    halign: 'center'
 
-                MDNavigationDrawerDivider:
+        # Other screens as siblings to the splash screen
+        JerryScreen:
+            name: 'jerry'
+        CheckinScreen:
+            name: 'checkin'
+        CBTScreen:
+            name: 'cbt'
+        DBTScreen:
+            name: 'dbt'
+        EntriesScreen:
+            name: 'entries'
+        HistoryScreen:
+            name: 'history'
+        HushScreen:
+            name: 'hush'
 
-                MDLabel:  # <- Now properly inside the MDBoxLayout
-                    text: "Version 1.0"
-                    font_style: "Caption"
-                    halign: "center"
-                    padding_y: "12dp"
-
-        # 2. The ScreenManager (must be a direct child)
-        ScreenManager:
-            id: sm
-
-            # Splash screen with your top bar, banner, etc inside it
-            MDScreen:
-                name: 'splash'
-                BoxLayout:
-                    orientation: 'vertical'
-
-                    MDTopAppBar:
-                        title: "HushOS Tools"
-                        left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
-                        elevation: 4
-
-                    MDLabel:
-                        id: affirmation_banner
-                        size_hint_y: None
-                        height: 0
-                        text_size: self.width - dp(20), None
-                        valign: 'middle'
-                        halign: 'center'
-
-            # Other screens as siblings to the splash screen
-            JerryScreen:
-                name: 'jerry'
-            CheckinScreen:
-                name: 'checkin'
-            CBTScreen:
-                name: 'cbt'
-            DBTScreen:
-                name: 'dbt'
-            EntriesScreen:
-                name: 'entries'
-            HistoryScreen:
-                name: 'history'
-            HushScreen:
-                name: 'hush'
 
 # --- Screen Layout Definitions ---
 # These rules now just apply to the existing Python classes
