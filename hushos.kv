@@ -71,7 +71,7 @@
                 text: "HushOS Tools"
                 font_size: '20sp'
 
-        # AFFIRMATION BANNER (was missing)
+        # AFFIRMATION BANNER
         Label:
             id: affirmation_banner
             size_hint_y: None
@@ -83,7 +83,6 @@
         ScreenManager:
             id: sm
             current: 'splash' # Start on the splash screen
-            # ADDED SplashScreen
             SplashScreen:
                 name: 'splash'
             JerryScreen:
@@ -228,61 +227,71 @@
                 size_hint_x: None
                 width: dp(80)
                 on_press: root.send_message()
-        
-        # The ScrollView now takes up the remaining space
+
+# --- NEW, DYNAMIC LAYOUTS FOR INTERACTIVE SCREENS ---
+
+<TherapyScreenBase@BaseScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+        TitleLabel:
+            id: title_label
+            text: "Therapy Worksheet"
+            halign: 'center'
         ScrollView:
             size_hint: 1, 1
-            Label:
-                id: chat_log
-                markup: True
+            GridLayout:
+                id: content_box
+                cols: 1
                 size_hint_y: None
-                height: self.texture_size[1]
-                text_size: self.width - dp(20), None
-                padding: dp(10), dp(10)
-        
-        # The input bar, now correctly at the bottom of the main layout
+                spacing: dp(10)
+                height: self.minimum_height
         BoxLayout:
             size_hint_y: None
-            height: dp(48)
-            padding: dp(8)
-            spacing: dp(8)
-            TextInput:
-                id: user_entry
-                multiline: False
-                on_text_validate: root.send_message()
+            height: dp(50)
+            spacing: dp(10)
             Button:
-                id: send_button 
-                text: 'Send'
-                size_hint_x: None
-                width: dp(80)
-                on_press: root.send_message()
+                text: "Back"
+                on_press: root.prev_step()
+                disabled: root.flow_step == 0
+            Button:
+                id: next_button
+                text: "Next"
+                on_press: root.next_step()
 
 <CheckinScreen@BaseScreen>:
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
-        Label:
-            text: "How are you feeling today?"
-            font_size: '24sp'
-        GridLayout:
-            cols: 2
-            spacing: dp(10)
+        spacing: dp(15)
+        TitleLabel:
+            id: checkin_title_label
+            text: "How are you feeling?"
+            halign: 'center'
+        ProgressBar:
+            id: progress_bar
             size_hint_y: None
-            height: dp(200)
-            Button:
-                text: "😊 Good"
-            Button:
-                text: "😐 Okay"
-            Button:
-                text: "😞 Bad"
-            Button:
-                text: "😡 Angry"
+            height: dp(10)
+            max: 100
+        Widget:
+            size_hint_y: 0.2
+        BoxLayout:
+            id: checkin_content
+            orientation: 'vertical'
+            size_hint: 1, 1
+        Widget:
+            size_hint_y: 0.2
 
 <CBTScreen@TherapyScreenBase>:
-    # Inherits the correct layout, no extra rules needed
+    # This now correctly inherits the layout from TherapyScreenBase
+    # No extra rules needed!
 
 <DBTScreen@TherapyScreenBase>:
-    # Inherits the correct layout, no extra rules needed
+    # This also correctly inherits the layout from TherapyScreenBase
+    # No extra rules needed!
+
+# --- Standard Log Screens ---
 
 <EntriesScreen@BaseScreen>:
     BoxLayout:
@@ -291,7 +300,6 @@
         Label:
             text: "Your Journal Entries"
             font_size: '24sp'
-        # CORRECTED: Use the custom BodyScrollView
         BodyScrollView:
             id: entries_log
 
@@ -302,7 +310,6 @@
         Label:
             text: "Conversation History"
             font_size: '24sp'
-        # CORRECTED: Use the custom BodyScrollView
         BodyScrollView:
             id: history_log
 
