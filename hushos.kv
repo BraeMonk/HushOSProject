@@ -158,11 +158,9 @@
         font_size: '48sp'
 
 <JerryScreen@BaseScreen>:
-    # Single root layout for the entire screen
     BoxLayout:
         orientation: 'vertical'
         
-        # Top bar with padding, defined within the main layout
         BoxLayout:
             orientation: 'vertical'
             padding: dp(10)
@@ -204,6 +202,32 @@
                     size_hint_y: None
                     height: dp(10)
                     max: 100
+        
+        ScrollView:
+            size_hint: 1, 1
+            Label:
+                id: chat_log
+                markup: True
+                size_hint_y: None
+                height: self.texture_size[1]
+                text_size: self.width - dp(20), None
+                padding: dp(10), dp(10)
+        
+        BoxLayout:
+            size_hint_y: None
+            height: dp(48)
+            padding: dp(8)
+            spacing: dp(8)
+            TextInput:
+                id: user_entry
+                multiline: False
+                on_text_validate: root.send_message()
+            Button:
+                id: send_button
+                text: 'Send'
+                size_hint_x: None
+                width: dp(80)
+                on_press: root.send_message()
         
         # The ScrollView now takes up the remaining space
         ScrollView:
