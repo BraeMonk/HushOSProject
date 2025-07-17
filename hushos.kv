@@ -41,55 +41,16 @@
         text_size: self.width - dp(20), None
         color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
 
-# --- Root Widget Definition ---
-
 <RootWidget>:
     MDNavigationLayout:
         id: nav_layout
 
-        BoxLayout:
-            orientation: 'vertical'
-
-            MDTopAppBar:
-                title: "HushOS Tools"
-                left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
-                elevation: 4
-
-            MDLabel:
-                id: affirmation_banner
-                size_hint_y: None
-                height: 0
-                text_size: self.width - dp(20), None
-                valign: 'middle'
-                halign: 'center'
-
-            ScreenManager:
-                id: sm
-                SplashScreen:
-                    name: 'splash'
-                JerryScreen:
-                    name: 'jerry'
-                CheckinScreen:
-                    name: 'checkin'
-                CBTScreen:
-                    name: 'cbt'
-                DBTScreen:
-                    name: 'dbt'
-                EntriesScreen:
-                    name: 'entries'
-                HistoryScreen:
-                    name: 'history'
-                HushScreen:
-                    name: 'hush'
-        
-        # --- The Navigation Drawer Panel ---
+        # 1. The Navigation Drawer Panel (must be a direct child)
         MDNavigationDrawer:
             id: nav_drawer
             radius: (0, 16, 16, 0)
 
-            # This is the content for the drawer that we just filled out
             MDNavigationDrawerMenu:
-
                 MDNavigationDrawerHeader:
                     title: "Menu"
                     spacing: "4dp"
@@ -123,7 +84,7 @@
                     text: "Hush"
                     icon: "timer-sand"
                     screen_name: 'hush'
-                
+
                 MDNavigationDrawerDivider:
 
                 MDLabel:
@@ -131,6 +92,46 @@
                     font_style: "Caption"
                     halign: "center"
                     padding_y: "12dp"
+
+
+        # 2. The ScreenManager (must be a direct child)
+        ScreenManager:
+            id: sm
+
+            # Splash screen with your top bar, banner, etc inside it
+            MDScreen:
+                name: 'splash'
+                BoxLayout:
+                    orientation: 'vertical'
+
+                    MDTopAppBar:
+                        title: "HushOS Tools"
+                        left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+                        elevation: 4
+
+                    MDLabel:
+                        id: affirmation_banner
+                        size_hint_y: None
+                        height: 0
+                        text_size: self.width - dp(20), None
+                        valign: 'middle'
+                        halign: 'center'
+
+            # Other screens as siblings to the splash screen
+            JerryScreen:
+                name: 'jerry'
+            CheckinScreen:
+                name: 'checkin'
+            CBTScreen:
+                name: 'cbt'
+            DBTScreen:
+                name: 'dbt'
+            EntriesScreen:
+                name: 'entries'
+            HistoryScreen:
+                name: 'history'
+            HushScreen:
+                name: 'hush'
 
 # --- Screen Layout Definitions ---
 
