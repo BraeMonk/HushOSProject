@@ -695,6 +695,7 @@ class HushScreen(Screen):
 
 class HushOSApp(MDApp):
     def build(self):
+        Builder.load_file("hushos.kv")
         api_key = None
         try:
             with open("config.json") as f:
@@ -719,11 +720,7 @@ class HushOSApp(MDApp):
         
         self.sound = None
         self.current_track_index = 0
-        self.play_music()
-
-        # Load the KV file explicitly
-        # Builder.load_file('hushos.kv')
-        return RootWidget()
+        self.play_music() 
 
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
