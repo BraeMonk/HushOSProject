@@ -547,36 +547,55 @@ class EntriesScreen(Screen):
         App.get_running_app().update_affirmation_banner(self.name)
         log_label = self.ids.entries_log.ids.body_text
         log_label.text = ""
+        
         entries = App.get_running_app().entries_log.get_all_entries()
         if not entries:
             log_label.text = "No entries yet."
         else:
             full_text = []
             for entry in entries:
-                title = f"[b][{entry['type']}] - {entry['timestamp']}[/b]\n"
-                summary = f"{entry['data']['summary']}\n\n"
-                full_text.append(title + summary)
+                # Safely get all parts of the entry
+                entry_type = entry.get('type', 'Entry')
+                timestamp = entry.get('timestamp', 'Unknown Date')
+                data = entry.get('data', {})
+                summary = data.get('summary', 'No summary available.')
+                
+                title = f"[b][{entry_type}] - {timestamp}[/b]\n"
+                summary_text = f"{summary}\n\n"
+                full_text.append(title + summary_text)
             log_label.text = "".join(full_text)
-
+            
 class HistoryScreen(Screen):
+    # The on_enter method is now indented to be part of the class
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
         log_label = self.ids.history_log.ids.body_text
         log_label.text = ""
+        
         convo_log = App.get_running_app().ai.conversation_log.load_log()
         if not convo_log:
             log_label.text = "No conversation history."
         else:
             full_text = []
             for session in convo_log:
-                full_text.append(f"[b]Session: {session['timestamp']}[/b]\n")
-                for message in session['conversation']:
-                    speaker = "Jerry" if message['role'] == 'model' else 'You'
-                    text = message['parts'][0] if isinstance(message['parts'], list) else message['parts']
+                # Safely get timestamp
+                timestamp = session.get('timestamp', 'Unknown Date')
+                full_text.append(f"[b]Session: {timestamp}[/b]\n")
+                
+                # Safely get conversation list
+                conversation = session.get('conversation', [])
+                for message in conversation:
+                    # Safely get message role and parts
+                    role = message.get('role', 'model')
+                    speaker = "Jerry" if role == 'model' else 'You'
+                    
+                    parts = message.get('parts', ['(Message not found)'])
+                    text = parts[0] if isinstance(parts, list) and parts else '(Empty message)'
+                    
                     full_text.append(f"[b]{speaker}:[/b] {text}\n")
                 full_text.append("\n")
             log_label.text = "".join(full_text)
-
+            
 class HushScreen(Screen):
     timer_seconds = NumericProperty(180)
     timer_active = BooleanProperty(False)
