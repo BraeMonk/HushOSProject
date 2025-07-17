@@ -660,7 +660,7 @@ class HushOSApp(App):
         self.play_music()
 
         # Load the KV file explicitly
-        Builder.load_file('hushos.kv')
+        # Builder.load_file('hushos.kv')
         return RootWidget()
 
     def on_start(self):
