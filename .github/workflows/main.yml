@@ -1,4 +1,5 @@
 name: Build HushOS APK
+
 on:
   push:
     branches:
@@ -7,45 +8,24 @@ on:
 
 jobs:
   build-android:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      # --- THIS IS THE NEW, CRITICAL STEP ---
-      - name: Set up Java Development Kit (JDK) 8
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-
-      - name: Prepare source directory for build action
-        run: |
-          mkdir -p src
-          mv main.py hushos.kv buildozer.spec assets src/
-          mv config.json google_ai_client.pyc src/ 2>/dev/null || true
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          workdir: src
-          command: |
-            echo "--- Running buildozer android update ---"
-            buildozer android update
-            echo "--- Running buildozer -v android clean debug DEBUG=1 ---"
-            buildozer -v android clean debug DEBUG=1 
+          # This command builds the debug APK.
+          # The action handles Java and all dependencies automatically.
+          command: buildozer -v android debug
 
-      - name: Debug APK path output
-        run: |
-          echo "The APK path reported by buildozer-action is: ${{ steps.buildozer.outputs.apk_path }}"
-          ls -l $(dirname ${{ steps.buildozer.outputs.apk_path }}) || true
-
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
+          # The action provides the correct path to the APK as an output.
           path: ${{ steps.buildozer.outputs.apk_path }}
           if-no-files-found: error
