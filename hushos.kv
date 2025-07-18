@@ -143,7 +143,7 @@
             padding: dp(10)
             spacing: dp(10)
             size_hint_y: None
-            height: self.minimum_height # Height is determined by its children
+            height: self.minimum_height  # Height is determined by its children
 
             JerryAnimator:
                 id: animator
@@ -182,33 +182,43 @@
                     height: dp(10)
                     max: 100
         
-        # This ScrollView now takes up all the remaining vertical space
+        # ScrollView now with a single child MDBoxLayout wrapping the MDLabel
         ScrollView:
             size_hint_y: 1 
-            MDLabel:
-                id: chat_log
-                markup: True
+            MDBoxLayout:
+                orientation: 'vertical'
                 size_hint_y: None
-                height: self.texture_size[1]
-                text_size: self.width - dp(20), None
-                padding: dp(10), dp(10)
+                height: self.minimum_height
+                padding: dp(10)
+
+                MDLabel:
+                    id: chat_log
+                    markup: True
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    text_size: self.width - dp(20), None
+                    padding: dp(10), dp(10)
         
-        # The input bar already has a fixed height, which is correct
+        # Input bar with fixed height
         BoxLayout:
             size_hint_y: None
             height: dp(48)
             padding: dp(8)
             spacing: dp(8)
+
             TextInput:
                 id: user_entry
                 multiline: False
                 on_text_validate: root.send_message()
+
             MDFillRoundFlatButton:
                 id: send_button
                 text: 'Send'
                 size_hint_x: None
                 width: dp(80)
                 on_press: root.send_message()
+
+
 
 <TherapyScreenBase>:
     BoxLayout:
