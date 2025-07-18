@@ -32,7 +32,7 @@ android.api = 33
 # (int) Minimum API required
 android.minapi = 21
 # (str) Explicitly set the Build Tools version for reliability
-android.build_tools_version = 33.0.2
+android.build_tools_version = 34.0.0
 # (str) A known stable NDK version
 android.ndk_version = 25.2.9519653
 # These blank paths force Buildozer to use the SDK and NDK from the
