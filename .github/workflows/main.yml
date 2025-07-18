@@ -14,10 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # THIS NEW STEP INCREASES THE MEMORY AVAILABLE TO GRADLE
-      - name: Set Gradle Heap Size
-        run: echo "GRADLE_OPTS=-Xmx3072m" >> $GITHUB_ENV
-
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
