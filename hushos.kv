@@ -1,8 +1,6 @@
-#:kivy 1.11.1 
+#:kivy 1.11.1
 #:import get_color_from_hex kivy.utils.get_color_from_hex
 #:import dp kivy.metrics.dp
-
-# --- Reusable Component & Base Class Definitions ---
 
 <Screen>:
     canvas.before:
@@ -22,76 +20,14 @@
     MDBoxLayout:
         id: body_box
         orientation: 'vertical'
-        size_hint_y: None
-        height: self.minimum_height
+        adaptive_height: True
         padding: dp(10)
         spacing: dp(10)
-        adaptive_height: True
-
 
 <RootWidget>:
-    id: nav_layout
-
-    # 1. The Navigation Drawer Panel (must be a direct child)
-    MDNavigationDrawer:
-        id: nav_drawer
-        radius: (0, 16, 16, 0)
-
-        MDBoxLayout:
-            orientation: 'vertical'
-            spacing: "8dp"
-            padding: "8dp"
-
-            MDNavigationDrawerHeader:
-                title: "Menu"
-                spacing: "4dp"
-                padding: "12dp", 0, 0, "8dp"
-
-            MDNavigationDrawerItem:
-                text: "Jerry"
-                icon: "robot-happy-outline"
-                screen_name: 'jerry'
-            MDNavigationDrawerItem:
-                text: "Check-in"
-                icon: "emoticon-happy-outline"
-                screen_name: 'checkin'
-            MDNavigationDrawerItem:
-                text: "CBT Worksheet"
-                icon: "notebook-edit-outline"
-                screen_name: 'cbt'
-            MDNavigationDrawerItem:
-                text: "DBT Skills Log"
-                icon: "notebook-check-outline"
-                screen_name: 'dbt'
-            MDNavigationDrawerItem:
-                text: "All Entries"
-                icon: "book-open-variant"
-                screen_name: 'entries'
-            MDNavigationDrawerItem:
-                text: "Conversation History"
-                icon: "history"
-                screen_name: 'history'
-            MDNavigationDrawerItem:
-                text: "Hush"
-                icon: "timer-sand"
-                screen_name: 'hush'
-
-            MDNavigationDrawerDivider:
-
-            MDLabel:  # <- Now properly inside the MDBoxLayout
-                text: "Version 1.0"
-                font_style: "Caption"
-                halign: "center"
-                padding: [0, dp(12), 0, dp(12)]
-
-    # 2. The ScreenManager (must be a direct child)
-    ScreenManager:
-        id: sm
-
-        # Splash screen with your top bar, banner, etc inside it
+    MDNavigationLayout:
         MDScreen:
-            name: 'splash'
-            BoxLayout:
+            MDBoxLayout:
                 orientation: 'vertical'
 
                 MDTopAppBar:
@@ -103,247 +39,237 @@
                     id: affirmation_banner
                     size_hint_y: None
                     height: 0
-                    text_size: self.width - dp(20), None
-                    valign: 'middle'
                     halign: 'center'
 
-        # Other screens as siblings to the splash screen
-        JerryScreen:
-            name: 'jerry'
-        CheckinScreen:
-            name: 'checkin'
-        CBTScreen:
-            name: 'cbt'
-        DBTScreen:
-            name: 'dbt'
-        EntriesScreen:
-            name: 'entries'
-        HistoryScreen:
-            name: 'history'
-        HushScreen:
-            name: 'hush'
+                ScreenManager:
+                    id: sm
+                    SplashScreen:
+                        name: 'splash'
+                    JerryScreen:
+                        name: 'jerry'
+                    CheckinScreen:
+                        name: 'checkin'
+                    CBTScreen:
+                        name: 'cbt'
+                    DBTScreen:
+                        name: 'dbt'
+                    EntriesScreen:
+                        name: 'entries'
+                    HistoryScreen:
+                        name: 'history'
+                    HushScreen:
+                        name: 'hush'
 
-
+        MDNavigationDrawer:
+            id: nav_drawer
+            radius: (0, 16, 16, 0)
+            MDNavigationDrawerMenu:
+                MDNavigationDrawerHeader:
+                    title: "Menu"
+                MDNavigationDrawerItem:
+                    text: "Jerry"
+                    icon: "robot-happy-outline"
+                    on_release: app.change_screen('jerry')
+                MDNavigationDrawerItem:
+                    text: "Check-in"
+                    icon: "emoticon-happy-outline"
+                    on_release: app.change_screen('checkin')
+                MDNavigationDrawerItem:
+                    text: "CBT Worksheet"
+                    icon: "notebook-edit-outline"
+                    on_release: app.change_screen('cbt')
+                MDNavigationDrawerItem:
+                    text: "DBT Skills Log"
+                    icon: "notebook-check-outline"
+                    on_release: app.change_screen('dbt')
+                MDNavigationDrawerItem:
+                    text: "All Entries"
+                    icon: "book-open-variant"
+                    on_release: app.change_screen('entries')
+                MDNavigationDrawerItem:
+                    text: "Conversation History"
+                    icon: "history"
+                    on_release: app.change_screen('history')
+                MDNavigationDrawerItem:
+                    text: "Hush"
+                    icon: "timer-sand"
+                    on_release: app.change_screen('hush')
+                MDNavigationDrawerDivider:
+                MDLabel:
+                    text: "Version 1.0"
+                    font_style: "Caption"
+                    halign: "center"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    padding_y: "12dp"
+                    
 # --- Screen Layout Definitions ---
 
 <SplashScreen>:
-    Label:
+    MDLabel:
         text: 'HushOS'
-        font_size: '48sp'
+        font_style: 'H2'
+        halign: 'center'
 
 <JerryScreen>:
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
-
-        # This top section now has a fixed height
-        BoxLayout:
-            orientation: 'vertical'
-            padding: dp(10)
-            spacing: dp(10)
-            size_hint_y: None
-            height: self.minimum_height  # Height is determined by its children
-
-            JerryAnimator:
-                id: animator
-                size_hint_y: None
-                height: dp(120)
-            
-            GridLayout:
-                cols: 2
-                size_hint_y: None
-                height: dp(80)
-                spacing: dp(10)
-                Label:
-                    text: 'Clarity'
-                ProgressBar:
-                    id: clarity_bar
-                    max: 100
-                Label:
-                    text: 'Insight'
-                ProgressBar:
-                    id: insight_bar
-                    max: 100
-                Label:
-                    text: 'Calm'
-                ProgressBar:
-                    id: calm_bar
-                    max: 100
-
-            BoxLayout:
-                size_hint_y: None
-                height: dp(25)
-                Label:
-                    id: level_label
-                ProgressBar:
-                    id: xp_bar
-                    size_hint_y: None
-                    height: dp(10)
-                    max: 100
+        padding: dp(10)
+        spacing: dp(10)
         
-        # ScrollView now with a single child MDBoxLayout wrapping the MDLabel
+        JerryAnimator:
+            id: animator
+            size_hint_y: None
+            height: dp(120)
+            
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: dp(80)
+            spacing: dp(10)
+            MDLabel:
+                text: 'Clarity'
+            ProgressBar:
+                id: clarity_bar
+                max: 100
+            MDLabel:
+                text: 'Insight'
+            ProgressBar:
+                id: insight_bar
+                max: 100
+            MDLabel:
+                text: 'Calm'
+            ProgressBar:
+                id: calm_bar
+                max: 100
+        
+        MDBoxLayout:
+            size_hint_y: None
+            height: dp(25)
+            adaptive_width: True
+            MDLabel:
+                id: level_label
+            ProgressBar:
+                id: xp_bar
+                max: 100
+        
         ScrollView:
             id: chat_scroll
-            size_hint_y: 1 
-
-            MDBoxLayout:
-                orientation: 'vertical'
+            MDLabel:
+                id: chat_log
+                markup: True
                 size_hint_y: None
-                height: self.minimum_height
-                padding: dp(10)
-
-                MDLabel:
-                    id: chat_log
-                    markup: True
-                    size_hint_y: None
-                    height: self.texture_size[1]
-                    text_size: self.width - dp(20), None
-                    padding: dp(10), dp(10)
-        
-        # Input bar with fixed height
-        BoxLayout:
+                height: self.texture_size[1]
+                text_size: self.width - dp(20), None
+                
+        MDBoxLayout:
             size_hint_y: None
             height: dp(48)
             padding: dp(8)
             spacing: dp(8)
-
             TextInput:
                 id: user_entry
                 multiline: False
                 on_text_validate: root.send_message()
-
             MDFillRoundFlatButton:
                 id: send_button
                 text: 'Send'
-                size_hint_x: None
-                width: dp(80)
-                on_press: root.send_message()
-
-
+                on_release: root.send_message()
 <TherapyScreenBase>:
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
         padding: dp(20)
         spacing: dp(15)
-
         TitleLabel:
             id: title_label
             text: "Therapy Worksheet"
             halign: 'center'
-
         ScrollView:
-            size_hint: 1, 1
-
-            BoxLayout:
-                orientation: 'vertical'
-                size_hint_y: None
-                height: self.minimum_height
+            GridLayout:
+                id: content_box
+                cols: 1
+                adaptive_height: True
                 spacing: dp(10)
-
-                GridLayout:
-                    id: content_box
-                    cols: 1
-                    size_hint_y: None
-                    height: self.minimum_height
-                    spacing: dp(10)
-
-        BoxLayout:
+        MDBoxLayout:
             size_hint_y: None
             height: dp(50)
             spacing: dp(10)
-
+            adaptive_width: True
             MDFillRoundFlatButton:
                 text: "Back"
-                on_press: root.prev_step()
+                on_release: root.prev_step()
                 disabled: root.flow_step == 0
-
             MDFillRoundFlatButton:
                 id: next_button
                 text: "Next"
-                on_press: root.next_step()
-
-
+                on_release: root.next_step()
 <CheckinScreen>:
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
         padding: dp(20)
         spacing: dp(15)
-
         TitleLabel:
             id: checkin_title_label
             text: "How are you feeling?"
             halign: 'center'
-
         ProgressBar:
             id: progress_bar
             size_hint_y: None
             height: dp(10)
             max: 100
-
         Widget:
             size_hint_y: 0.2
-
         ScrollView:
-            size_hint: 1, 1
-
-            BoxLayout:
+            GridLayout:
                 id: checkin_content
-                orientation: 'vertical'
-                size_hint_y: None
-                height: self.minimum_height
+                adaptive_height: True
+                cols: 1
                 spacing: dp(10)
-
         Widget:
             size_hint_y: 0.2
-
 
 <CBTScreen>:
-    # Placeholder, inherits TherapyScreenBase in Python
-
-
 <DBTScreen>:
-    # Placeholder, inherits TherapyScreenBase in Python
-
 
 <EntriesScreen>:
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
         padding: dp(20)
-        Label:
+        spacing: dp(10)
+        MDLabel:
             text: "Your Journal Entries"
-            font_size: '24sp'
-            size_hint_y: None
-            height: self.texture_size[1]
+            font_style: 'H4'
+            adaptive_height: True
         BodyScrollView:
             id: entries_log
 
-
 <HistoryScreen>:
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
         padding: dp(20)
-        Label:
+        spacing: dp(10)
+        MDLabel:
             text: "Conversation History"
-            font_size: '24sp'
-            size_hint_y: None
-            height: self.texture_size[1]
+            font_style: 'H4'
+            adaptive_height: True
         BodyScrollView:
             id: history_log
 
-
 <HushScreen>:
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
         padding: dp(20)
         spacing: dp(20)
-        Label:
+        MDLabel:
             text: "Find a moment of peace"
-            font_size: '24sp'
-        Label:
+            font_style: 'H4'
+            halign: 'center'
+        MDLabel:
             id: timer_label
             text: root.get_timer_text()
-            font_size: '48sp'
+            font_style: 'H2'
+            halign: 'center'
         MDFillRoundFlatButton:
             text: "Start Timer" if not root.timer_active else "Stop Timer"
-            size_hint_y: None
-            height: dp(50)
-            on_press: root.start_stop_timer()
+            on_release: root.start_stop_timer()
+            pos_hint: {'center_x': 0.5}
