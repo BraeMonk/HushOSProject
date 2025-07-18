@@ -4,57 +4,30 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
-  build_android_apk:
+  build-android:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java Development Kit (JDK) 11
-        uses: actions/setup-java@v4
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
         with:
-          distribution: 'temurin'
-          java-version: '11'
+          # This command tells the action to build the debug APK
+          command: buildozer android debug
+          # This sets the build tools version inside the container
+          # to a known stable version, preventing the license error.
+          buildozer_version: stable
+          build_tools_version: 34.0.0
 
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
-      - name: Install dependencies and Buildozer
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git zip unzip build-essential autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
-          python3 -m pip install --upgrade pip wheel setuptools
-          pip install --upgrade cython
-          pip install buildozer
-          
-      - name: Add Google AI API Key to a file
-        # This creates a file that your main.py can read if needed,
-        # but it's more common to set it as an environment variable.
-        # This step is optional if your app logic doesn't read a file.
-        run: echo "${{ secrets.SECRET_API_KEY }}" > config.json
-
-      - name: Configure and Build with Buildozer
-        run: |
-          # This command finds the build tools line and replaces it with the correct version.
-          # If the line doesn't exist, it adds it to the file.
-          grep -q "^android\.build_tools_version" buildozer.spec && sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 34.0.0/' buildozer.spec || echo "android.build_tools_version = 34.0.0" >> buildozer.spec
-
-          # Now run the build
-          buildozer -v android debug
-
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
-          # Buildozer places the final APKs in the 'bin' directory by default
-          path: bin/*.apk
+          path: ${{ steps.buildozer.outputs.apk_path }}
           if-no-files-found: error
