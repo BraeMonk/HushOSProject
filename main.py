@@ -631,23 +631,40 @@ class EntriesScreen(Screen):
                 text="No entries yet.",
                 theme_text_color="Primary"
             ))
-        else:
-            from kivymd.uix.label import MDLabel
-            for entry in reversed(entries):
-                entry_type = entry.get('type', 'Entry')
-                timestamp = entry.get('timestamp', 'Unknown Date')
-                data = entry.get('data', {})
-                summary = data.get('summary', 'No summary available.')
+            return
+        
+        # Helper to safely parse timestamp, fallback to epoch start for sorting
+        def parse_timestamp(ts):
+            try:
+                # Adjust format to match your timestamp format exactly!
+                return datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                return datetime(1970, 1, 1)
+        
+        # Sort entries by timestamp descending (newest first)
+        entries_sorted = sorted(
+            entries, 
+            key=lambda e: parse_timestamp(e.get('timestamp', '')), 
+            reverse=True
+        )
+        
+        from kivymd.uix.label import MDLabel
+        for entry in entries_sorted:
+            entry_type = entry.get('type', 'Entry')
+            timestamp = entry.get('timestamp', 'Unknown Date')
+            data = entry.get('data', {})
+            summary = data.get('summary', 'No summary available.')
 
-                label = MDLabel(
-                    text=f"[b][{entry_type}] - {timestamp}[/b]\n{summary}",
-                    markup=True,
-                    theme_text_color="Primary",
-                    size_hint_y=None,
-                    height=dp(60),
-                    halign="left"
-                )
-                body_box.add_widget(label)
+            label = MDLabel(
+                text=f"[b][{entry_type}] - {timestamp}[/b]\n{summary}",
+                markup=True,
+                theme_text_color="Primary",
+                size_hint_y=None,
+                height=dp(60),
+                halign="left"
+            )
+            body_box.add_widget(label)
+
             
 class HistoryScreen(Screen):
     # The on_enter method is now indented to be part of the class
