@@ -607,25 +607,33 @@ class DBTScreen(TherapyScreenBase):
 class EntriesScreen(Screen):
     def on_enter(self):
         App.get_running_app().update_affirmation_banner(self.name)
-        log_label = self.ids.entries_log.ids.body_text
-        log_label.text = ""
+        body_box = self.ids.entries_log.ids.body_box
+        body_box.clear_widgets()
         
         entries = App.get_running_app().entries_log.get_all_entries()
         if not entries:
-            log_label.text = "No entries yet."
+            from kivymd.uix.label import MDLabel
+            body_box.add_widget(MDLabel(
+                text="No entries yet.",
+                theme_text_color="Primary"
+            ))
         else:
-            full_text = []
+            from kivymd.uix.label import MDLabel
             for entry in entries:
-                # Safely get all parts of the entry
                 entry_type = entry.get('type', 'Entry')
                 timestamp = entry.get('timestamp', 'Unknown Date')
                 data = entry.get('data', {})
                 summary = data.get('summary', 'No summary available.')
-                
-                title = f"[b][{entry_type}] - {timestamp}[/b]\n"
-                summary_text = f"{summary}\n\n"
-                full_text.append(title + summary_text)
-            log_label.text = "".join(full_text)
+
+                label = MDLabel(
+                    text=f"[b][{entry_type}] - {timestamp}[/b]\n{summary}",
+                    markup=True,
+                    theme_text_color="Primary",
+                    size_hint_y=None,
+                    height=dp(60),
+                    halign="left"
+                )
+                body_box.add_widget(label)
             
 class HistoryScreen(Screen):
     # The on_enter method is now indented to be part of the class
