@@ -20,13 +20,14 @@
     color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
 
 <BodyScrollView@ScrollView>:
-    BoxLayout:
-        id: body_text
-        markup: True
+    MDBoxLayout:
+        id: body_box
+        orientation: 'vertical'
         size_hint_y: None
-        height: self.texture_size[1]
-        text_size: self.width - dp(20), None
-        color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
+        height: self.minimum_height
+        padding: dp(10)
+        spacing: dp(10)
+
 
 <RootWidget>:
     id: nav_layout
