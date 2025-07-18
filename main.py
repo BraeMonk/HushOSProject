@@ -742,7 +742,6 @@ class HushScreen(Screen):
 
 class HushOSApp(MDApp):
     def build(self):
-        Builder.load_file("hushos.kv")
         api_key = None
         try:
             with open("config.json") as f:
