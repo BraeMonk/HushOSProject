@@ -19,7 +19,7 @@ jobs:
           # Move all your app files and folders into the src directory
           # The "|| true" prevents an error if a file doesn't exist.
           mv main.py hushos.kv buildozer.spec assets src/
-          mv config.json google_ai_client.pyc src/ 2>/dev/null || true
+          mv config.json google_ai_client.py src/ 2>/dev/null || true
       
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
