@@ -390,33 +390,33 @@ class JerryScreen(Screen):
             self._message("Jerry", response, is_typing=True)
 
     def _message(self, speaker, message, is_typing=False):
-    app = App.get_running_app()
-    speaker_color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
-    self.ids.chat_log.text += f"[b][color={speaker_color_hex}]{speaker}: [/color][/b]"
-    if is_typing and app.ai.client:
-        Clock.schedule_once(lambda dt, m=message: self.type_out_message(m))
-    else:
-        self.ids.chat_log.text += f"{message}\n\n"
-        self.ids.user_entry.disabled = False
-        self.ids.send_button.disabled = False
-        self.scroll_to_bottom()
+        app = App.get_running_app()
+        speaker_color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
+        self.ids.chat_log.text += f"[b][color={speaker_color_hex}]{speaker}: [/color][/b]"
+        if is_typing and app.ai.client:
+            Clock.schedule_once(lambda dt, m=message: self.type_out_message(m))
+        else:
+            self.ids.chat_log.text += f"{message}\n\n"
+            self.ids.user_entry.disabled = False
+            self.ids.send_button.disabled = False
+            self.scroll_to_bottom()
 
-def type_out_message(self, message, index=0):
-    if index < len(message):
-        self.ids.chat_log.text += message[index]
-        self.scroll_to_bottom()
-        Clock.schedule_once(lambda dt: self.type_out_message(message, index + 1), 0.035)
-    else:
-        self.ids.chat_log.text += "\n\n"
-        self.ids.user_entry.disabled = False
-        self.ids.send_button.disabled = False
-        self.ids.user_entry.focus = True
-        self.ids.animator.start()
-        self.scroll_to_bottom()
+    def type_out_message(self, message, index=0):
+        if index < len(message):
+            self.ids.chat_log.text += message[index]
+            self.scroll_to_bottom()
+            Clock.schedule_once(lambda dt: self.type_out_message(message, index + 1), 0.035)
+        else:
+            self.ids.chat_log.text += "\n\n"
+            self.ids.user_entry.disabled = False
+            self.ids.send_button.disabled = False
+            self.ids.user_entry.focus = True
+            self.ids.animator.start()
+            self.scroll_to_bottom()
 
-def scroll_to_bottom(self):
-    scroll_view = self.ids.chat_scroll
-    Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0))
+    def scroll_to_bottom(self):
+        scroll_view = self.ids.chat_scroll
+        Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0))
 
 
 # In main.py, replace 'class CheckinScreen(Screen): pass' with this:
