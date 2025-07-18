@@ -20,6 +20,8 @@ android.presplash_color = #fdfae6
 # (str) Presplash image
 android.presplash_png = %(source.dir)s/assets/icon.png
 # (str) Icon of the application
+android.archs = arm64-v8a, armeabi-v7a
+# (list) The Android archs to build for
 icon.filename = %(source.dir)s/assets/icon.png
 # (str) Supported orientation
 orientation = portrait
