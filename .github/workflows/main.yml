@@ -24,10 +24,16 @@ jobs:
         id: buildozer
         with:
           workdir: src
+          # *** IMPORTANT CHANGE HERE ***
           command: |
-            buildozer -v android debug
+            buildozer -v android clean debug DEBUG=1 
       
-      - name: Upload APK
+      - name: Debug APK path output (will run only if build succeeds)
+        run: |
+          echo "The APK path reported by buildozer-action is: ${{ steps.buildozer.outputs.apk_path }}"
+          ls -l $(dirname ${{ steps.buildozer.outputs.apk_path }}) || true
+
+      - name: Upload APK (will run only if build succeeds)
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
