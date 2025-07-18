@@ -227,10 +227,12 @@
         orientation: 'vertical'
         padding: dp(20)
         spacing: dp(15)
+
         TitleLabel:
             id: title_label
             text: "Therapy Worksheet"
             halign: 'center'
+
         ScrollView:
             size_hint: 1, 1
             BoxLayout:
@@ -238,24 +240,26 @@
                 size_hint_y: None
                 height: self.minimum_height
                 spacing: dp(10)
+
                 GridLayout:
                     id: content_box
                     cols: 1
                     size_hint_y: None
                     height: self.minimum_height
                     spacing: dp(10)
-                BoxLayout:
-                    size_hint_y: None
-                    height: dp(50)
-                    spacing: dp(10)
-                    MDFillRoundFlatButton:
-                        text: "Back"
-                        on_press: root.prev_step()
-                        disabled: root.flow_step == 0
-                    MDFillRoundFlatButton:
-                        id: next_button
-                        text: "Next"
-                        on_press: root.next_step()
+
+        BoxLayout:  # ✅ Moved outside ScrollView
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(10)
+            MDFillRoundFlatButton:
+                text: "Back"
+                on_press: root.prev_step()
+                disabled: root.flow_step == 0
+            MDFillRoundFlatButton:
+                id: next_button
+                text: "Next"
+                on_press: root.next_step()
 
 
 <CheckinScreen>:
