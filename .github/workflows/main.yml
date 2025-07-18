@@ -1,19 +1,16 @@
 name: Build HushOS APK
-
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-
 jobs:
   build-android:
     runs-on: ubuntu-22.04
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      
       # This step creates the 'src' directory and moves your files into it.
       # This is CRITICAL for the build action to find your buildozer.spec file.
       - name: Prepare source directory for build action
@@ -23,7 +20,7 @@ jobs:
           # The "|| true" prevents an error if a file doesn't exist.
           mv main.py hushos.kv buildozer.spec assets src/
           mv config.json google_ai_client.pyc src/ 2>/dev/null || true
-
+      
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
@@ -32,9 +29,8 @@ jobs:
           # where it can find your buildozer.spec.
           workdir: src
           command: |
-            buildozer config set android.build_tools_version 34.0.0
             buildozer -v android debug
-
+      
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
