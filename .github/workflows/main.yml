@@ -42,10 +42,13 @@ jobs:
         # This step is optional if your app logic doesn't read a file.
         run: echo "${{ secrets.SECRET_API_KEY }}" > config.json
 
-      - name: Build with Buildozer
+      - name: Configure and Build with Buildozer
         run: |
-          buildozer p4a set --build-tools-version=34.0.0
-          # The --verbose flag gives detailed logs if something goes wrong
+          # This command finds the build tools line and replaces it with the correct version.
+          # If the line doesn't exist, it adds it to the file.
+          grep -q "^android\.build_tools_version" buildozer.spec && sed -i 's/^android\.build_tools_version.*$/android.build_tools_version = 34.0.0/' buildozer.spec || echo "android.build_tools_version = 34.0.0" >> buildozer.spec
+
+          # Now run the build
           buildozer -v android debug
 
       - name: Upload APK artifact
