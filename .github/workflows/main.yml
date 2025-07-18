@@ -44,6 +44,7 @@ jobs:
 
       - name: Build with Buildozer
         run: |
+          buildozer p4a set --build-tools-version=34.0.0
           # The --verbose flag gives detailed logs if something goes wrong
           buildozer -v android debug
 
