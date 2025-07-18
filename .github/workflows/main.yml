@@ -18,10 +18,18 @@ jobs:
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          command: buildozer -v android debug
-        # This 'env' block adds the memory setting to the build container
+          # Pin the Buildozer version to a known stable release
+          buildozer_version: "1.5.0"
+          command: |
+            # Set specific, stable versions for Android tools in buildozer.spec
+            buildozer config set android.ndk_version 25b
+            buildozer config set android.build_tools_version 34.0.0
+            
+            # Run the build
+            buildozer -v android debug
         env:
-          GRADLE_OPTS: -Xmx3072m
+          # Allocate sufficient memory for the Gradle process
+          GRADLE_OPTS: -Xmx4g
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
