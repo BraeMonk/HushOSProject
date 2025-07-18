@@ -11,23 +11,29 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      # This new step creates a 'src' directory and moves your files into it,
+      # which is the structure the build action expects.
+      - name: Prepare source directory for build action
+        run: |
+          mkdir src
+          mv main.py hushos.kv buildozer.spec config.json assets google_ai_client.pyc src/
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          # This command tells the action to build the debug APK
+          # This tells the action to look inside the 'src' folder
+          workdir: src
+          # The command is now simpler
           command: buildozer android debug
-          # This sets the build tools version inside the container
-          # to a known stable version, preventing the license error.
-          buildozer_version: stable
-          build_tools_version: 34.0.0
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
+          # The output path is now correctly referenced from the action's output
           path: ${{ steps.buildozer.outputs.apk_path }}
           if-no-files-found: error
