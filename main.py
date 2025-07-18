@@ -74,7 +74,7 @@ DBT_SKILLS = {
     "Emotion Regulation": ["Check the Facts", "Opposite Action", "Problem Solving", "ABC PLEASE"], "Interpersonal Effectiveness": ["DEAR MAN", "GIVE", "FAST"]
 }
 DAILY_THEMES = [
-    {"navbar": "#ade6eb", "navbar_hover": "#8ac0d5", "background": "#fdfae6", "text_dark": "#000000", "text_light": "#4a4a4a", "accent": "#fcf8a7", "accent_dark": "#000000", "disabled": "#e0e0e0", "chat_bg": "#FFFFFF", "emotion": "#ade6eb", "physical": "#fcf8a7", "mental": "#fdfae6", "cbt_primary": "#ade6eb", "cbt_secondary": "#b8e0ea", "cbt_tertiary": "#c9e9f0", "cbt_quaternary": "#d9f3f5", "cbt_complete": "#fdfae6", "dbt_primary": "#c8a2e4", "dbt_secondary": "#d3b4ea", "dbt_tertiary": "#dfc9f0", "dbt_quaternary": "#eac3f5", "dbt_complete": "#e9e0f8", "clarity_bar": "#8ac0d5", "insight_bar": "#fbd7a5", "calm_bar": "#addcc7"},
+    {"navbar": "#ade6eb", "navbar_hover": "#8ac0d5", "background": "#fdfae6", "text_dark": "#000000", "text_light": "#4a4a4a", "accent": "#fcf8a7", "accent_dark": "#000000", "disabled": "#e0e0e0", "chat_bg": "#FFFFFF", "emotion": "#ade6eb", "physical": "#fcf8a7", "mental": "#fdfae6", "cbt_primary": "#ade6eb", "cbt_secondary": "#b8e0ea", "cbt_tertiary": "#c9e9f0", "cbt_quaternary": "#d9f3f5", "cbt_complete": "#fdfae6", "dbt_primary": "#c8a2e4", "dbt_secondary": "#d3b4ea", "dbt_tertiary": "#dfc9f0", "dbt_quaternary": "#eac3f5", "dbt_complete": "#e9e0f8", "clarity_bar": "#8ac0d5", "insight_bar": "#fbd7a5", "calm_bar": "#cc7"},
     {"navbar": "#a2e4d3", "navbar_hover": "#7fc9b8", "background": "#e6f2e4", "text_dark": "#000000", "text_light": "#3d5a54", "accent": "#7fc9b8", "accent_dark": "#000000", "disabled": "#d1e9d7", "chat_bg": "#FFFFFF", "emotion": "#a2e4d3", "physical": "#b4e9c5", "mental": "#e6f2e4", "cbt_primary": "#a2e4d3", "cbt_secondary": "#b0e9c8", "cbt_tertiary": "#beeddd", "cbt_quaternary": "#ccf2e2", "cbt_complete": "#e6f2e4", "dbt_primary": "#fec994", "dbt_secondary": "#f8d6a7", "dbt_tertiary": "#f9e0b7", "dbt_quaternary": "#fbe6c7", "dbt_complete": "#fff5ea", "clarity_bar": "#7fc9b8", "insight_bar": "#b4e9c5", "calm_bar": "#a2e4d3"},
 ]
 
@@ -85,7 +85,7 @@ class ConversationLog:
         try:
             with open(self.filepath, 'r') as f: return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError): return []
-    def add_session(self, chat_history):
+    def _session(self, chat_history):
         if not chat_history: return
         log = self.load_log()
         session = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "conversation": chat_history}
@@ -109,7 +109,7 @@ class EntriesLog:
         try:
             with open(self.filepath, 'r') as f: return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError): return []
-    def add_entry(self, entry_type, data):
+    def _entry(self, entry_type, data):
         entry = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "type": entry_type, "data": data}
         self.entries.insert(0, entry)
         self.save_entries()
@@ -144,7 +144,7 @@ class JerryCompanion:
             self.needs[n] = max(0, 100 - ((now - t) / 3600 / self.decay_rates_hours[n]) * 100)
     def feed(self, n, a=100):
         self.update_needs(); self.needs[n] = min(100, self.needs[n] + a); self.last_fed[n] = time.time(); self.save_state()
-    def add_xp(self, a):
+    def _xp(self, a):
         self.xp += a
         if self.xp >= self.xp_to_next_level: self.level_up()
         self.save_state()
@@ -226,7 +226,7 @@ class JerryAI:
     def end_session(self):
         if self.chat_history:
             print("Session ended. Saving conversation to log.")
-            self.conversation_log.add_session(self.chat_history)
+            self.conversation_log._session(self.chat_history)
             self.chat_history = []
 
 # --- KIVY WIDGETS AND SCREENS ---
@@ -353,16 +353,16 @@ class JerryScreen(Screen):
 
         # The rest of the setup logic also moves here
         if not self.ids.chat_log.text:
-             self.add_message("Jerry", "It's good to see you again.")
+             self._message("Jerry", "It's good to see you again.")
         self.ids.user_entry.focus = True
         App.get_running_app().update_affirmation_banner(self.name)
 
     def on_leave(self):
         self.ids.animator.stop()
-        # The end_session call was missing, let's add it back
+        # The end_session call was missing, let's  it back
         App.get_running_app().ai.end_session()
 
-    def update_ui(self, *args): # Added *args to accept the clock's dt argument if passed
+    def update_ui(self, *args): # ed *args to accept the clock's dt argument if passed
         jerry = App.get_running_app().jerry
         jerry.update_needs()
         self.ids.clarity_bar.value = jerry.needs['clarity']
@@ -376,7 +376,7 @@ class JerryScreen(Screen):
         if app.ai.is_thinking: return
         user_text = self.ids.user_entry.text.strip()
         if not user_text: return
-        self.add_message("You", user_text)
+        self._message("You", user_text)
         self.ids.user_entry.text = ""
         self.ids.user_entry.disabled = True
         self.ids.send_button.disabled = True
@@ -387,9 +387,9 @@ class JerryScreen(Screen):
         if response.startswith("ACTION:"):
             App.get_running_app().root.ids.sm.current = response.split(":")[1].strip()
         else:
-            self.add_message("Jerry", response, is_typing=True)
+            self._message("Jerry", response, is_typing=True)
 
-    def add_message(self, speaker, message, is_typing=False):
+    def _message(self, speaker, message, is_typing=False):
         app = App.get_running_app()
         speaker_color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
         self.ids.chat_log.text += f"[b][color={speaker_color_hex}]{speaker}: [/color][/b]"
@@ -454,9 +454,9 @@ class CheckinScreen(Screen):
                 background_normal=''
             )
             btn.bind(on_press=lambda x, cat=key, c=choice: self.next_step(cat, c))
-            button_layout.add_widget(btn)
+            button_layout._widget(btn)
         
-        self.ids.checkin_content.add_widget(button_layout)
+        self.ids.checkin_content._widget(button_layout)
 
     def next_step(self, category, choice):
         self.checkin_data[category] = choice
@@ -504,23 +504,37 @@ class TherapyScreenBase(Screen):
         self.ids.title_label.text = question_data["question"]
         self.ids.next_button.text = 'Next'
         content_box = self.ids.content_box
-        
+        content_box.clear_widgets()
+
         if question_data.get("type") == "rating":
+            def make_callback(key, val):
+                return lambda instance: self.set_rating_answer(key, val)
+
             rating_box = GridLayout(cols=6, size_hint_y=None, height=dp(48))
             for i in range(6):
-                btn = ToggleButton(text=str(i), group=question_data["key"], size_hint_y=None, height=dp(48))
-                if self.flow_data.get(question_data["key"]) == str(i):
+                val = str(i)
+                btn = ToggleButton(
+                    text=val,
+                    group=question_data["key"],
+                    size_hint_y=None,
+                    height=dp(48)
+                )
+                if self.flow_data.get(question_data["key"]) == val:
                     btn.state = 'down'
-                btn.bind(on_press=lambda instance, val=str(i): self.set_rating_answer(question_data["key"], val))
+                btn.bind(on_press=make_callback(question_data["key"], val))
                 rating_box.add_widget(btn)
             content_box.add_widget(rating_box)
         else:
             text_input = TextInput(
-                id='current_answer', text=self.flow_data.get(question_data["key"], ''),
-                size_hint_y=None, height=dp(150), multiline=True,
+                id='current_answer',
+                text=self.flow_data.get(question_data["key"], ''),
+                size_hint_y=None,
+                height=dp(150),
+                multiline=True,
                 hint_text=question_data.get("hint", "")
             )
             content_box.add_widget(text_input)
+
 
     def display_checklist_step(self):
         self.ids.title_label.text = "Did any of these apply?"
@@ -619,7 +633,7 @@ class EntriesScreen(Screen):
             ))
         else:
             from kivymd.uix.label import MDLabel
-            for entry in entries:
+            for entry in reversed(entries):
                 entry_type = entry.get('type', 'Entry')
                 timestamp = entry.get('timestamp', 'Unknown Date')
                 data = entry.get('data', {})
