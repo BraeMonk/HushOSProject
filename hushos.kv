@@ -26,6 +26,8 @@
 
 <RootWidget>:
     MDNavigationLayout:
+
+        # --- 1. Main Content Screen ---
         MDScreen:
             MDBoxLayout:
                 orientation: 'vertical'
@@ -60,9 +62,11 @@
                     HushScreen:
                         name: 'hush'
 
+        # --- 2. Navigation Drawer Panel ---
         MDNavigationDrawer:
             id: nav_drawer
             radius: (0, 16, 16, 0)
+
             MDNavigationDrawerMenu:
                 MDNavigationDrawerHeader:
                     title: "Menu"
@@ -103,7 +107,7 @@
                     height: self.texture_size[1]
                     padding_y: "12dp"
                     
-# --- Screen Layout Definitions ---
+# --- Screen Layout Definitions (No changes needed below this line) ---
 
 <SplashScreen>:
     MDLabel:
@@ -146,7 +150,6 @@
         MDBoxLayout:
             size_hint_y: None
             height: dp(25)
-            adaptive_width: True
             MDLabel:
                 id: level_label
             ProgressBar:
@@ -195,6 +198,7 @@
             height: dp(50)
             spacing: dp(10)
             adaptive_width: True
+            pos_hint: {"center_x": 0.5}
             MDFillRoundFlatButton:
                 text: "Back"
                 on_release: root.prev_step()
@@ -264,6 +268,7 @@
             text: "Find a moment of peace"
             font_style: 'H4'
             halign: 'center'
+            adaptive_height: True
         MDLabel:
             id: timer_label
             text: root.get_timer_text()
