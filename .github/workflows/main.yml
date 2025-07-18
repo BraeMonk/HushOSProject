@@ -14,30 +14,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # This new step creates a 'src' directory and moves your files into it,
-      # which is the structure the build action expects.
-      - name: Prepare source directory for build action
-        run: |
-          mkdir src
-          # This command moves only the essential files that are known to exist.
-          # It won't fail if optional files are missing.
-          mv main.py hushos.kv buildozer.spec assets src/
-          # This command attempts to move other files but won't cause an error if they don't exist.
-          mv config.json google_ai_client.py src/ 2>/dev/null || true
-
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          # This tells the action to look inside the 'src' folder
-          workdir: src
-          # The command is now simpler
-          command: buildozer android debug
+          # This tells the action to run commands from the root of your repository
+          workdir: ./ 
+          command: |
+            # Add a step to set the build tools version before building
+            buildozer config set android.build_tools_version 34.0.0
+            buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
-          # The output path is now correctly referenced from the action's output
           path: ${{ steps.buildozer.outputs.apk_path }}
           if-no-files-found: error
