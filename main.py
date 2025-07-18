@@ -9,6 +9,7 @@ from datetime import datetime
 
 # --- Kivy and App Dependencies ---
 from kivymd.app import MDApp
+from kivymd.uix.screen import MDScreen
 from kivymd.uix.navigationdrawer import MDNavigationLayout
 from kivy.animation import Animation
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition, NoTransition
@@ -74,7 +75,7 @@ DBT_SKILLS = {
     "Emotion Regulation": ["Check the Facts", "Opposite Action", "Problem Solving", "ABC PLEASE"], "Interpersonal Effectiveness": ["DEAR MAN", "GIVE", "FAST"]
 }
 DAILY_THEMES = [
-    {"navbar": "#ade6eb", "navbar_hover": "#8ac0d5", "background": "#fdfae6", "text_dark": "#000000", "text_light": "#4a4a4a", "accent": "#fcf8a7", "accent_dark": "#000000", "disabled": "#e0e0e0", "chat_bg": "#FFFFFF", "emotion": "#ade6eb", "physical": "#fcf8a7", "mental": "#fdfae6", "cbt_primary": "#ade6eb", "cbt_secondary": "#b8e0ea", "cbt_tertiary": "#c9e9f0", "cbt_quaternary": "#d9f3f5", "cbt_complete": "#fdfae6", "dbt_primary": "#c8a2e4", "dbt_secondary": "#d3b4ea", "dbt_tertiary": "#dfc9f0", "dbt_quaternary": "#eac3f5", "dbt_complete": "#e9e0f8", "clarity_bar": "#8ac0d5", "insight_bar": "#fbd7a5", "calm_bar": "#cc7"},
+    {"navbar": "#ade6eb", "navbar_hover": "#8ac0d5", "background": "#fdfae6", "text_dark": "#000000", "text_light": "#4a4a4a", "accent": "#fcf8a7", "accent_dark": "#000000", "disabled": "#e0e0e0", "chat_bg": "#FFFFFF", "emotion": "#ade6eb", "physical": "#fcf8a7", "mental": "#fdfae6", "cbt_primary": "#ade6eb", "cbt_secondary": "#b8e0ea", "cbt_tertiary": "#c9e9f0", "cbt_quaternary": "#d9f3f5", "cbt_complete": "#fdfae6", "dbt_primary": "#c8a2e4", "dbt_secondary": "#d3b4ea", "dbt_tertiary": "#dfc9f0", "dbt_quaternary": "#eac3f5", "dbt_complete": "#e9e0f8", "clarity_bar": "#8ac0d5", "insight_bar": "#fbd7a5", "calm_bar": "#addcc7"},
     {"navbar": "#a2e4d3", "navbar_hover": "#7fc9b8", "background": "#e6f2e4", "text_dark": "#000000", "text_light": "#3d5a54", "accent": "#7fc9b8", "accent_dark": "#000000", "disabled": "#d1e9d7", "chat_bg": "#FFFFFF", "emotion": "#a2e4d3", "physical": "#b4e9c5", "mental": "#e6f2e4", "cbt_primary": "#a2e4d3", "cbt_secondary": "#b0e9c8", "cbt_tertiary": "#beeddd", "cbt_quaternary": "#ccf2e2", "cbt_complete": "#e6f2e4", "dbt_primary": "#fec994", "dbt_secondary": "#f8d6a7", "dbt_tertiary": "#f9e0b7", "dbt_quaternary": "#fbe6c7", "dbt_complete": "#fff5ea", "clarity_bar": "#7fc9b8", "insight_bar": "#b4e9c5", "calm_bar": "#a2e4d3"},
 ]
 
@@ -85,7 +86,7 @@ class ConversationLog:
         try:
             with open(self.filepath, 'r') as f: return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError): return []
-    def _session(self, chat_history):
+    def add_session(self, chat_history):
         if not chat_history: return
         log = self.load_log()
         session = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "conversation": chat_history}
@@ -109,7 +110,7 @@ class EntriesLog:
         try:
             with open(self.filepath, 'r') as f: return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError): return []
-    def _entry(self, entry_type, data):
+    def add_entry(self, entry_type, data):
         entry = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "type": entry_type, "data": data}
         self.entries.insert(0, entry)
         self.save_entries()
@@ -144,7 +145,7 @@ class JerryCompanion:
             self.needs[n] = max(0, 100 - ((now - t) / 3600 / self.decay_rates_hours[n]) * 100)
     def feed(self, n, a=100):
         self.update_needs(); self.needs[n] = min(100, self.needs[n] + a); self.last_fed[n] = time.time(); self.save_state()
-    def _xp(self, a):
+    def add_xp(self, a):
         self.xp += a
         if self.xp >= self.xp_to_next_level: self.level_up()
         self.save_state()
@@ -164,7 +165,6 @@ class JerryAI:
 
         if GOOGLE_AI_AVAILABLE and self.api_key:
             try:
-                # Assuming your GoogleAIClient is a wrapper around the official client
                 self.client = GoogleAIClient(api_key=self.api_key)
                 print("Jerry AI initialized with Google AI support.")
             except Exception as e:
@@ -183,21 +183,11 @@ class JerryAI:
         def get_response_thread():
             if self.client:
                 try:
-                    # Construct a more robust prompt including history and instructions
-                    # Note: The exact format depends on your `GoogleAIClient` implementation.
-                    # This example assumes it can take a history list directly.
                     system_instruction = "You are Jerry, a friendly, gentle, and supportive AI companion. Keep your responses brief and caring."
-                    
-                    # Create the payload for the model
-                    # The official API would look something like this:
-                    # model = self.client.get_generative_model('gemini-1.5-flash')
-                    # response = model.generate_content(self.chat_history, generation_config=... etc)
-                    
-                    # Using your custom client structure:
                     response = self.client.generate_content(
                         model="gemini-1.5-flash",
                         system_instruction=system_instruction,
-                        history=self.chat_history 
+                        history=self.chat_history
                     )
                     ai_response = response.text.strip()
                 except Exception as e:
@@ -226,18 +216,17 @@ class JerryAI:
     def end_session(self):
         if self.chat_history:
             print("Session ended. Saving conversation to log.")
-            self.conversation_log._session(self.chat_history)
+            self.conversation_log.add_session(self.chat_history)
             self.chat_history = []
 
 # --- KIVY WIDGETS AND SCREENS ---
-# This replaces your old RootWidget(FloatLayout) class
-class RootWidget(MDNavigationLayout):
+class RootWidget(MDScreen):
     pass
 
 class JerryAnimator(FloatLayout):
     anim_frame = NumericProperty(0)
     is_thinking = BooleanProperty(False)
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         Clock.schedule_once(self._post_init)
@@ -246,7 +235,7 @@ class JerryAnimator(FloatLayout):
         self.current_interval = None
 
     def _post_init(self, dt):
-        self.app = App.get_running_app()
+        self.app = MDApp.get_running_app()
         self.jerry = self.app.jerry
         self.theme = self.app.theme
         self._define_sprites()
@@ -259,10 +248,9 @@ class JerryAnimator(FloatLayout):
             "thinking": [[[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],[0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,0,3,1,2,0,2,1,1,3,0],[0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],[0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],[0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,0,3,1,2,2,2,1,1,3,0],[0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],[0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]]
         }
         self.sprites["low_clarity"] = self.sprites["content"]
-        
+
     def start(self):
-        if not hasattr(self, 'jerry'):
-            return
+        if not hasattr(self, 'jerry'): return
         self.stop()
         self.is_thinking = False
         self.current_interval = 0.35
@@ -293,17 +281,15 @@ class JerryAnimator(FloatLayout):
         self.anim_frame = (self.anim_frame + 1) % len(frames)
         self.draw_sprite(frames[self.anim_frame], anim_key)
 
-    # ... keep your existing show_thinking_sprite, animate_thinking, draw_sprite methods ...
-        
     def show_thinking_sprite(self):
         self.stop(); self.is_thinking = True; self.anim_frame = 0
         self.thinking_event = Clock.schedule_interval(self.animate_thinking, 0.5)
-        
+
     def animate_thinking(self, dt):
         frames = self.sprites["thinking"]
         self.anim_frame = (self.anim_frame + 1) % len(frames)
         self.draw_sprite(frames[self.anim_frame], 'thinking')
-        
+
     def draw_sprite(self, data, anim_key):
         self.canvas.clear()
         pixel_size = self.width / 18
@@ -337,33 +323,22 @@ class SplashScreen(Screen):
 
 class JerryScreen(Screen):
     def on_enter(self):
-        """
-        Called when the screen is entered. We schedule all UI setup for the
-        next frame to ensure all widgets from the .kv file are loaded.
-        """
         Clock.schedule_once(self.setup_screen)
 
     def setup_screen(self, dt):
-        """
-        This method runs on the next frame after on_enter, ensuring the
-        UI is fully loaded and self.ids is populated.
-        """
         self.update_ui()
         self.ids.animator.start()
-
-        # The rest of the setup logic also moves here
         if not self.ids.chat_log.text:
-             self._message("Jerry", "It's good to see you again.")
+            self.add_message("Jerry", "It's good to see you again.")
         self.ids.user_entry.focus = True
-        App.get_running_app().update_affirmation_banner(self.name)
+        MDApp.get_running_app().update_affirmation_banner(self.name)
 
     def on_leave(self):
         self.ids.animator.stop()
-        # The end_session call was missing, let's  it back
-        App.get_running_app().ai.end_session()
+        MDApp.get_running_app().ai.end_session()
 
-    def update_ui(self, *args): # ed *args to accept the clock's dt argument if passed
-        jerry = App.get_running_app().jerry
+    def update_ui(self, *args):
+        jerry = MDApp.get_running_app().jerry
         jerry.update_needs()
         self.ids.clarity_bar.value = jerry.needs['clarity']
         self.ids.insight_bar.value = jerry.needs['insight']
@@ -372,11 +347,11 @@ class JerryScreen(Screen):
         self.ids.xp_bar.value = (jerry.xp / jerry.xp_to_next_level) * 100
 
     def send_message(self):
-        app = App.get_running_app()
+        app = MDApp.get_running_app()
         if app.ai.is_thinking: return
         user_text = self.ids.user_entry.text.strip()
         if not user_text: return
-        self._message("You", user_text)
+        self.add_message("You", user_text)
         self.ids.user_entry.text = ""
         self.ids.user_entry.disabled = True
         self.ids.send_button.disabled = True
@@ -385,12 +360,12 @@ class JerryScreen(Screen):
 
     def handle_ai_response(self, response):
         if response.startswith("ACTION:"):
-            App.get_running_app().root.ids.sm.current = response.split(":")[1].strip()
+            MDApp.get_running_app().root.ids.sm.current = response.split(":")[1].strip()
         else:
-            self._message("Jerry", response, is_typing=True)
+            self.add_message("Jerry", response, is_typing=True)
 
-    def _message(self, speaker, message, is_typing=False):
-        app = App.get_running_app()
+    def add_message(self, speaker, message, is_typing=False):
+        app = MDApp.get_running_app()
         speaker_color_hex = app.theme.COLORS['accent_dark'] if speaker == 'Jerry' else app.theme.COLORS['text_dark']
         self.ids.chat_log.text += f"[b][color={speaker_color_hex}]{speaker}: [/color][/b]"
         if is_typing and app.ai.client:
@@ -418,21 +393,18 @@ class JerryScreen(Screen):
         scroll_view = self.ids.chat_scroll
         Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0))
 
-
-# In main.py, replace 'class CheckinScreen(Screen): pass' with this:
-
 class CheckinScreen(Screen):
     checkin_step = NumericProperty(0)
     
     def on_enter(self):
-        App.get_running_app().update_affirmation_banner(self.name)
+        MDApp.get_running_app().update_affirmation_banner(self.name)
         self.checkin_data = {}
         self.checkin_step = 0
         self.display_step()
 
     def display_step(self):
         self.ids.checkin_content.clear_widgets()
-        app = App.get_running_app()
+        app = MDApp.get_running_app()
         theme = app.theme.COLORS
 
         steps = [
@@ -472,7 +444,7 @@ class CheckinScreen(Screen):
         self.display_step()
 
     def complete_checkin(self):
-        app = App.get_running_app()
+        app = MDApp.get_running_app()
         summary = f"Emotionally feeling {self.checkin_data.get('emotion', 'N/A')}, physically {self.checkin_data.get('physical', 'N/A')}, mentally {self.checkin_data.get('mental', 'N/A')}."
         log_data = {"summary": summary, "details": self.checkin_data}
         app.entries_log.add_entry("Check-in", log_data)
@@ -484,7 +456,7 @@ class TherapyScreenBase(Screen):
     flow_step = NumericProperty(0)
 
     def on_enter(self):
-        App.get_running_app().update_affirmation_banner(self.name)
+        MDApp.get_running_app().update_affirmation_banner(self.name)
         self.flow_data = {}
         self.flow_step = 0
         self.questions = []
@@ -513,7 +485,7 @@ class TherapyScreenBase(Screen):
         self.ids.next_button.text = 'Next'
         content_box = self.ids.content_box
         content_box.clear_widgets()
-
+        
         if question_data.get("type") == "rating":
             def make_callback(key, val):
                 return lambda instance: self.set_rating_answer(key, val)
@@ -542,7 +514,6 @@ class TherapyScreenBase(Screen):
                 hint_text=question_data.get("hint", "")
             )
             content_box.add_widget(text_input)
-
 
     def display_checklist_step(self):
         self.ids.title_label.text = "Did any of these apply?"
@@ -589,7 +560,7 @@ class TherapyScreenBase(Screen):
             self.display_step()
 
     def complete_flow(self):
-        app = App.get_running_app()
+        app = MDApp.get_running_app()
         summary = ""
         for key, value in self.flow_data.items():
             summary += f"{key.replace('_', ' ').capitalize()}: {value}\n"
@@ -614,6 +585,7 @@ class DBTScreen(TherapyScreenBase):
         self.ids.title_label.text = "Which skills did you use?"
         self.ids.next_button.text = 'Finish'
         content_box = self.ids.content_box
+        content_box.clear_widgets()
         saved_checklist = self.flow_data.get('checklist', [])
         for category, skills in self.checklist.items():
             content_box.add_widget(Label(text=f"[b]{category}[/b]", markup=True, size_hint_y=None, height=dp(40)))
@@ -628,73 +600,65 @@ class DBTScreen(TherapyScreenBase):
 
 class EntriesScreen(Screen):
     def on_enter(self):
-        App.get_running_app().update_affirmation_banner(self.name)
+        app = MDApp.get_running_app()
+        app.update_affirmation_banner(self.name)
         body_box = self.ids.entries_log.ids.body_box
         body_box.clear_widgets()
         
-        entries = App.get_running_app().entries_log.get_all_entries()
+        entries = app.entries_log.get_all_entries()
         if not entries:
             from kivymd.uix.label import MDLabel
             body_box.add_widget(MDLabel(
                 text="No entries yet.",
-                theme_text_color="Primary"
+                halign="center"
             ))
             return
-        
-        # Helper to safely parse timestamp, fallback to epoch start for sorting
-        def parse_timestamp(ts):
-            try:
-                # Adjust format to match your timestamp format exactly!
-                return datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
-            except Exception:
-                return datetime(1970, 1, 1)
-        
-        # Sort entries by timestamp descending (newest first)
-        entries_sorted = sorted(
-            entries, 
-            key=lambda e: parse_timestamp(e.get('timestamp', '')), 
-            reverse=True
-        )
-        
+            
+        from kivymd.uix.card import MDCard
         from kivymd.uix.label import MDLabel
-        for entry in entries_sorted:
+        for entry in entries:
             entry_type = entry.get('type', 'Entry')
             timestamp = entry.get('timestamp', 'Unknown Date')
             data = entry.get('data', {})
             summary = data.get('summary', 'No summary available.')
 
-            label = MDLabel(
-                text=f"[b][{entry_type}] - {timestamp}[/b]\n{summary}",
-                markup=True,
-                theme_text_color="Primary",
+            card = MDCard(
+                orientation="vertical",
+                padding=dp(10),
+                spacing=dp(5),
                 size_hint_y=None,
-                height=dp(60),
-                halign="left"
+                adaptive_height=True,
+                md_bg_color=app.theme_cls.surface_container_low_color
             )
-            body_box.add_widget(label)
+            card.add_widget(MDLabel(
+                text=f"[{entry_type}] - {timestamp}",
+                font_style="Overline",
+                adaptive_height=True
+            ))
+            card.add_widget(MDLabel(
+                text=summary,
+                theme_text_color="Primary",
+                adaptive_height=True
+            ))
+            body_box.add_widget(card)
 
-            
 class HistoryScreen(Screen):
-    # The on_enter method is now indented to be part of the class
     def on_enter(self):
-        App.get_running_app().update_affirmation_banner(self.name)
+        MDApp.get_running_app().update_affirmation_banner(self.name)
         log_label = self.ids.history_log.ids.body_text
         log_label.text = ""
         
-        convo_log = App.get_running_app().ai.conversation_log.load_log()
+        convo_log = MDApp.get_running_app().ai.conversation_log.load_log()
         if not convo_log:
             log_label.text = "No conversation history."
         else:
             full_text = []
             for session in convo_log:
-                # Safely get timestamp
                 timestamp = session.get('timestamp', 'Unknown Date')
                 full_text.append(f"[b]Session: {timestamp}[/b]\n")
                 
-                # Safely get conversation list
                 conversation = session.get('conversation', [])
                 for message in conversation:
-                    # Safely get message role and parts
                     role = message.get('role', 'model')
                     speaker = "Jerry" if role == 'model' else 'You'
                     
@@ -710,13 +674,13 @@ class HushScreen(Screen):
     timer_active = BooleanProperty(False)
     
     def on_enter(self):
-        App.get_running_app().update_affirmation_banner(self.name)
+        MDApp.get_running_app().update_affirmation_banner(self.name)
         self.reset_timer()
         
     def start_stop_timer(self):
         self.timer_active = not self.timer_active
         if self.timer_active:
-            app = App.get_running_app()
+            app = MDApp.get_running_app()
             app.jerry.feed("calm", 100); app.jerry.add_xp(5)
             self.timer_event = Clock.schedule_interval(self.update_timer, 1)
         else:
@@ -726,7 +690,7 @@ class HushScreen(Screen):
         self.timer_seconds -= 1
         if self.timer_seconds <= 0:
             self.timer_event.cancel()
-            App.get_running_app().root.ids.sm.current = 'jerry'
+            MDApp.get_running_app().root.ids.sm.current = 'jerry'
             
     def get_timer_text(self):
         mins, secs = divmod(self.timer_seconds, 60)
@@ -742,6 +706,9 @@ class HushScreen(Screen):
 
 class HushOSApp(MDApp):
     def build(self):
+        self.theme_cls.theme_style = "Light"
+        self.theme_cls.primary_palette = "Blue"
+
         api_key = None
         try:
             with open("config.json") as f:
@@ -773,7 +740,6 @@ class HushOSApp(MDApp):
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
         self.root.ids.sm.current = 'splash'
-        # The initial screen is now set in the KV file, so go_to_splash is not needed.
         
     def on_stop(self):
         self.ai.end_session()
@@ -781,7 +747,7 @@ class HushOSApp(MDApp):
         
     def on_request_close(self, *args):
         self.on_stop()
-        return True # Return True to allow the app to close
+        return True
 
     def on_pause(self):
         if self.sound and self.sound.state == 'play': self.sound.stop()
@@ -800,14 +766,11 @@ class HushOSApp(MDApp):
                 self.COLORS = DAILY_THEMES[datetime.now().weekday() % len(DAILY_THEMES)]
         return Theme()
 
-    # In your HushOSApp class, replace the old method with this one
     def change_screen(self, screen_name):
+        self.root.ids.nav_drawer.set_state("close")
         sm = self.root.ids.sm
         if sm.current != screen_name:
             sm.current = screen_name
-    # This closes the drawer after a selection is made
-        self.root.ids.nav_drawer.set_state("close")
-
 
     def update_affirmation_banner(self, screen_name):
         banner = self.root.ids.affirmation_banner
