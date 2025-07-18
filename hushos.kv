@@ -1,10 +1,9 @@
-#:kivy 1.11.1
+#:kivy 1.11.1 
 #:import get_color_from_hex kivy.utils.get_color_from_hex
 #:import dp kivy.metrics.dp
 
 # --- Reusable Component & Base Class Definitions ---
-# This rule now applies a background to ANY screen that doesn't have one,
-# simplifying the rules below. This is a more robust way to define a base style.
+
 <Screen>:
     canvas.before:
         Color:
@@ -83,7 +82,7 @@
                 text: "Version 1.0"
                 font_style: "Caption"
                 halign: "center"
-                padding_y: "12dp"
+                padding: [0, dp(12), 0, dp(12)]
 
     # 2. The ScreenManager (must be a direct child)
     ScreenManager:
@@ -126,8 +125,6 @@
 
 
 # --- Screen Layout Definitions ---
-# These rules now just apply to the existing Python classes
-# without re-declaring them. This is the main fix.
 
 <SplashScreen>:
     Label:
@@ -187,6 +184,7 @@
         ScrollView:
             id: chat_scroll
             size_hint_y: 1 
+
             MDBoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
@@ -219,7 +217,6 @@
                 size_hint_x: None
                 width: dp(80)
                 on_press: root.send_message()
-
 
 
 <TherapyScreenBase>:
@@ -265,7 +262,6 @@
                 on_press: root.next_step()
 
 
-
 <CheckinScreen>:
     BoxLayout:
         orientation: 'vertical'
@@ -288,6 +284,7 @@
 
         ScrollView:
             size_hint: 1, 1
+
             BoxLayout:
                 id: checkin_content
                 orientation: 'vertical'
@@ -300,12 +297,12 @@
 
 
 <CBTScreen>:
-    # This class is defined in Python and inherits from TherapyScreenBase
-    # Its visuals are entirely controlled by the TherapyScreenBase rule above.
-    # So we don't need a specific rule for it, but this placeholder can stay.
-    
+    # Placeholder, inherits TherapyScreenBase in Python
+
+
 <DBTScreen>:
-    # Same as CBTScreen
+    # Placeholder, inherits TherapyScreenBase in Python
+
 
 <EntriesScreen>:
     BoxLayout:
@@ -314,8 +311,11 @@
         Label:
             text: "Your Journal Entries"
             font_size: '24sp'
+            size_hint_y: None
+            height: self.texture_size[1]
         BodyScrollView:
             id: entries_log
+
 
 <HistoryScreen>:
     BoxLayout:
@@ -324,8 +324,11 @@
         Label:
             text: "Conversation History"
             font_size: '24sp'
+            size_hint_y: None
+            height: self.texture_size[1]
         BodyScrollView:
             id: history_log
+
 
 <HushScreen>:
     BoxLayout:
