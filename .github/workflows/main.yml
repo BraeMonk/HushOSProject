@@ -14,18 +14,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Java Development Kit (JDK) 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      # THIS NEW STEP INCREASES THE MEMORY AVAILABLE TO GRADLE
+      - name: Set Gradle Heap Size
+        run: echo "GRADLE_OPTS=-Xmx3072m" >> $GITHUB_ENV
+
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          # This command builds the debug APK.
-          # The action handles Java and all dependencies automatically.
           command: buildozer -v android debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
-          # The action provides the correct path to the APK as an output.
           path: ${{ steps.buildozer.outputs.apk_path }}
           if-no-files-found: error
