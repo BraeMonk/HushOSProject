@@ -12,53 +12,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          persist-credentials: false # Recommended for security, even if it might slightly increase clone time
+          persist-credentials: false
+
+      # --- THIS IS THE NEW, CRITICAL STEP ---
+      - name: Set up Java Development Kit (JDK) 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
 
       - name: Prepare source directory for build action
         run: |
-          # Create the 'src' directory where Buildozer expects the project files
           mkdir -p src
-          
-          # Move core project files into the 'src' directory
-          # Using `|| true` with `2>/dev/null` for optional files ensures the step doesn't fail
-          # if config.json or google_ai_client.pyc are not present.
           mv main.py hushos.kv buildozer.spec assets src/
           mv config.json google_ai_client.pyc src/ 2>/dev/null || true
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer # Assign an ID to this step to access its outputs
+        id: buildozer
         with:
-          workdir: src # Tell the action to run Buildozer commands within the 'src' directory
+          workdir: src
           command: |
-            # Step 1: Force Buildozer to update/initialize its environment.
-            # This ensures 'python-for-android' and other tools are downloaded
-            # and set up correctly before subsequent commands. This specifically addresses
-            # the 'FileNotFoundError' during the 'clean' operation.
             echo "--- Running buildozer android update ---"
             buildozer android update
-
-            # Step 2: Perform the actual clean and debug build.
-            # 'clean': Removes previous build artifacts and cached components, ensuring a fresh build.
-            # 'debug': Builds a debug APK.
-            # 'DEBUG=1': Increases verbosity for detailed logging, useful for debugging.
             echo "--- Running buildozer -v android clean debug DEBUG=1 ---"
             buildozer -v android clean debug DEBUG=1 
-      
+
       - name: Debug APK path output
-        # This step will only run if the 'Build with Buildozer' step succeeds.
         run: |
           echo "The APK path reported by buildozer-action is: ${{ steps.buildozer.outputs.apk_path }}"
-          
-          # List the contents of the directory where the APK is expected to be
-          # This helps verify if the APK was indeed generated and where it is.
-          # `|| true` prevents this debug command from failing the workflow if the path doesn't exist.
           ls -l $(dirname ${{ steps.buildozer.outputs.apk_path }}) || true
 
       - name: Upload APK
-        # This step will only run if the 'Build with Buildozer' step succeeds.
         uses: actions/upload-artifact@v4
         with:
-          name: hush-os-apk # Name for the artifact bundle
-          path: ${{ steps.buildozer.outputs.apk_path }} # The path to the generated APK
-          if-no-files-found: error # Fail the workflow if no APK is found at the specified path
+          name: hush-os-apk
+          path: ${{ steps.buildozer.outputs.apk_path }}
+          if-no-files-found: error
