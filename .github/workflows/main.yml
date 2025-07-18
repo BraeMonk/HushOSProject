@@ -19,7 +19,11 @@ jobs:
       - name: Prepare source directory for build action
         run: |
           mkdir src
-          mv main.py hushos.kv buildozer.spec config.json assets google_ai_client.pyc src/
+          # This command moves only the essential files that are known to exist.
+          # It won't fail if optional files are missing.
+          mv main.py hushos.kv buildozer.spec assets src/
+          # This command attempts to move other files but won't cause an error if they don't exist.
+          mv config.json google_ai_client.py src/ 2>/dev/null || true
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
