@@ -35,12 +35,14 @@ from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
 
 # --- AI & Media Dependencies ---
-try:
-    import google.generativeai as genai
-    GOOGLE_AI_AVAILABLE = True
-except ImportError:
-    GOOGLE_AI_AVAILABLE = False
-    print("Warning: google-generativeai not found. Jerry will have basic responses.")
+if GOOGLE_AI_AVAILABLE and self.api_key:
+    try:
+        genai.configure(api_key=self.api_key)
+        self.client = genai.GenerativeModel("gemini-1.5-flash")
+        print("Jerry AI initialized with Google AI support.")
+    except Exception as e:
+        print(f"Failed to initialize Google AI client: {e}")
+        self.client = None
 
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
@@ -75,10 +77,6 @@ DBT_SKILLS = {
     "Mindfulness": ["Observe", "Describe", "Participate", "Non-judgmentally", "One-mindfully", "Effectively"], "Distress Tolerance": ["TIP", "ACCEPTS", "Self-Soothe", "IMPROVE the moment", "Radical Acceptance"],
     "Emotion Regulation": ["Check the Facts", "Opposite Action", "Problem Solving", "ABC PLEASE"], "Interpersonal Effectiveness": ["DEAR MAN", "GIVE", "FAST"]
 }
-DAILY_THEMES = [
-    {"navbar": "#ade6eb", "navbar_hover": "#8ac0d5", "background": "#fdfae6", "text_dark": "#FFFFFF", "text_light": "#4a4a4a", "accent": "#fcf8a7", "accent_dark": "#FFFFFF", "disabled": "#e0e0e0", "chat_bg": "#FFFFFF", "emotion": "#ade6eb", "physical": "#fcf8a7", "mental": "#fdfae6", "cbt_primary": "#ade6eb", "cbt_secondary": "#b8e0ea", "cbt_tertiary": "#c9e9f0", "cbt_quaternary": "#d9f3f5", "cbt_complete": "#fdfae6", "dbt_primary": "#c8a2e4", "dbt_secondary": "#d3b4ea", "dbt_tertiary": "#dfc9f0", "dbt_quaternary": "#eac3f5", "dbt_complete": "#e9e0f8", "clarity_bar": "#8ac0d5", "insight_bar": "#fbd7a5", "calm_bar": "#addcc7"},
-    {"navbar": "#a2e4d3", "navbar_hover": "#7fc9b8", "background": "#e6f2e4", "text_dark": "#FFFFFF", "text_light": "#3d5a54", "accent": "#7fc9b8", "accent_dark": "#FFFFFF", "disabled": "#d1e9d7", "chat_bg": "#FFFFFF", "emotion": "#a2e4d3", "physical": "#b4e9c5", "mental": "#e6f2e4", "cbt_primary": "#a2e4d3", "cbt_secondary": "#b0e9c8", "cbt_tertiary": "#beeddd", "cbt_quaternary": "#ccf2e2", "cbt_complete": "#e6f2e4", "dbt_primary": "#fec994", "dbt_secondary": "#f8d6a7", "dbt_tertiary": "#f9e0b7", "dbt_quaternary": "#fbe6c7", "dbt_complete": "#fff5ea", "clarity_bar": "#7fc9b8", "insight_bar": "#b4e9c5", "calm_bar": "#a2e4d3"},
-]
 
 # --- DATA MANAGEMENT CLASSES ---
 class ConversationLog:
@@ -776,12 +774,6 @@ class HushOSApp(MDApp):
         self.play_music()
         if self.root.ids.sm.current == 'jerry':
             self.root.ids.sm.get_screen('jerry').ids.animator.start()
-
-    def get_daily_theme(self):
-        class Theme:
-            def __init__(self):
-                self.COLORS = DAILY_THEMES[datetime.now().weekday() % len(DAILY_THEMES)]
-        return Theme()
 
     def change_screen(self, screen_name):
         self.root.ids.nav_drawer.set_state("close")
