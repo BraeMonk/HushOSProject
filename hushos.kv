@@ -26,43 +26,65 @@
 
 <RootWidget>:
     MDNavigationLayout:
+        # We add an id here so we can reference the nav_drawer from within child widgets.
+        id: nav_layout
 
-        # --- 1. Main Content Screen ---
-        MDScreen:
-            MDBoxLayout:
-                orientation: 'vertical'
+        ##
+        # Section 1: The Screen Manager
+        # This MUST be a direct child of MDNavigationLayout.
+        ##
+        ScreenManager:
+            id: sm
 
-                MDTopAppBar:
-                    title: "HushOS Tools"
-                    left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
-                    elevation: 4
+            SplashScreen:
+                name: 'splash'
+                # Minimal splash screen, likely without a toolbar.
 
-                MDLabel:
-                    id: affirmation_banner
-                    size_hint_y: None
-                    height: 0
-                    halign: 'center'
+            JerryScreen:
+                name: 'jerry'
+                MDBoxLayout:
+                    orientation: 'vertical'
+                    # The Toolbar now lives inside the screen.
+                    MDTopAppBar:
+                        title: "HushOS"
+                        elevation: 4
+                        # The lambda now uses `nav_layout.ids` to find the drawer.
+                        left_action_items: [["menu", lambda x: nav_layout.ids.nav_drawer.set_state("open")]]
 
-                ScreenManager:
-                    id: sm
-                    SplashScreen:
-                        name: 'splash'
-                    JerryScreen:
-                        name: 'jerry'
-                    CheckinScreen:
-                        name: 'checkin'
-                    CBTScreen:
-                        name: 'cbt'
-                    DBTScreen:
-                        name: 'dbt'
-                    EntriesScreen:
-                        name: 'entries'
-                    HistoryScreen:
-                        name: 'history'
-                    HushScreen:
-                        name: 'hush'
+                    # Add the rest of JerryScreen's content below the toolbar.
+                    MDLabel:
+                        text: "Jerry Screen Content"
+                        halign: "center"
 
-        # --- 2. Navigation Drawer Panel ---
+            CheckinScreen:
+                name: 'checkin'
+                # Add layout and toolbar here if needed.
+
+            CBTScreen:
+                name: 'cbt'
+                # Add layout and toolbar here if needed.
+
+            DBTScreen:
+                name: 'dbt'
+                # Add layout and toolbar here if needed.
+
+            EntriesScreen:
+                name: 'entries'
+                # Add layout and toolbar here if needed.
+
+            HistoryScreen:
+                name: 'history'
+                # Add layout and toolbar here if needed.
+
+            HushScreen:
+                name: 'hush'
+                # Add layout and toolbar here if needed.
+
+
+        ##
+        # Section 2: The Navigation Drawer
+        # This is the second required child. This section was already correct.
+        ##
         MDNavigationDrawer:
             id: nav_drawer
             radius: (0, 16, 16, 0)
@@ -70,35 +92,44 @@
             MDNavigationDrawerMenu:
                 MDNavigationDrawerHeader:
                     title: "Menu"
+
                 MDNavigationDrawerItem:
                     text: "Jerry"
                     icon: "robot-happy-outline"
-                    on_release: app.change_screen('jerry')
+                    on_release: sm.current = 'jerry'; nav_drawer.set_state("close")
+
                 MDNavigationDrawerItem:
                     text: "Check-in"
                     icon: "emoticon-happy-outline"
-                    on_release: app.change_screen('checkin')
+                    on_release: sm.current = 'checkin'; nav_drawer.set_state("close")
+
                 MDNavigationDrawerItem:
                     text: "CBT Worksheet"
                     icon: "notebook-edit-outline"
-                    on_release: app.change_screen('cbt')
+                    on_release: sm.current = 'cbt'; nav_drawer.set_state("close")
+
                 MDNavigationDrawerItem:
                     text: "DBT Skills Log"
                     icon: "notebook-check-outline"
-                    on_release: app.change_screen('dbt')
+                    on_release: sm.current = 'dbt'; nav_drawer.set_state("close")
+
                 MDNavigationDrawerItem:
                     text: "All Entries"
                     icon: "book-open-variant"
-                    on_release: app.change_screen('entries')
+                    on_release: sm.current = 'entries'; nav_drawer.set_state("close")
+
                 MDNavigationDrawerItem:
                     text: "Conversation History"
                     icon: "history"
-                    on_release: app.change_screen('history')
+                    on_release: sm.current = 'history'; nav_drawer.set_state("close")
+
                 MDNavigationDrawerItem:
                     text: "Hush"
                     icon: "timer-sand"
-                    on_release: app.change_screen('hush')
+                    on_release: sm.current = 'hush'; nav_drawer.set_state("close")
+
                 MDNavigationDrawerDivider:
+
                 MDLabel:
                     text: "Version 1.0"
                     font_style: "Caption"
