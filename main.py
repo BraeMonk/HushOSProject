@@ -32,14 +32,15 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
+import google.generativeai as genai
 
 # --- AI & Media Dependencies ---
 try:
-    from google_ai_client import GoogleAIClient # Assuming you have a custom client wrapper
+    import google.generativeai as genai
     GOOGLE_AI_AVAILABLE = True
 except ImportError:
     GOOGLE_AI_AVAILABLE = False
-    print("Warning: Google AI client not found. Jerry will have basic responses.")
+    print("Warning: google-generativeai not found. Jerry will have basic responses.")
 
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
@@ -158,7 +159,14 @@ class JerryAI:
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
         self.memory = JerryMemory(jerry_memory_path)
-        self.api_key = api_key
+        self.api_key = None
+        try:
+            config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                self.api_key = config.get('api_key')
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Could not load config.json: {e}")
         self.client = None
         self.is_thinking = False
         self.chat_history = []  # Stores the current session's conversation
@@ -604,7 +612,7 @@ class EntriesScreen(Screen):
         app.update_affirmation_banner(self.name)
         body_box = self.ids.entries_log.ids.body_box
         body_box.clear_widgets()
-        
+        body_label = self.ids.entries_text
         entries = app.entries_log.get_all_entries()
         if not entries:
             from kivymd.uix.label import MDLabel
@@ -645,7 +653,7 @@ class EntriesScreen(Screen):
 class HistoryScreen(Screen):
     def on_enter(self):
         MDApp.get_running_app().update_affirmation_banner(self.name)
-        log_label = self.ids.history_log.ids.body_text
+        log_label = self.ids.history_log.ids.history_text
         log_label.text = ""
         
         convo_log = MDApp.get_running_app().ai.conversation_log.load_log()
