@@ -136,32 +136,70 @@
         padding: dp(12)
         spacing: dp(12)
 
-        ScrollView:
-            size_hint_y: 1
-            padding: dp(8)
+        # TOP: Jerry + Stats
+        MDBoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: dp(180)
+            spacing: dp(12)
 
+            # Jerry animation container (top-left)
+            BoxLayout:
+                id: jerry_avatar_container
+                size_hint_x: 0.5
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0.05
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+
+            # Stats (top-right)
+            MDBoxLayout:
+                orientation: 'vertical'
+                size_hint_x: 0.5
+                spacing: dp(10)
+
+                MDLabel:
+                    text: "Clarity"
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.text_color
+                ColorProgressBar:
+                    id: clarity_bar
+                    max: 100
+                    value: 100
+
+                MDLabel:
+                    text: "Insight"
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.text_color
+                ColorProgressBar:
+                    id: insight_bar
+                    max: 100
+                    value: 100
+
+                MDLabel:
+                    text: "Calm"
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.text_color
+                ColorProgressBar:
+                    id: calm_bar
+                    max: 100
+                    value: 100
+
+        # MIDDLE: Chat Log
+        ScrollView:
             MDBoxLayout:
                 id: chat_log_container
                 orientation: 'vertical'
                 size_hint_y: None
                 height: self.minimum_height
-                padding: dp(10)
                 spacing: dp(10)
 
-                MDLabel:
-                    id: chat_log
-                    markup: True
-                    size_hint_y: None
-                    height: self.texture_size[1]
-                    text_size: self.width, None
-                    padding: [dp(8), dp(8), dp(8), dp(8)]
-                    theme_text_color: "Custom"
-                    text_color: app.theme_cls.text_color
-
+        # BOTTOM: Text Entry
         MDBoxLayout:
             size_hint_y: None
             height: dp(56)
-            padding: dp(8)
             spacing: dp(8)
 
             MDTextField:
@@ -169,10 +207,8 @@
                 multiline: False
                 hint_text: "Talk to Jerry..."
                 on_text_validate: root.send_message()
-                padding: [dp(12), 0, dp(12), 0]
 
             MDIconButton:
-                id: send_button
                 icon: "send"
                 on_release: root.send_message()
 
