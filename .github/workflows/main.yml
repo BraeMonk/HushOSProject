@@ -17,6 +17,8 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt-get autoremove -y
+          sudo apt-get autoclean -y
           df -h
       
       - name: Build with Buildozer
@@ -25,22 +27,16 @@ jobs:
         with:
           buildozer_version: "1.5.0"
           command: |
-            # Set specific, stable versions for Android tools in buildozer.spec
-            buildozer config set android.ndk_version 25b
-            buildozer config set android.build_tools_version 34.0.0
-            
-            # Configure memory settings in buildozer.spec
-            buildozer config set android.gradle_dependencies ''
-            buildozer config set android.add_gradle_maven ''
-            
-            # Run the build with verbose output
+            # The buildozer.spec already has the correct versions, so we don't need to set them again
+            # Just run the build with verbose output
             buildozer -v android debug
         env:
-          # Increase memory allocation for various processes
-          GRADLE_OPTS: -Xmx6g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError
-          JAVA_OPTS: -Xmx4g
-          # Additional JVM options for the build process
-          _JAVA_OPTIONS: -Xmx4g -XX:MaxMetaspaceSize=512m
+          # Memory settings for Gradle and Java processes
+          GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
+          JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
+          _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
+          # Reduce parallelism to save memory
+          GRADLE_MAX_WORKERS: 2
       
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
