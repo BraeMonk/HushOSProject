@@ -40,69 +40,90 @@
         halign: 'center'
 
 <JerryScreen>:
+    # The main container that stacks the top, middle, and bottom sections
     MDBoxLayout:
         orientation: 'vertical'
-        MDTopAppBar:
-            title: "HushOS"
-            elevation: 4
-            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
-        MDBoxLayout:
-            orientation: 'vertical'
-            padding: dp(10)
-            spacing: dp(10)
+
+        # --- 1. Top Section (Jerry & Stats) ---
+        MDRelativeLayout:
+            size_hint_y: None
+            height: dp(210) # Fixed height for the top area
+
+            # Jerry's animation is the base layer
             JerryAnimator:
                 id: animator
-                size_hint_y: None
+                size_hint: None, None
+                size: dp(140), dp(120)
+                pos_hint: {'center_x': 0.5, 'top': 1.0}
+
+            # A card to hold the stats, slightly overlapping Jerry
+            MDCard:
+                orientation: 'vertical'
+                size_hint: .9, None
                 height: dp(120)
-            GridLayout:
-                cols: 2
-                size_hint_y: None
-                height: dp(80)
-                spacing: dp(10)
-                MDLabel:
-                    text: 'Clarity'
-                ProgressBar:
-                    id: clarity_bar
-                    max: 100
-                MDLabel:
-                    text: 'Insight'
-                ProgressBar:
-                    id: insight_bar
-                    max: 100
-                MDLabel:
-                    text: 'Calm'
-                ProgressBar:
-                    id: calm_bar
-                    max: 100
-            MDBoxLayout:
-                size_hint_y: None
-                height: dp(25)
-                MDLabel:
-                    id: level_label
-                ProgressBar:
-                    id: xp_bar
-                    max: 100
-            ScrollView:
-                id: chat_scroll
-                MDLabel:
-                    id: chat_log
-                    markup: True
-                    size_hint_y: None
-                    height: self.texture_size[1]
-                    text_size: self.width - dp(20), None
-            MDBoxLayout:
-                size_hint_y: None
-                height: dp(48)
+                pos_hint: {'center_x': 0.5, 'y': 0} # Positioned at the bottom
+                elevation: 4
                 padding: dp(8)
                 spacing: dp(8)
-                TextInput:
-                    id: user_entry
-                    multiline: False
-                    on_text_validate: root.send_message()
-                MDFillRoundFlatButton:
-                    id: send_button
-                    text: 'Send'
-                    on_release: root.send_message()
+                radius: [12, 12, 12, 12]
+
+                GridLayout:
+                    cols: 2
+                    size_hint_y: None
+                    height: dp(80)
+                    spacing: dp(10)
+                    MDLabel:
+                        text: 'Clarity'
+                    ProgressBar:
+                        id: clarity_bar
+                        max: 100
+                    MDLabel:
+                        text: 'Insight'
+                    ProgressBar:
+                        id: insight_bar
+                        max: 100
+                    MDLabel:
+                        text: 'Calm'
+                    ProgressBar:
+                        id: calm_bar
+                        max: 100
+
+                MDBoxLayout:
+                    size_hint_y: None
+                    height: dp(25)
+                    MDLabel:
+                        id: level_label
+                    ProgressBar:
+                        id: xp_bar
+                        max: 100
+
+        # --- 2. Middle Section (Chat Log) ---
+        ScrollView:
+            id: chat_scroll
+            size_hint_y: 1 # This tells the ScrollView to fill all available space
+            MDLabel:
+                id: chat_log
+                markup: True
+                size_hint_y: None
+                height: self.texture_size[1]
+                text_size: self.width - dp(20), None
+                padding: dp(10)
+
+        # --- 3. Bottom Section (Text Input) ---
+        MDBoxLayout:
+            size_hint_y: None
+            height: dp(56) # Increased height for better touch targets
+            padding: dp(8)
+            spacing: dp(8)
+            MDTextField:
+                id: user_entry
+                multiline: False
+                hint_text: "Talk to Jerry..."
+                on_text_validate: root.send_message()
+            MDIconButton:
+                id: send_button
+                icon: "send"
+                on_release: root.send_message()
 
 <TherapyScreenBase>:
     MDBoxLayout:
