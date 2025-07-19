@@ -110,7 +110,7 @@
         MDTopAppBar:
             title: "Therapy Worksheet"
             elevation: 4
-            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
+            left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
         MDBoxLayout:
             orientation: 'vertical'
             padding: dp(20)
