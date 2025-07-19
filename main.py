@@ -340,22 +340,41 @@ class JerryAnimator(FloatLayout):
         pixel_size = self.width / 18
         offset_x = (self.width - (16 * pixel_size)) / 2
         offset_y = (self.height - (16 * pixel_size)) / 2
-        clarity_factor = self.jerry.needs['clarity'] / 100.0
-        r, g, b = int(173 + (43 - 173) * (1-clarity_factor)), int(214 + (52 - 214) * (1-clarity_factor)), int(239 + (64 - 239) * (1-clarity_factor))
-        body_c, outline_c, eye_c, feature_c = (r/255, g/255, b/255, 1), get_color_from_hex("#4a4a4a"), get_color_from_hex("#FFFFFF"), get_color_from_hex("#8ac0d5")
+
+        # Medium bright blue body color (normalized 0-1)
+        body_c = (0.3, 0.6, 0.9, 1)  # medium bright blue
+
+        # Brighter blue outline
+        outline_c = (0.5, 0.8, 1.0, 1)  # bright blue
+
+        # White eyes
+        eye_c = (1, 1, 1, 1)
+
+        # Feature color: slightly lighter blue
+        feature_c = (0.6, 0.85, 1.0, 1)
+
+        # Optionally keep the low_insight tint adjustment
         if anim_key == 'low_insight':
-            r,g,b = int(r*0.8), int(g*0.8), int(b*0.8)
-            body_c = (r/255, g/255, b/255, 1)
-            feature_c = get_color_from_hex("#627a82")
+            # Darker tint for body and features in low insight state
+            body_c = (body_c[0]*0.8, body_c[1]*0.8, body_c[2]*0.8, 1)
+            feature_c = (0.4, 0.57, 0.65, 1)  # darker feature blue
+
         with self.canvas:
             for y, row in enumerate(data):
                 for x, p in enumerate(row):
                     if p > 0:
-                        if p == 1: Color(*body_c)
-                        elif p == 2: Color(*eye_c)
-                        elif p == 3: Color(*outline_c)
-                        elif p == 4: Color(*feature_c)
-                        Rectangle(pos=(x * pixel_size + offset_x, self.height - (y+1) * pixel_size - offset_y), size=(pixel_size, pixel_size))
+                        if p == 1:
+                            Color(*body_c)
+                        elif p == 2:
+                            Color(*eye_c)
+                        elif p == 3:
+                            Color(*outline_c)
+                        elif p == 4:
+                            Color(*feature_c)
+                        Rectangle(
+                            pos=(x * pixel_size + offset_x, self.height - (y + 1) * pixel_size - offset_y),
+                            size=(pixel_size, pixel_size)
+                        )
 
 class SplashScreen(Screen):
     def on_enter(self):
