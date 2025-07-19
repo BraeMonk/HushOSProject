@@ -33,6 +33,7 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
+import google.generativeai as genai
 
 # --- AI & Media Dependencies ---
 if GOOGLE_AI_AVAILABLE and self.api_key:
@@ -152,29 +153,32 @@ class JerryCompanion:
         self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
 class JerryAI:
-    def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
+    def __init__(self, jerry, app, conversation_log_path, jerry_memory_path):
         self.jerry = jerry
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
         self.memory = JerryMemory(jerry_memory_path)
         self.api_key = None
+
+        # Load API key from config.json robustly
         try:
-        # This is the robust way to find the file in the root directory
             app_dir = App.get_running_app().directory
             config_path = os.path.join(app_dir, 'config.json')
-        
             with open(config_path, 'r') as f:
                 config = json.load(f)
                 self.api_key = config.get('api_key')
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Could not load config.json: {e}")
+
         self.client = None
         self.is_thinking = False
-        self.chat_history = []  # Stores the current session's conversation
+        self.chat_history = []
 
+        # Initialize google generative ai client if available and api_key present
         if GOOGLE_AI_AVAILABLE and self.api_key:
             try:
-                self.client = GoogleAIClient(api_key=self.api_key)
+                genai.configure(api_key=self.api_key)
+                self.client = genai.GenerativeModel("gemini-1.5-flash")
                 print("Jerry AI initialized with Google AI support.")
             except Exception as e:
                 print(f"Failed to initialize Google AI client: {e}")
@@ -187,16 +191,19 @@ class JerryAI:
 
     def get_response(self, user_input, callback):
         self.is_thinking = True
-        self.chat_history.append({"role": "user", "parts": [user_input]})
+        self.chat_history.append({"role": "user", "content": user_input})
 
         def get_response_thread():
             if self.client:
                 try:
                     system_instruction = "You are Jerry, a friendly, gentle, and supportive AI companion. Keep your responses brief and caring."
+                    prompt = {
+                        "messages": self.chat_history,
+                        "system_message": system_instruction
+                    }
                     response = self.client.generate_content(
                         model="gemini-1.5-flash",
-                        system_instruction=system_instruction,
-                        contents=self.chat_history
+                        prompt=prompt
                     )
                     ai_response = response.text.strip()
                 except Exception as e:
@@ -205,11 +212,12 @@ class JerryAI:
             else:
                 ai_response = self.get_fallback_response(user_input)
 
-            self.chat_history.append({"role": "model", "parts": [ai_response]})
-            Clock.schedule_once(lambda dt: callback(ai_response))
-            self.is_thinking = False
+            self.chat_history.append({"role": "model", "content": ai_response})
+            Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
+            Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
 
-        threading.Thread(target=get_response_thread).start()
+        threading.Thread(target=get_response_thread, daemon=True).start()
+
 
     def get_fallback_response(self, user_input):
         user_input = user_input.lower()
