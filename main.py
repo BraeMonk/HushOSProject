@@ -772,9 +772,20 @@ class HushOSApp(MDApp):
         if sm.current != screen_name:
             sm.current = screen_name
 
+    # In main.py, inside the HushOSApp class
+
     def update_affirmation_banner(self, screen_name):
-        sm = self.root.ids.sm
-        banner = sm.parent.ids.affirmation_bannerbanner = self.root.ids.affirmation_banner
+        try:
+            # This is a more robust way to find the nested widgets
+            sm = self.root.ids.sm
+            # The screen manager's parent is the BoxLayout that holds the banner
+            content_box = sm.parent
+            # The children are in reverse order: [ScreenManager, MDLabel(banner), MDTopAppBar]
+            banner = content_box.children[1]
+        except Exception as e:
+            print(f"Could not find the banner widget: {e}")
+            return
+
         if screen_name == 'jerry':
             banner.height = 0
         else:
