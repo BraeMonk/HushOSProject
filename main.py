@@ -161,7 +161,7 @@ class JerryAI:
         self.api_key = None
         try:
         # This is the robust way to find the file in the root directory
-            app_dir = App.get_running_app().directory
+            app_dir = app.get_running_app().directory
             config_path = os.path.join(app_dir, 'config.json')
         
             with open(config_path, 'r') as f:
