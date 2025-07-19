@@ -151,13 +151,13 @@ class JerryCompanion:
 class JerryAI:
     MAX_HISTORY = 20
 
-    def __init__(self, jerry, app, conversation_log_path, jerry_memory_path):
+    def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
         print("[JerryAI] Initialized with api_key:", api_key) 
         self.jerry = jerry
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
         self.memory = JerryMemory(jerry_memory_path)
-        self.api_key = None
+        self.api_key = api_key
         self.chat_lock = threading.Lock()  # Thread safety lock
         self.client = None
         self.is_thinking = False
