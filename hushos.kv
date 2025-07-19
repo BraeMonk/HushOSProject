@@ -1,5 +1,4 @@
 #:kivy 1.11.1
-#:import get_color_from_hex kivy.utils.get_color_from_hex
 #:import dp kivy.metrics.dp
 
 #=============================================================================
@@ -11,15 +10,15 @@
     icon: ''
     text: ''
     theme_text_color: "Custom"
-    text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+    text_color: app.theme_cls.text_color
     on_release: app.change_screen(self.screen_name)
 
 <ColorProgressBar@ProgressBar>:
-    bar_color: 0, 0, 0, 1
+    bar_color: app.theme_cls.primary_color
     canvas:
         Clear
         Color:
-            rgba: 0, 0, 0, 0.1 # Background of the bar track
+            rgba: 0, 0, 0, 0.1
         Rectangle:
             pos: self.x, self.center_y - 5
             size: self.width, 10
@@ -32,14 +31,13 @@
 <Screen>:
     canvas.before:
         Color:
-            rgba: get_color_from_hex(app.theme_cls.bg_dark) if app else (1, 1, 1, 1)
+            rgba: app.theme_cls.bg_dark
         Rectangle:
             pos: self.pos
             size: self.size
 
 #=============================================================================
 # ROOT WIDGET
-# Contains the main structure: a single Top Bar, the Screen Manager, and the Drawer.
 #=============================================================================
 
 <RootWidget>:
@@ -50,8 +48,8 @@
             title: "HushOS"
             left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
             elevation: 4
-            md_bg_color: get_color_from_hex(app.theme.COLORS['navbar'])
-            specific_text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            md_bg_color: app.theme_cls.primary_color
+            specific_text_color: app.theme_cls.text_color
 
         MDNavigationLayout:
             ScreenManager:
@@ -72,18 +70,17 @@
                     name: 'history'
                 HushScreen:
                     name: 'hush'
-            
+
             MDNavigationDrawer:
                 id: nav_drawer
-                md_bg_color: get_color_from_hex(app.theme.COLORS['background'])
-                
+                md_bg_color: app.theme_cls.bg_dark
+
                 MDNavigationDrawerMenu:
                     MDNavigationDrawerHeader:
                         title: "Menu"
                         theme_title_color: "Custom"
-                        title_color: get_color_from_hex(app.theme.COLORS['text_dark'])
-                    
-                    # ... All your NavDrawerItems go here ...
+                        title_color: app.theme_cls.text_color
+
                     NavDrawerItem:
                         text: "Jerry"
                         icon: "robot-happy-outline"
@@ -112,7 +109,7 @@
                         text: "Hush"
                         icon: "timer-sand"
                         screen_name: 'hush'
-                    
+
                     MDNavigationDrawerDivider:
                     MDLabel:
                         text: "Version 1.0"
@@ -120,11 +117,10 @@
                         halign: "center"
                         padding_y: "12dp"
                         theme_text_color: "Custom"
-                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                        text_color: app.theme_cls.text_color
 
 #=============================================================================
-# FULL SCREEN DEFINITIONS
-# These are now simplified and only contain their specific content.
+# SCREENS
 #=============================================================================
 
 <SplashScreen>:
@@ -133,83 +129,13 @@
         font_style: 'H2'
         halign: 'center'
         theme_text_color: "Custom"
-        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        text_color: app.theme_cls.text_color
 
 <JerryScreen>:
     MDBoxLayout:
         orientation: 'vertical'
         padding: dp(12)
         spacing: dp(12)
-
-        MDBoxLayout:
-            orientation: 'horizontal'
-            size_hint_y: None
-            height: dp(160)
-            spacing: dp(16)
-            padding: [dp(16), dp(12), dp(16), dp(12)]
-
-            # Jerry animation on the left
-            MDBoxLayout:
-                size_hint_x: 0.4
-                padding: dp(8)
-                JerryAnimator:
-                    id: animator
-                    size_hint: None, None
-                    size: dp(140), dp(120)
-                    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-
-            # Stat block on the right
-            MDCard:
-                orientation: 'vertical'
-                size_hint_x: 0.6
-                elevation: 6
-                padding: dp(16)
-                spacing: dp(12)
-                radius: [12, 12, 12, 12]
-                md_bg_color: get_color_from_hex(app.theme.COLORS['background'])
-
-                GridLayout:
-                    cols: 2
-                    size_hint_y: None
-                    height: dp(80)
-                    spacing: dp(12)
-                    MDLabel:
-                        text: 'Clarity'
-                        theme_text_color: "Custom"
-                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
-                    ColorProgressBar:
-                        id: clarity_bar
-                        max: 100
-                        bar_color: get_color_from_hex(app.theme.COLORS['clarity_bar'])
-                    MDLabel:
-                        text: 'Insight'
-                        theme_text_color: "Custom"
-                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
-                    ColorProgressBar:
-                        id: insight_bar
-                        max: 100
-                        bar_color: get_color_from_hex(app.theme.COLORS['insight_bar'])
-                    MDLabel:
-                        text: 'Calm'
-                        theme_text_color: "Custom"
-                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
-                    ColorProgressBar:
-                        id: calm_bar
-                        max: 100
-                        bar_color: get_color_from_hex(app.theme.COLORS['calm_bar'])
-
-                MDBoxLayout:
-                    size_hint_y: None
-                    height: dp(28)
-                    spacing: dp(12)
-                    MDLabel:
-                        id: level_label
-                        theme_text_color: "Custom"
-                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
-                    ColorProgressBar:
-                        id: xp_bar
-                        max: 100
-                        bar_color: get_color_from_hex(app.theme.COLORS['accent'])
 
         ScrollView:
             size_hint_y: 1
@@ -230,6 +156,8 @@
                     height: self.texture_size[1]
                     text_size: self.width, None
                     padding: [dp(8), dp(8), dp(8), dp(8)]
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.text_color
 
         MDBoxLayout:
             size_hint_y: None
@@ -249,8 +177,7 @@
                 icon: "send"
                 on_release: root.send_message()
 
-
-
+# OTHER SCREENS
 <TherapyScreenBase>:
     MDBoxLayout:
         orientation: 'vertical'
@@ -262,7 +189,7 @@
             halign: 'center'
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            text_color: app.theme_cls.text_color
         ScrollView:
             GridLayout:
                 id: content_box
@@ -285,7 +212,6 @@
                 on_release: root.next_step()
 
 <CBTScreen@TherapyScreenBase>:
-
 <DBTScreen@TherapyScreenBase>:
 
 <CheckinScreen>:
@@ -300,13 +226,13 @@
             font_style: 'H4'
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            text_color: app.theme_cls.text_color
         ColorProgressBar:
             id: progress_bar
             size_hint_y: None
             height: dp(10)
             max: 100
-            bar_color: get_color_from_hex(app.theme.COLORS['accent'])
+            bar_color: app.theme_cls.primary_color
         Widget:
             size_hint_y: 0.2
         ScrollView:
@@ -328,7 +254,7 @@
             font_style: 'H4'
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            text_color: app.theme_cls.text_color
         ScrollView:
             id: entries_log
             MDLabel:
@@ -337,7 +263,7 @@
                 adaptive_height: True
                 text_size: self.width - dp(20), None
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                text_color: app.theme_cls.text_color
 
 <HistoryScreen>:
     MDBoxLayout:
@@ -349,7 +275,7 @@
             font_style: 'H4'
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            text_color: app.theme_cls.text_color
         ScrollView:
             id: history_log
             MDLabel:
@@ -358,7 +284,7 @@
                 adaptive_height: True
                 text_size: self.width - dp(20), None
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                text_color: app.theme_cls.text_color
 
 <HushScreen>:
     MDBoxLayout:
@@ -374,7 +300,7 @@
             halign: 'center'
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            text_color: app.theme_cls.text_color
 
         MDLabel:
             id: timer_label
@@ -383,7 +309,7 @@
             halign: 'center'
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+            text_color: app.theme_cls.text_color
 
         MDFillRoundFlatButton:
             text: "Start Timer" if not root.timer_active else "Stop Timer"
