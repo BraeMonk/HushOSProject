@@ -43,85 +43,84 @@
 #=============================================================================
 
 <RootWidget>:
-    MDNavigationLayout:
-        MDScreen:
-            MDBoxLayout:
-                orientation: 'vertical'
+    MDBoxLayout:
+        orientation: 'vertical'
 
-                MDTopAppBar:
-                    title: "HushOS Tools"
-                    left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
-                    elevation: 4
-                    md_bg_color: get_color_from_hex(app.theme.COLORS['navbar'])
-                    specific_text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        MDTopAppBar:
+            title: "HushOS Tools"
+            left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+            elevation: 4
+            md_bg_color: get_color_from_hex(app.theme.COLORS['navbar'])
+            specific_text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
 
-                ScreenManager:
-                    id: sm
-                    SplashScreen:
-                        name: 'splash'
-                    JerryScreen:
-                        name: 'jerry'
-                    CheckinScreen:
-                        name: 'checkin'
-                    CBTScreen:
-                        name: 'cbt'
-                    DBTScreen:
-                        name: 'dbt'
-                    EntriesScreen:
-                        name: 'entries'
-                    HistoryScreen:
-                        name: 'history'
-                    HushScreen:
-                        name: 'hush'
-        
-        MDNavigationDrawer:
-            id: nav_drawer
-            md_bg_color: get_color_from_hex(app.theme.COLORS['background'])
+        MDNavigationLayout:
+            ScreenManager:
+                id: sm
+                SplashScreen:
+                    name: 'splash'
+                JerryScreen:
+                    name: 'jerry'
+                CheckinScreen:
+                    name: 'checkin'
+                CBTScreen:
+                    name: 'cbt'
+                DBTScreen:
+                    name: 'dbt'
+                EntriesScreen:
+                    name: 'entries'
+                HistoryScreen:
+                    name: 'history'
+                HushScreen:
+                    name: 'hush'
             
-            MDNavigationDrawerMenu:
-                MDNavigationDrawerHeader:
-                    title: "Menu"
-                    theme_title_color: "Custom"
-                    title_color: get_color_from_hex(app.theme.COLORS['text_dark'])
-
-                NavDrawerItem:
-                    text: "Jerry"
-                    icon: "robot-happy-outline"
-                    screen_name: 'jerry'
-                NavDrawerItem:
-                    text: "Check-in"
-                    icon: "emoticon-happy-outline"
-                    screen_name: 'checkin'
-                NavDrawerItem:
-                    text: "CBT Worksheet"
-                    icon: "notebook-edit-outline"
-                    screen_name: 'cbt'
-                NavDrawerItem:
-                    text: "DBT Skills Log"
-                    icon: "notebook-check-outline"
-                    screen_name: 'dbt'
-                NavDrawerItem:
-                    text: "All Entries"
-                    icon: "book-open-variant"
-                    screen_name: 'entries'
-                NavDrawerItem:
-                    text: "Conversation History"
-                    icon: "history"
-                    screen_name: 'history'
-                NavDrawerItem:
-                    text: "Hush"
-                    icon: "timer-sand"
-                    screen_name: 'hush'
+            MDNavigationDrawer:
+                id: nav_drawer
+                md_bg_color: get_color_from_hex(app.theme.COLORS['background'])
                 
-                MDNavigationDrawerDivider:
-
-                MDLabel:
-                    text: "Version 1.0"
-                    font_style: "Caption"
-                    halign: "center"
-                    padding_y: "12dp"
-                    theme_text_color: "Custom"
-                    text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                MDNavigationDrawerMenu:
+                    MDNavigationDrawerHeader:
+                        title: "Menu"
+                        theme_title_color: "Custom"
+                        title_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                    
+                    # ... All your NavDrawerItems go here ...
+                    NavDrawerItem:
+                        text: "Jerry"
+                        icon: "robot-happy-outline"
+                        screen_name: 'jerry'
+                    NavDrawerItem:
+                        text: "Check-in"
+                        icon: "emoticon-happy-outline"
+                        screen_name: 'checkin'
+                    NavDrawerItem:
+                        text: "CBT Worksheet"
+                        icon: "notebook-edit-outline"
+                        screen_name: 'cbt'
+                    NavDrawerItem:
+                        text: "DBT Skills Log"
+                        icon: "notebook-check-outline"
+                        screen_name: 'dbt'
+                    NavDrawerItem:
+                        text: "All Entries"
+                        icon: "book-open-variant"
+                        screen_name: 'entries'
+                    NavDrawerItem:
+                        text: "Conversation History"
+                        icon: "history"
+                        screen_name: 'history'
+                    NavDrawerItem:
+                        text: "Hush"
+                        icon: "timer-sand"
+                        screen_name: 'hush'
+                    
+                    MDNavigationDrawerDivider:
+                    MDLabel:
+                        text: "Version 1.0"
+                        font_style: "Caption"
+                        halign: "center"
+                        padding_y: "12dp"
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
 
 #=============================================================================
 # FULL SCREEN DEFINITIONS
