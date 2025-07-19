@@ -33,18 +33,14 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
-import google.generativeai as genai
 
 # --- AI & Media Dependencies ---
-if GOOGLE_AI_AVAILABLE and self.api_key:
-    try:
-        genai.configure(api_key=self.api_key)
-        self.client = genai.GenerativeModel("gemini-1.5-flash")
-        print("Jerry AI initialized with Google AI support.")
-    except Exception as e:
-        print(f"Failed to initialize Google AI client: {e}")
-        self.client = None
-
+try:
+    import google.generativeai as genai
+    GOOGLE_AI_AVAILABLE = True
+except ImportError:
+    GOOGLE_AI_AVAILABLE = False
+    
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
 
@@ -153,12 +149,18 @@ class JerryCompanion:
         self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
 class JerryAI:
+    MAX_HISTORY = 20
+
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path):
         self.jerry = jerry
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
         self.memory = JerryMemory(jerry_memory_path)
         self.api_key = None
+        self.chat_lock = threading.Lock()  # Thread safety lock
+        self.client = None
+        self.is_thinking = False
+        self.chat_history = []
 
         # Load API key from config.json robustly
         try:
@@ -167,12 +169,9 @@ class JerryAI:
             with open(config_path, 'r') as f:
                 config = json.load(f)
                 self.api_key = config.get('api_key')
+            print(f"Loaded API key from {config_path}: {'****' if self.api_key else 'None'}")
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Could not load config.json: {e}")
-
-        self.client = None
-        self.is_thinking = False
-        self.chat_history = []
 
         # Initialize google generative ai client if available and api_key present
         if GOOGLE_AI_AVAILABLE and self.api_key:
@@ -191,7 +190,11 @@ class JerryAI:
 
     def get_response(self, user_input, callback):
         self.is_thinking = True
-        self.chat_history.append({"role": "user", "content": user_input})
+        with self.chat_lock:
+            self.chat_history.append({"role": "user", "content": user_input})
+            # Limit chat history length
+            if len(self.chat_history) > self.MAX_HISTORY:
+                self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
         def get_response_thread():
             if self.client:
@@ -201,6 +204,7 @@ class JerryAI:
                         "messages": self.chat_history,
                         "system_message": system_instruction
                     }
+                    print(f"Sending prompt to Google AI with {len(self.chat_history)} messages.")
                     response = self.client.generate_content(
                         model="gemini-1.5-flash",
                         prompt=prompt
@@ -212,11 +216,35 @@ class JerryAI:
             else:
                 ai_response = self.get_fallback_response(user_input)
 
-            self.chat_history.append({"role": "model", "content": ai_response})
+            with self.chat_lock:
+                self.chat_history.append({"role": "model", "content": ai_response})
+                if len(self.chat_history) > self.MAX_HISTORY:
+                    self.chat_history = self.chat_history[-self.MAX_HISTORY:]
+
             Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
             Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
 
         threading.Thread(target=get_response_thread, daemon=True).start()
+
+    def get_fallback_response(self, user_input):
+        user_input = user_input.lower()
+        responses = {
+            "hello": "Hello! It's good to see you.",
+            "hi": "Hello! It's good to see you.",
+            "how are you": "I'm doing well, thank you! How can I help you today?",
+            "thank": "You're very welcome!",
+            "bye": "Goodbye! Have a great day!"
+        }
+        for key, value in responses.items():
+            if key in user_input:
+                return value
+        return "I'm here to listen. Tell me what's on your mind."
+
+    def end_session(self):
+        if self.chat_history:
+            print("Session ended. Saving conversation to log.")
+            self.conversation_log.add_session(self.chat_history)
+            self.chat_history = []
 
 
     def get_fallback_response(self, user_input):
