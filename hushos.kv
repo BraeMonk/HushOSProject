@@ -32,7 +32,7 @@
 <Screen>:
     canvas.before:
         Color:
-            rgba: get_color_from_hex(app.theme.COLORS['background']) if app else (1, 1, 1, 1)
+            rgba: get_color_from_hex(app.theme_cls.bg_dark) if app else (1, 1, 1, 1)
         Rectangle:
             pos: self.pos
             size: self.size
