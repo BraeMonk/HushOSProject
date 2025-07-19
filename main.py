@@ -390,7 +390,7 @@ class JerryScreen(Screen):
             self.scroll_to_bottom()
 
     def scroll_to_bottom(self):
-        scroll_view = self.ids.chat_scroll
+        scroll_view = self.ids.chat_log
         Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0))
 
 class CheckinScreen(Screen):
