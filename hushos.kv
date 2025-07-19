@@ -292,8 +292,14 @@
         Widget:
             size_hint_y: 0.2
 
-<CBTScreen(TherapyScreenBase)>:
-<DBTScreen(TherapyScreenBase)>:
+<CBTScreen>:
+    # This placeholder is enough because the class already inherits
+    # from TherapyScreenBase in your Python code.
+    pass
+
+<DBTScreen>:
+    # Same as above.
+    pass
 
 <EntriesScreen>:
     MDBoxLayout:
