@@ -719,8 +719,8 @@ class HushScreen(Screen):
 
 class HushOSApp(MDApp):
     def build(self):
-        self.theme_cls.theme_style = "Light"
-        self.theme_cls.primary_palette = "Blue"
+        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_palette = "Indigo"
 
         api_key = None
         try:
