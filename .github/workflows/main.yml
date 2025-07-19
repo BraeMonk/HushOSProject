@@ -1,36 +1,47 @@
 name: Build HushOS APK
-
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-
 jobs:
   build-android:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+      
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          # Pin the Buildozer version to a known stable release
           buildozer_version: "1.5.0"
           command: |
             # Set specific, stable versions for Android tools in buildozer.spec
             buildozer config set android.ndk_version 25b
             buildozer config set android.build_tools_version 34.0.0
             
-            # Run the build
+            # Configure memory settings in buildozer.spec
+            buildozer config set android.gradle_dependencies ''
+            buildozer config set android.add_gradle_maven ''
+            
+            # Run the build with verbose output
             buildozer -v android debug
         env:
-          # Allocate sufficient memory for the Gradle process
-          GRADLE_OPTS: -Xmx4g
-
+          # Increase memory allocation for various processes
+          GRADLE_OPTS: -Xmx6g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError
+          JAVA_OPTS: -Xmx4g
+          # Additional JVM options for the build process
+          _JAVA_OPTIONS: -Xmx4g -XX:MaxMetaspaceSize=512m
+      
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
