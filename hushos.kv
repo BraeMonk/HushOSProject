@@ -2,6 +2,10 @@
 #:import get_color_from_hex kivy.utils.get_color_from_hex
 #:import dp kivy.metrics.dp
 
+#=============================================================================
+# BASE WIDGET STYLES
+#=============================================================================
+
 <Screen>:
     canvas.before:
         Color:
@@ -24,121 +28,10 @@
         padding: dp(10)
         spacing: dp(10)
 
-<RootWidget>:
-    MDNavigationLayout:
-        # We add an id here so we can reference the nav_drawer from within child widgets.
-        id: nav_layout
-
-        ##
-        # Section 1: The Screen Manager
-        # This MUST be a direct child of MDNavigationLayout.
-        ##
-        ScreenManager:
-            id: sm
-
-            SplashScreen:
-                name: 'splash'
-                # Minimal splash screen, likely without a toolbar.
-
-            JerryScreen:
-                name: 'jerry'
-                MDBoxLayout:
-                    orientation: 'vertical'
-                    # The Toolbar now lives inside the screen.
-                    MDTopAppBar:
-                        title: "HushOS"
-                        elevation: 4
-                        # The lambda now uses `nav_layout.ids` to find the drawer.
-                        left_action_items: [["menu", lambda x: nav_layout.ids.nav_drawer.set_state("open")]]
-
-                    # Add the rest of JerryScreen's content below the toolbar.
-                    MDLabel:
-                        text: "Jerry Screen Content"
-                        halign: "center"
-
-            CheckinScreen:
-                name: 'checkin'
-                # Add layout and toolbar here if needed.
-
-            CBTScreen:
-                name: 'cbt'
-                # Add layout and toolbar here if needed.
-
-            DBTScreen:
-                name: 'dbt'
-                # Add layout and toolbar here if needed.
-
-            EntriesScreen:
-                name: 'entries'
-                # Add layout and toolbar here if needed.
-
-            HistoryScreen:
-                name: 'history'
-                # Add layout and toolbar here if needed.
-
-            HushScreen:
-                name: 'hush'
-                # Add layout and toolbar here if needed.
-
-
-        ##
-        # Section 2: The Navigation Drawer
-        # This is the second required child. This section was already correct.
-        ##
-        MDNavigationDrawer:
-            id: nav_drawer
-            radius: (0, 16, 16, 0)
-
-            MDNavigationDrawerMenu:
-                MDNavigationDrawerHeader:
-                    title: "Menu"
-
-                MDNavigationDrawerItem:
-                    text: "Jerry"
-                    icon: "robot-happy-outline"
-                    on_release: sm.current = 'jerry'; nav_drawer.set_state("close")
-
-                MDNavigationDrawerItem:
-                    text: "Check-in"
-                    icon: "emoticon-happy-outline"
-                    on_release: sm.current = 'checkin'; nav_drawer.set_state("close")
-
-                MDNavigationDrawerItem:
-                    text: "CBT Worksheet"
-                    icon: "notebook-edit-outline"
-                    on_release: sm.current = 'cbt'; nav_drawer.set_state("close")
-
-                MDNavigationDrawerItem:
-                    text: "DBT Skills Log"
-                    icon: "notebook-check-outline"
-                    on_release: sm.current = 'dbt'; nav_drawer.set_state("close")
-
-                MDNavigationDrawerItem:
-                    text: "All Entries"
-                    icon: "book-open-variant"
-                    on_release: sm.current = 'entries'; nav_drawer.set_state("close")
-
-                MDNavigationDrawerItem:
-                    text: "Conversation History"
-                    icon: "history"
-                    on_release: sm.current = 'history'; nav_drawer.set_state("close")
-
-                MDNavigationDrawerItem:
-                    text: "Hush"
-                    icon: "timer-sand"
-                    on_release: sm.current = 'hush'; nav_drawer.set_state("close")
-
-                MDNavigationDrawerDivider:
-
-                MDLabel:
-                    text: "Version 1.0"
-                    font_style: "Caption"
-                    halign: "center"
-                    size_hint_y: None
-                    height: self.texture_size[1]
-                    padding_y: "12dp"
-                    
-# --- Screen Layout Definitions (No changes needed below this line) ---
+#=============================================================================
+# FULL SCREEN DEFINITIONS
+# Every screen is defined here, once, with its complete layout.
+#=============================================================================
 
 <SplashScreen>:
     MDLabel:
@@ -149,163 +42,266 @@
 <JerryScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(10)
-        spacing: dp(10)
-        
-        JerryAnimator:
-            id: animator
-            size_hint_y: None
-            height: dp(120)
-            
-        GridLayout:
-            cols: 2
-            size_hint_y: None
-            height: dp(80)
+        MDTopAppBar:
+            title: "HushOS"
+            elevation: 4
+            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
+        MDBoxLayout:
+            orientation: 'vertical'
+            padding: dp(10)
             spacing: dp(10)
-            MDLabel:
-                text: 'Clarity'
-            ProgressBar:
-                id: clarity_bar
-                max: 100
-            MDLabel:
-                text: 'Insight'
-            ProgressBar:
-                id: insight_bar
-                max: 100
-            MDLabel:
-                text: 'Calm'
-            ProgressBar:
-                id: calm_bar
-                max: 100
-        
-        MDBoxLayout:
-            size_hint_y: None
-            height: dp(25)
-            MDLabel:
-                id: level_label
-            ProgressBar:
-                id: xp_bar
-                max: 100
-        
-        ScrollView:
-            id: chat_scroll
-            MDLabel:
-                id: chat_log
-                markup: True
+            JerryAnimator:
+                id: animator
                 size_hint_y: None
-                height: self.texture_size[1]
-                text_size: self.width - dp(20), None
-                
-        MDBoxLayout:
-            size_hint_y: None
-            height: dp(48)
-            padding: dp(8)
-            spacing: dp(8)
-            TextInput:
-                id: user_entry
-                multiline: False
-                on_text_validate: root.send_message()
-            MDFillRoundFlatButton:
-                id: send_button
-                text: 'Send'
-                on_release: root.send_message()
+                height: dp(120)
+            GridLayout:
+                cols: 2
+                size_hint_y: None
+                height: dp(80)
+                spacing: dp(10)
+                MDLabel:
+                    text: 'Clarity'
+                ProgressBar:
+                    id: clarity_bar
+                    max: 100
+                MDLabel:
+                    text: 'Insight'
+                ProgressBar:
+                    id: insight_bar
+                    max: 100
+                MDLabel:
+                    text: 'Calm'
+                ProgressBar:
+                    id: calm_bar
+                    max: 100
+            MDBoxLayout:
+                size_hint_y: None
+                height: dp(25)
+                MDLabel:
+                    id: level_label
+                ProgressBar:
+                    id: xp_bar
+                    max: 100
+            ScrollView:
+                id: chat_scroll
+                MDLabel:
+                    id: chat_log
+                    markup: True
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    text_size: self.width - dp(20), None
+            MDBoxLayout:
+                size_hint_y: None
+                height: dp(48)
+                padding: dp(8)
+                spacing: dp(8)
+                TextInput:
+                    id: user_entry
+                    multiline: False
+                    on_text_validate: root.send_message()
+                MDFillRoundFlatButton:
+                    id: send_button
+                    text: 'Send'
+                    on_release: root.send_message()
+
 <TherapyScreenBase>:
     MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(15)
-        TitleLabel:
-            id: title_label
-            text: "Therapy Worksheet"
-            halign: 'center'
-        ScrollView:
-            GridLayout:
-                id: content_box
-                cols: 1
-                adaptive_height: True
-                spacing: dp(10)
+        MDTopAppBar:
+            title: "Therapy Worksheet"
+            elevation: 4
+            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
         MDBoxLayout:
-            size_hint_y: None
-            height: dp(50)
-            spacing: dp(10)
-            adaptive_width: True
-            pos_hint: {"center_x": 0.5}
-            MDFillRoundFlatButton:
-                text: "Back"
-                on_release: root.prev_step()
-                disabled: root.flow_step == 0
-            MDFillRoundFlatButton:
-                id: next_button
-                text: "Next"
-                on_release: root.next_step()
+            orientation: 'vertical'
+            padding: dp(20)
+            spacing: dp(15)
+            TitleLabel:
+                id: title_label
+                text: "Therapy Worksheet" # This will be updated by child classes
+                halign: 'center'
+            ScrollView:
+                GridLayout:
+                    id: content_box
+                    cols: 1
+                    adaptive_height: True
+                    spacing: dp(10)
+            MDBoxLayout:
+                size_hint_y: None
+                height: dp(50)
+                spacing: dp(10)
+                adaptive_width: True
+                pos_hint: {"center_x": 0.5}
+                MDFillRoundFlatButton:
+                    text: "Back"
+                    on_release: root.prev_step()
+                    disabled: root.flow_step == 0
+                MDFillRoundFlatButton:
+                    id: next_button
+                    text: "Next"
+                    on_release: root.next_step()
+
 <CheckinScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(15)
-        TitleLabel:
-            id: checkin_title_label
-            text: "How are you feeling?"
-            halign: 'center'
-        ProgressBar:
-            id: progress_bar
-            size_hint_y: None
-            height: dp(10)
-            max: 100
-        Widget:
-            size_hint_y: 0.2
-        ScrollView:
-            GridLayout:
-                id: checkin_content
-                adaptive_height: True
-                cols: 1
-                spacing: dp(10)
-        Widget:
-            size_hint_y: 0.2
+        MDTopAppBar:
+            title: "Check-in"
+            elevation: 4
+            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
+        MDBoxLayout:
+            orientation: 'vertical'
+            padding: dp(20)
+            spacing: dp(15)
+            TitleLabel:
+                id: checkin_title_label
+                text: "How are you feeling?"
+                halign: 'center'
+            ProgressBar:
+                id: progress_bar
+                size_hint_y: None
+                height: dp(10)
+                max: 100
+            Widget:
+                size_hint_y: 0.2
+            ScrollView:
+                GridLayout:
+                    id: checkin_content
+                    adaptive_height: True
+                    cols: 1
+                    spacing: dp(10)
+            Widget:
+                size_hint_y: 0.2
 
-<CBTScreen>:
-<DBTScreen>:
+<CBTScreen(TherapyScreenBase)>:
+<DBTScreen(TherapyScreenBase)>:
 
 <EntriesScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(10)
-        MDLabel:
-            text: "Your Journal Entries"
-            font_style: 'H4'
-            adaptive_height: True
-        BodyScrollView:
-            id: entries_log
+        MDTopAppBar:
+            title: "Your Journal Entries"
+            elevation: 4
+            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
+        MDBoxLayout:
+            orientation: 'vertical'
+            padding: dp(20)
+            spacing: dp(10)
+            MDLabel:
+                text: "Your Journal Entries"
+                font_style: 'H4'
+                size_hint_y: None
+                height: self.texture_size[1]
+            BodyScrollView:
+                id: entries_log
 
 <HistoryScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(10)
-        MDLabel:
-            text: "Conversation History"
-            font_style: 'H4'
-            adaptive_height: True
-        BodyScrollView:
-            id: history_log
+        MDTopAppBar:
+            title: "Conversation History"
+            elevation: 4
+            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
+        MDBoxLayout:
+            orientation: 'vertical'
+            padding: dp(20)
+            spacing: dp(10)
+            MDLabel:
+                text: "Conversation History"
+                font_style: 'H4'
+                size_hint_y: None
+                height: self.texture_size[1]
+            BodyScrollView:
+                id: history_log
 
 <HushScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(20)
-        MDLabel:
-            text: "Find a moment of peace"
-            font_style: 'H4'
-            halign: 'center'
-            adaptive_height: True
-        MDLabel:
-            id: timer_label
-            text: root.get_timer_text()
-            font_style: 'H2'
-            halign: 'center'
-        MDFillRoundFlatButton:
-            text: "Start Timer" if not root.timer_active else "Stop Timer"
-            on_release: root.start_stop_timer()
-            pos_hint: {'center_x': 0.5}
+        MDTopAppBar:
+            title: "Hush"
+            elevation: 4
+            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
+        MDBoxLayout:
+            orientation: 'vertical'
+            padding: dp(20)
+            spacing: dp(20)
+            MDLabel:
+                text: "Find a moment of peace"
+                font_style: 'H4'
+                halign: 'center'
+                adaptive_height: True
+            MDLabel:
+                id: timer_label
+                text: root.get_timer_text()
+                font_style: 'H2'
+                halign: 'center'
+            MDFillRoundFlatButton:
+                text: "Start Timer" if not root.timer_active else "Stop Timer"
+                on_release: root.start_stop_timer()
+                pos_hint: {'center_x': 0.5}
+
+#=============================================================================
+# ROOT WIDGET
+# This should be the last rule. It assembles the screens defined above.
+#=============================================================================
+<RootWidget>:
+    MDNavigationLayout:
+        id: nav_layout
+        ScreenManager:
+            id: sm
+            SplashScreen:
+                name: 'splash'
+            JerryScreen:
+                name: 'jerry'
+            CheckinScreen:
+                name: 'checkin'
+            CBTScreen:
+                name: 'cbt'
+            DBTScreen:
+                name: 'dbt'
+            EntriesScreen:
+                name: 'entries'
+            HistoryScreen:
+                name: 'history'
+            HushScreen:
+                name: 'hush'
+        MDNavigationDrawer:
+            id: nav_drawer
+            radius: (0, 16, 16, 0)
+            MDNavigationDrawerMenu:
+                MDNavigationDrawerHeader:
+                    title: "Menu"
+                MDNavigationDrawerItem:
+                    text: "Jerry"
+                    icon: "robot-happy-outline"
+                    on_release: sm.current = 'jerry'; nav_drawer.set_state("close")
+                MDNavigationDrawerItem:
+                    text: "Check-in"
+                    icon: "emoticon-happy-outline"
+                    on_release: sm.current = 'checkin'; nav_drawer.set_state("close")
+                MDNavigationDrawerItem:
+                    text: "CBT Worksheet"
+                    icon: "notebook-edit-outline"
+                    on_release: sm.current = 'cbt'; nav_drawer.set_state("close")
+                MDNavigationDrawerItem:
+                    text: "DBT Skills Log"
+                    icon: "notebook-check-outline"
+                    on_release: sm.current = 'dbt'; nav_drawer.set_state("close")
+                MDNavigationDrawerItem:
+                    text: "All Entries"
+                    icon: "book-open-variant"
+                    on_release: sm.current = 'entries'; nav_drawer.set_state("close")
+                MDNavigationDrawerItem:
+                    text: "Conversation History"
+                    icon: "history"
+                    on_release: sm.current = 'history'; nav_drawer.set_state("close")
+                MDNavigationDrawerItem:
+                    text: "Hush"
+                    icon: "timer-sand"
+                    on_release: sm.current = 'hush'; nav_drawer.set_state("close")
+                MDNavigationDrawerDivider:
+                MDLabel:
+                    text: "Version 1.0"
+                    font_style: "Caption"
+                    halign: "center"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    padding_y: "12dp"
