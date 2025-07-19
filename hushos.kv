@@ -139,19 +139,26 @@
     MDBoxLayout:
         orientation: 'vertical'
 
-        MDRelativeLayout:
+        MDBoxLayout:
+            orientation: 'horizontal'
             size_hint_y: None
-            height: dp(210)
-            JerryAnimator:
-                id: animator
-                size_hint: None, None
-                size: dp(140), dp(120)
-                pos_hint: {'center_x': 0.5, 'top': 1.0}
+            height: dp(150)
+            spacing: dp(10)
+            padding: [dp(20), dp(10)]
+            
+            # Jerry animation on the left
+            MDBoxLayout:
+                size_hint_x: 0.4
+                JerryAnimator:
+                    id: animator
+                    size_hint: None, None
+                    size: dp(140), dp(120)
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            
+            # Stat block on the right
             MDCard:
                 orientation: 'vertical'
-                size_hint: .9, None
-                height: dp(120)
-                pos_hint: {'center_x': 0.5, 'y': 0}
+                size_hint_x: 0.6
                 elevation: 4
                 padding: dp(8)
                 spacing: dp(8)
