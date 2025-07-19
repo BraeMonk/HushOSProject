@@ -152,6 +152,7 @@ class JerryAI:
     MAX_HISTORY = 20
 
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path):
+        print("[JerryAI] Initialized with api_key:", api_key) 
         self.jerry = jerry
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
@@ -783,7 +784,7 @@ class HushOSApp(MDApp):
         try:
             with open("config.json") as f:
                 secrets = json.load(f)
-                api_key = secrets.get("SECRET_API_KEY")
+                api_key = secrets.get("api_key")
         except Exception as e:
             print(f"!!! Could not load API key from config.json: {e}. Jerry will be in basic mode.")
 
