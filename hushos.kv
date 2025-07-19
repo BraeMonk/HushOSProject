@@ -6,31 +6,126 @@
 # BASE WIDGET STYLES
 #=============================================================================
 
+<NavDrawerItem@MDNavigationDrawerItem>:
+    screen_name: ''
+    icon: ''
+    text: ''
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+    on_release: app.change_screen(self.screen_name)
+
+<ColorProgressBar@ProgressBar>:
+    bar_color: 0, 0, 0, 1
+    canvas:
+        Clear
+        Color:
+            rgba: 0, 0, 0, 0.1 # Background of the bar track
+        Rectangle:
+            pos: self.x, self.center_y - 5
+            size: self.width, 10
+        Color:
+            rgba: self.bar_color
+        Rectangle:
+            pos: self.x, self.center_y - 5
+            size: self.width * self.value_normalized, 10
+
 <Screen>:
     canvas.before:
         Color:
-            rgba: get_color_from_hex(app.theme.COLORS['background']) if app else (0.53, 0.81, 0.98, 1)
+            rgba: get_color_from_hex(app.theme.COLORS['background']) if app else (1, 1, 1, 1)
         Rectangle:
             pos: self.pos
             size: self.size
 
-<TitleLabel@Label>:
-    font_size: '24sp'
-    size_hint_y: None
-    height: self.texture_size[1]
-    color: get_color_from_hex(app.theme.COLORS['text_dark']) if app else (0, 0, 0, 1)
+#=============================================================================
+# ROOT WIDGET
+# Contains the main structure: a single Top Bar, the Screen Manager, and the Drawer.
+#=============================================================================
 
-<BodyScrollView@ScrollView>:
-    MDBoxLayout:
-        id: body_box
-        orientation: 'vertical'
-        adaptive_height: True
-        padding: dp(10)
-        spacing: dp(10)
+<RootWidget>:
+    MDNavigationLayout:
+        MDScreen:
+            MDBoxLayout:
+                orientation: 'vertical'
+
+                MDTopAppBar:
+                    title: "HushOS Tools"
+                    left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+                    elevation: 4
+                    md_bg_color: get_color_from_hex(app.theme.COLORS['navbar'])
+                    specific_text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+
+                ScreenManager:
+                    id: sm
+                    SplashScreen:
+                        name: 'splash'
+                    JerryScreen:
+                        name: 'jerry'
+                    CheckinScreen:
+                        name: 'checkin'
+                    CBTScreen:
+                        name: 'cbt'
+                    DBTScreen:
+                        name: 'dbt'
+                    EntriesScreen:
+                        name: 'entries'
+                    HistoryScreen:
+                        name: 'history'
+                    HushScreen:
+                        name: 'hush'
+        
+        MDNavigationDrawer:
+            id: nav_drawer
+            md_bg_color: get_color_from_hex(app.theme.COLORS['background'])
+            
+            MDNavigationDrawerMenu:
+                MDNavigationDrawerHeader:
+                    title: "Menu"
+                    theme_title_color: "Custom"
+                    title_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+
+                NavDrawerItem:
+                    text: "Jerry"
+                    icon: "robot-happy-outline"
+                    screen_name: 'jerry'
+                NavDrawerItem:
+                    text: "Check-in"
+                    icon: "emoticon-happy-outline"
+                    screen_name: 'checkin'
+                NavDrawerItem:
+                    text: "CBT Worksheet"
+                    icon: "notebook-edit-outline"
+                    screen_name: 'cbt'
+                NavDrawerItem:
+                    text: "DBT Skills Log"
+                    icon: "notebook-check-outline"
+                    screen_name: 'dbt'
+                NavDrawerItem:
+                    text: "All Entries"
+                    icon: "book-open-variant"
+                    screen_name: 'entries'
+                NavDrawerItem:
+                    text: "Conversation History"
+                    icon: "history"
+                    screen_name: 'history'
+                NavDrawerItem:
+                    text: "Hush"
+                    icon: "timer-sand"
+                    screen_name: 'hush'
+                
+                MDNavigationDrawerDivider:
+
+                MDLabel:
+                    text: "Version 1.0"
+                    font_style: "Caption"
+                    halign: "center"
+                    padding_y: "12dp"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
 
 #=============================================================================
 # FULL SCREEN DEFINITIONS
-# Every screen is defined here, once, with its complete layout.
+# These are now simplified and only contain their specific content.
 #=============================================================================
 
 <SplashScreen>:
@@ -38,35 +133,31 @@
         text: 'HushOS'
         font_style: 'H2'
         halign: 'center'
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
 
 <JerryScreen>:
-    # The main container that stacks the top, middle, and bottom sections
     MDBoxLayout:
         orientation: 'vertical'
 
-        # --- 1. Top Section (Jerry & Stats) ---
         MDRelativeLayout:
             size_hint_y: None
-            height: dp(210) # Fixed height for the top area
-
-            # Jerry's animation is the base layer
+            height: dp(210)
             JerryAnimator:
                 id: animator
                 size_hint: None, None
                 size: dp(140), dp(120)
                 pos_hint: {'center_x': 0.5, 'top': 1.0}
-
-            # A card to hold the stats, slightly overlapping Jerry
             MDCard:
                 orientation: 'vertical'
                 size_hint: .9, None
                 height: dp(120)
-                pos_hint: {'center_x': 0.5, 'y': 0} # Positioned at the bottom
+                pos_hint: {'center_x': 0.5, 'y': 0}
                 elevation: 4
                 padding: dp(8)
                 spacing: dp(8)
                 radius: [12, 12, 12, 12]
-
+                md_bg_color: get_color_from_hex(app.theme.COLORS['background'])
                 GridLayout:
                     cols: 2
                     size_hint_y: None
@@ -74,33 +165,41 @@
                     spacing: dp(10)
                     MDLabel:
                         text: 'Clarity'
-                    ProgressBar:
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                    ColorProgressBar:
                         id: clarity_bar
                         max: 100
+                        bar_color: get_color_from_hex(app.theme.COLORS['clarity_bar'])
                     MDLabel:
                         text: 'Insight'
-                    ProgressBar:
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                    ColorProgressBar:
                         id: insight_bar
                         max: 100
+                        bar_color: get_color_from_hex(app.theme.COLORS['insight_bar'])
                     MDLabel:
                         text: 'Calm'
-                    ProgressBar:
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                    ColorProgressBar:
                         id: calm_bar
                         max: 100
-
+                        bar_color: get_color_from_hex(app.theme.COLORS['calm_bar'])
                 MDBoxLayout:
                     size_hint_y: None
                     height: dp(25)
                     MDLabel:
                         id: level_label
-                    ProgressBar:
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+                    ColorProgressBar:
                         id: xp_bar
                         max: 100
+                        bar_color: get_color_from_hex(app.theme.COLORS['accent'])
 
-        # --- 2. Middle Section (Chat Log) ---
         ScrollView:
-            id: chat_scroll
-            size_hint_y: 1 # This tells the ScrollView to fill all available space
             MDLabel:
                 id: chat_log
                 markup: True
@@ -109,10 +208,9 @@
                 text_size: self.width - dp(20), None
                 padding: dp(10)
 
-        # --- 3. Bottom Section (Text Input) ---
         MDBoxLayout:
             size_hint_y: None
-            height: dp(56) # Increased height for better touch targets
+            height: dp(56)
             padding: dp(8)
             spacing: dp(8)
             MDTextField:
@@ -128,69 +226,65 @@
 <TherapyScreenBase>:
     MDBoxLayout:
         orientation: 'vertical'
-        MDTopAppBar:
-            title: "Therapy Worksheet"
-            elevation: 4
-            left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
-        MDBoxLayout:
-            orientation: 'vertical'
-            padding: dp(20)
-            spacing: dp(15)
-            TitleLabel:
-                id: title_label
-                text: "Therapy Worksheet" # This will be updated by child classes
-                halign: 'center'
-            ScrollView:
-                GridLayout:
-                    id: content_box
-                    cols: 1
-                    adaptive_height: True
-                    spacing: dp(10)
-            MDBoxLayout:
-                size_hint_y: None
-                height: dp(50)
+        padding: dp(20)
+        spacing: dp(15)
+        MDLabel:
+            id: title_label
+            font_style: 'H4'
+            halign: 'center'
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        ScrollView:
+            GridLayout:
+                id: content_box
+                cols: 1
+                adaptive_height: True
                 spacing: dp(10)
-                adaptive_width: True
-                pos_hint: {"center_x": 0.5}
-                MDFillRoundFlatButton:
-                    text: "Back"
-                    on_release: root.prev_step()
-                    disabled: root.flow_step == 0
-                MDFillRoundFlatButton:
-                    id: next_button
-                    text: "Next"
-                    on_release: root.next_step()
+        MDBoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(10)
+            adaptive_size: True
+            pos_hint: {"center_x": 0.5}
+            MDFillRoundFlatButton:
+                text: "Back"
+                on_release: root.prev_step()
+                disabled: root.flow_step == 0
+            MDFillRoundFlatButton:
+                id: next_button
+                text: "Next"
+                on_release: root.next_step()
 
 <CheckinScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        MDTopAppBar:
-            title: "Check-in"
-            elevation: 4
-            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
-        MDBoxLayout:
-            orientation: 'vertical'
-            padding: dp(20)
-            spacing: dp(15)
-            TitleLabel:
-                id: checkin_title_label
-                text: "How are you feeling?"
-                halign: 'center'
-            ProgressBar:
-                id: progress_bar
-                size_hint_y: None
-                height: dp(10)
-                max: 100
-            Widget:
-                size_hint_y: 0.2
-            ScrollView:
-                GridLayout:
-                    id: checkin_content
-                    adaptive_height: True
-                    cols: 1
-                    spacing: dp(10)
-            Widget:
-                size_hint_y: 0.2
+        padding: dp(20)
+        spacing: dp(15)
+        MDLabel:
+            id: checkin_title_label
+            text: "How are you feeling?"
+            halign: 'center'
+            font_style: 'H4'
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        ColorProgressBar:
+            id: progress_bar
+            size_hint_y: None
+            height: dp(10)
+            max: 100
+            bar_color: get_color_from_hex(app.theme.COLORS['accent'])
+        Widget:
+            size_hint_y: 0.2
+        ScrollView:
+            GridLayout:
+                id: checkin_content
+                adaptive_height: True
+                cols: 1
+                spacing: dp(10)
+        Widget:
+            size_hint_y: 0.2
 
 <CBTScreen(TherapyScreenBase)>:
 <DBTScreen(TherapyScreenBase)>:
@@ -198,131 +292,68 @@
 <EntriesScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        MDTopAppBar:
-            title: "Your Journal Entries"
-            elevation: 4
-            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
-        MDBoxLayout:
-            orientation: 'vertical'
-            padding: dp(20)
-            spacing: dp(10)
+        padding: dp(20)
+        spacing: dp(10)
+        MDLabel:
+            text: "Your Journal Entries"
+            font_style: 'H4'
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        ScrollView:
+            id: entries_log
             MDLabel:
-                text: "Your Journal Entries"
-                font_style: 'H4'
-                size_hint_y: None
-                height: self.texture_size[1]
-            BodyScrollView:
-                id: entries_log
+                id: body_text
+                markup: True
+                adaptive_height: True
+                text_size: self.width - dp(20), None
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
 
 <HistoryScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        MDTopAppBar:
-            title: "Conversation History"
-            elevation: 4
-            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
-        MDBoxLayout:
-            orientation: 'vertical'
-            padding: dp(20)
-            spacing: dp(10)
+        padding: dp(20)
+        spacing: dp(10)
+        MDLabel:
+            text: "Conversation History"
+            font_style: 'H4'
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        ScrollView:
+            id: history_log
             MDLabel:
-                text: "Conversation History"
-                font_style: 'H4'
-                size_hint_y: None
-                height: self.texture_size[1]
-            BodyScrollView:
-                id: history_log
+                id: body_text
+                markup: True
+                adaptive_height: True
+                text_size: self.width - dp(20), None
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
 
 <HushScreen>:
     MDBoxLayout:
         orientation: 'vertical'
-        MDTopAppBar:
-            title: "Hush"
-            elevation: 4
-            left_action_items: [["menu", lambda x: app.root.ids.nav_layout.ids.nav_drawer.set_state("open")]]
-        MDBoxLayout:
-            orientation: 'vertical'
-            padding: dp(20)
-            spacing: dp(20)
-            MDLabel:
-                text: "Find a moment of peace"
-                font_style: 'H4'
-                halign: 'center'
-                adaptive_height: True
-            MDLabel:
-                id: timer_label
-                text: root.get_timer_text()
-                font_style: 'H2'
-                halign: 'center'
-            MDFillRoundFlatButton:
-                text: "Start Timer" if not root.timer_active else "Stop Timer"
-                on_release: root.start_stop_timer()
-                pos_hint: {'center_x': 0.5}
-
-#=============================================================================
-# ROOT WIDGET
-# This should be the last rule. It assembles the screens defined above.
-#=============================================================================
-<RootWidget>:
-    MDNavigationLayout:
-        id: nav_layout
-        ScreenManager:
-            id: sm
-            SplashScreen:
-                name: 'splash'
-            JerryScreen:
-                name: 'jerry'
-            CheckinScreen:
-                name: 'checkin'
-            CBTScreen:
-                name: 'cbt'
-            DBTScreen:
-                name: 'dbt'
-            EntriesScreen:
-                name: 'entries'
-            HistoryScreen:
-                name: 'history'
-            HushScreen:
-                name: 'hush'
-        MDNavigationDrawer:
-            id: nav_drawer
-            radius: (0, 16, 16, 0)
-            MDNavigationDrawerMenu:
-                MDNavigationDrawerHeader:
-                    title: "Menu"
-                MDNavigationDrawerItem:
-                    text: "Jerry"
-                    icon: "robot-happy-outline"
-                    on_release: sm.current = 'jerry'; nav_drawer.set_state("close")
-                MDNavigationDrawerItem:
-                    text: "Check-in"
-                    icon: "emoticon-happy-outline"
-                    on_release: sm.current = 'checkin'; nav_drawer.set_state("close")
-                MDNavigationDrawerItem:
-                    text: "CBT Worksheet"
-                    icon: "notebook-edit-outline"
-                    on_release: sm.current = 'cbt'; nav_drawer.set_state("close")
-                MDNavigationDrawerItem:
-                    text: "DBT Skills Log"
-                    icon: "notebook-check-outline"
-                    on_release: sm.current = 'dbt'; nav_drawer.set_state("close")
-                MDNavigationDrawerItem:
-                    text: "All Entries"
-                    icon: "book-open-variant"
-                    on_release: sm.current = 'entries'; nav_drawer.set_state("close")
-                MDNavigationDrawerItem:
-                    text: "Conversation History"
-                    icon: "history"
-                    on_release: sm.current = 'history'; nav_drawer.set_state("close")
-                MDNavigationDrawerItem:
-                    text: "Hush"
-                    icon: "timer-sand"
-                    on_release: sm.current = 'hush'; nav_drawer.set_state("close")
-                MDNavigationDrawerDivider:
-                MDLabel:
-                    text: "Version 1.0"
-                    font_style: "Caption"
-                    halign: "center"
-                    size_hint_y: None
-                    height: self.texture_size[1]
-                    padding_y: "12dp"
+        padding: dp(20)
+        spacing: dp(20)
+        adaptive_size: True
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        MDLabel:
+            text: "Find a moment of peace"
+            font_style: 'H4'
+            halign: 'center'
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        MDLabel:
+            id: timer_label
+            text: root.get_timer_text()
+            font_style: 'H2'
+            halign: 'center'
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(app.theme.COLORS['text_dark'])
+        MDFillRoundFlatButton:
+            text: "Start Timer" if not root.timer_active else "Stop Timer"
+            on_release: root.start_stop_timer()
+            pos_hint: {'center_x': 0.5}
