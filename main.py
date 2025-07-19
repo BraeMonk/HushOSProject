@@ -679,6 +679,7 @@ class HistoryScreen(Screen):
 class HushScreen(Screen):
     timer_seconds = NumericProperty(180)
     timer_active = BooleanProperty(False)
+    timer_text = StringProperty("3:00")
     
     def on_enter(self):
         MDApp.get_running_app().update_affirmation_banner(self.name)
@@ -695,18 +696,23 @@ class HushScreen(Screen):
 
     def update_timer(self, dt):
         self.timer_seconds -= 1
+        # 2. Update the timer_text property every second.
+        self.update_timer_text()
         if self.timer_seconds <= 0:
             self.timer_event.cancel()
+            self.timer_active = False
             MDApp.get_running_app().root.ids.sm.current = 'jerry'
-            
-    def get_timer_text(self):
+
+    def update_timer_text(self):
+        """Formats the time and updates the StringProperty."""
         mins, secs = divmod(self.timer_seconds, 60)
-        return f"{int(mins):02d}:{int(secs):02d}"
+        self.timer_text = f"{int(mins):02d}:{int(secs):02d}"
         
     def reset_timer(self):
         if hasattr(self, 'timer_event') and self.timer_event.is_scheduled(): self.timer_event.cancel()
         self.timer_active = False
         self.timer_seconds = 180
+        self.update_timer_text()
         
     def on_leave(self):
         self.reset_timer()
