@@ -773,7 +773,8 @@ class HushOSApp(MDApp):
             sm.current = screen_name
 
     def update_affirmation_banner(self, screen_name):
-        banner = self.root.ids.affirmation_banner
+        sm = self.root.ids.sm
+        banner = sm.parent.ids.affirmation_bannerbanner = self.root.ids.affirmation_banner
         if screen_name == 'jerry':
             banner.height = 0
         else:
