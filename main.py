@@ -76,6 +76,10 @@ DBT_SKILLS = {
 }
 
 # --- DATA MANAGEMENT CLASSES ---
+class ColorProgressBar(ProgressBar):
+    # RGBA color list property for the bar's fill color
+    bar_color = ListProperty([1, 0, 0, 1])  # default red color
+    
 class ConversationLog:
     def __init__(self, filepath): self.filepath = filepath
     def load_log(self):
