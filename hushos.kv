@@ -145,7 +145,7 @@
             height: dp(150)
             spacing: dp(10)
             padding: [dp(20), dp(10)]
-            
+
             # Jerry animation on the left
             MDBoxLayout:
                 size_hint_x: 0.4
@@ -154,7 +154,7 @@
                     size_hint: None, None
                     size: dp(140), dp(120)
                     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-            
+
             # Stat block on the right
             MDCard:
                 orientation: 'vertical'
@@ -164,6 +164,7 @@
                 spacing: dp(8)
                 radius: [12, 12, 12, 12]
                 md_bg_color: get_color_from_hex(app.theme.COLORS['background'])
+
                 GridLayout:
                     cols: 2
                     size_hint_y: None
@@ -193,6 +194,7 @@
                         id: calm_bar
                         max: 100
                         bar_color: get_color_from_hex(app.theme.COLORS['calm_bar'])
+
                 MDBoxLayout:
                     size_hint_y: None
                     height: dp(25)
@@ -206,28 +208,41 @@
                         bar_color: get_color_from_hex(app.theme.COLORS['accent'])
 
         ScrollView:
-            MDLabel:
-                id: chat_log
-                markup: True
+            # Make ScrollView fill the remaining space
+            size_hint_y: 1
+
+            MDBoxLayout:
+                id: chat_log_container
+                orientation: 'vertical'
                 size_hint_y: None
-                height: self.texture_size[1]
-                text_size: self.width - dp(20), None
+                height: self.minimum_height
                 padding: dp(10)
+                spacing: dp(10)
+
+                MDLabel:
+                    id: chat_log
+                    markup: True
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    text_size: self.width, None
 
         MDBoxLayout:
             size_hint_y: None
             height: dp(56)
             padding: dp(8)
             spacing: dp(8)
+
             MDTextField:
                 id: user_entry
                 multiline: False
                 hint_text: "Talk to Jerry..."
                 on_text_validate: root.send_message()
+
             MDIconButton:
                 id: send_button
                 icon: "send"
                 on_release: root.send_message()
+
 
 <TherapyScreenBase>:
     MDBoxLayout:
