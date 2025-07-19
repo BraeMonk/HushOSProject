@@ -160,7 +160,10 @@ class JerryAI:
         self.memory = JerryMemory(jerry_memory_path)
         self.api_key = None
         try:
-            config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+        # This is the robust way to find the file in the root directory
+            app_dir = App.get_running_app().directory
+            config_path = os.path.join(app_dir, 'config.json')
+        
             with open(config_path, 'r') as f:
                 config = json.load(f)
                 self.api_key = config.get('api_key')
@@ -194,7 +197,7 @@ class JerryAI:
                     response = self.client.generate_content(
                         model="gemini-1.5-flash",
                         system_instruction=system_instruction,
-                        history=self.chat_history
+                        contents=self.chat_history
                     )
                     ai_response = response.text.strip()
                 except Exception as e:
