@@ -138,17 +138,20 @@
 <JerryScreen>:
     MDBoxLayout:
         orientation: 'vertical'
+        padding: dp(12)
+        spacing: dp(12)
 
         MDBoxLayout:
             orientation: 'horizontal'
             size_hint_y: None
-            height: dp(150)
-            spacing: dp(10)
-            padding: [dp(20), dp(10)]
+            height: dp(160)
+            spacing: dp(16)
+            padding: [dp(16), dp(12), dp(16), dp(12)]
 
             # Jerry animation on the left
             MDBoxLayout:
                 size_hint_x: 0.4
+                padding: dp(8)
                 JerryAnimator:
                     id: animator
                     size_hint: None, None
@@ -159,9 +162,9 @@
             MDCard:
                 orientation: 'vertical'
                 size_hint_x: 0.6
-                elevation: 4
-                padding: dp(8)
-                spacing: dp(8)
+                elevation: 6
+                padding: dp(16)
+                spacing: dp(12)
                 radius: [12, 12, 12, 12]
                 md_bg_color: get_color_from_hex(app.theme.COLORS['background'])
 
@@ -169,7 +172,7 @@
                     cols: 2
                     size_hint_y: None
                     height: dp(80)
-                    spacing: dp(10)
+                    spacing: dp(12)
                     MDLabel:
                         text: 'Clarity'
                         theme_text_color: "Custom"
@@ -197,7 +200,8 @@
 
                 MDBoxLayout:
                     size_hint_y: None
-                    height: dp(25)
+                    height: dp(28)
+                    spacing: dp(12)
                     MDLabel:
                         id: level_label
                         theme_text_color: "Custom"
@@ -208,8 +212,8 @@
                         bar_color: get_color_from_hex(app.theme.COLORS['accent'])
 
         ScrollView:
-            # Make ScrollView fill the remaining space
             size_hint_y: 1
+            padding: dp(8)
 
             MDBoxLayout:
                 id: chat_log_container
@@ -225,6 +229,7 @@
                     size_hint_y: None
                     height: self.texture_size[1]
                     text_size: self.width, None
+                    padding: [dp(8), dp(8), dp(8), dp(8)]
 
         MDBoxLayout:
             size_hint_y: None
@@ -237,11 +242,13 @@
                 multiline: False
                 hint_text: "Talk to Jerry..."
                 on_text_validate: root.send_message()
+                padding: [dp(12), 0, dp(12), 0]
 
             MDIconButton:
                 id: send_button
                 icon: "send"
                 on_release: root.send_message()
+
 
 
 <TherapyScreenBase>:
