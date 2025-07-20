@@ -143,25 +143,32 @@
             height: dp(180)
             spacing: dp(12)
 
-            # Jerry animation container (top-left)
+            # Jerry animation container 
+            AnchorLayout:
+                anchor_x: "left"
+                anchor_y: "top"
+                size_hint: None, None
+                size: dp(200), dp(200)
+
             MDBoxLayout:
-                orientation: 'vertical'
-                size_hint_x: 0.5
+                orientation: "vertical"
+                size_hint: 1, 1
                 spacing: dp(8)
 
-                JerryAnimator:
-                    id: animator
-                    size_hint_y: None
-                    height: dp(150)
+            JerryAnimator:
+                id: animator
+                size_hint_y: None
+                height: dp(150)
 
-                MDLabel:
-                    id: jerry_title_label
-                    text: ""
-                    halign: "center"
-                    theme_text_color: "Secondary"
-                    font_style: "Caption"
-                    size_hint_y: None
-                    height: self.texture_size[1]
+            MDLabel:
+                id: jerry_title_label
+                text: ""
+                halign: "center"
+                theme_text_color: "Secondary"
+                font_style: "Caption"
+                size_hint_y: None
+                height: self.texture_size[1]
+
 
             # Stats (top-right)
             MDBoxLayout:
