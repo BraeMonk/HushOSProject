@@ -653,6 +653,7 @@ class TherapyScreenBase(Screen):
                 hint_text=question_data.get("hint", "")
             )
             text_input.id = 'current_answer'  # <-- Set the ID after creation
+            content_box.add_widget(text_input)
 
     def display_checklist_step(self):
         self.ids.title_label.text = "Did any of these apply?"
