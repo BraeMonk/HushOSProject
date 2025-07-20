@@ -132,49 +132,50 @@
 
 <JerryScreen>:
     MDBoxLayout:
-    orientation: 'vertical'
-    padding: dp(12)
-    spacing: dp(12)
+        orientation: 'vertical'
+        padding: dp(12)
+        spacing: dp(12)
 
-    # Jerry Animator centered at top
-    AnchorLayout:
-        anchor_x: "center"
-        anchor_y: "top"
-        size_hint_y: None
-        height: dp(200)
+        # Jerry Animator centered at top
+        AnchorLayout:
+            anchor_x: "center"
+            anchor_y: "top"
+            size_hint_y: None
+            height: dp(200)
 
+            MDBoxLayout:
+                orientation: "vertical"
+                size_hint: None, None
+                size: dp(200), dp(200)
+                spacing: dp(8)
+
+                JerryAnimator:
+                    id: animator
+                    size_hint_y: None
+                    height: dp(150)
+
+                MDLabel:
+                    id: jerry_title_label
+                    text: ""
+                    halign: "center"
+                    theme_text_color: "Secondary"
+                    font_style: "Caption"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+
+        # Stats section
         MDBoxLayout:
-            orientation: "vertical"
-            size_hint: None, None
-            size: dp(200), dp(200)
+            orientation: 'vertical'
             spacing: dp(8)
 
-            JerryAnimator:
-                id: animator
-                size_hint_y: None
-                height: dp(150)
-
             MDLabel:
-                id: jerry_title_label
-                text: ""
+                id: level_label
+                text: "Level: 1"
+                font_style: "H6"
                 halign: "center"
-                theme_text_color: "Secondary"
-                font_style: "Caption"
                 size_hint_y: None
                 height: self.texture_size[1]
 
-    # Stats section
-    MDBoxLayout:
-        orientation: 'vertical'
-        spacing: dp(8)
-
-        MDLabel:
-            id: level_label
-            text: "Level: 1"
-            font_style: "H6"
-            halign: "center"
-            size_hint_y: None
-            height: self.texture_size[1]
 
         MDLabel:
             id: xp_bar
