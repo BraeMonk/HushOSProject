@@ -156,6 +156,7 @@ class JerryCompanion:
 
 class OpenAIClient:
     def __init__(self, api_key=None):
+        global app_dir
         if api_key is None:
             # Load from config.json
             try:
@@ -202,17 +203,18 @@ class JerryAI:
 
         # Load API key from config.json if not provided
         if not self.api_key:
-            config_path = './config.json'
+            config_path = os.path.join(app_dir, 'config.json')  # Use same app_dir defined at module level
+            print(f"[JerryAI] Looking for config.json at: {config_path}")
             if os.path.exists(config_path):
                 print(f"[JerryAI] Loading API key from {config_path}")
                 try:
                     with open(config_path, 'r') as f:
                         config = json.load(f)
+                        print(f"[JerryAI] Config keys found: {list(config.keys())}")
                         self.api_key = config.get('openai_api_key')
+                        print(f"[JerryAI] API key found: {'Yes' if self.api_key else 'No'}")
                 except Exception as e:
                     print(f"[JerryAI] Failed to load config.json: {e}")
-
-        print(f"[JerryAI] Initialized with api_key: {'****' if self.api_key else 'None'}")
 
         if self.api_key:
             self.openai_client = OpenAIClient(api_key=self.api_key)
@@ -886,33 +888,27 @@ class HushScreen(Screen):
 
 class HushOSApp(MDApp):
     def build(self):
-        self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Indigo"
+    self.theme_cls.theme_style = "Dark"
+    self.theme_cls.primary_palette = "Indigo"
 
-        api_key = None
-        try:
-            with open("config.json") as f:
-                secrets = json.load(f)
-                api_key = secrets.get("openai_api_key")
-        except Exception as e:
-            print(f"!!! Could not load API key from config.json: {e}. Jerry will be in basic mode.")
+    api_key = None
+    try:
+        config_path = os.path.join(app_dir, "config.json")
+        print(f"[HushOS] Trying to load API key from {config_path}")
+        with open(config_path, "r") as f:
+            secrets = json.load(f)
+            api_key = secrets.get("openai_api_key")
+        print(f"[HushOS] API key loaded: {'Yes' if api_key else 'No'}")
+    except Exception as e:
+        print(f"!!! Could not load API key from config.json: {e}. Jerry will be in basic mode.")
 
-        user_data_dir = self.user_data_dir
-        logs_path = os.path.join(user_data_dir, "logs")
-        os.makedirs(logs_path, exist_ok=True)
-        
-        jerry_state_path = os.path.join(logs_path, "jerry_state.json")
-        entries_log_path = os.path.join(logs_path, "entries_log.json")
-        conversation_log_path = os.path.join(logs_path, "conversation_log.json")
-        jerry_memory_path = os.path.join(logs_path, "jerry_memory.json")
-        
-        self.jerry = JerryCompanion(jerry_state_path)
-        self.ai = JerryAI(jerry=self.jerry, app=self, conversation_log_path=conversation_log_path, jerry_memory_path=jerry_memory_path, api_key=api_key)
-        self.entries_log = EntriesLog(entries_log_path)
-        
-        self.sound = None
-        self.current_track_index = 0
-        self.play_music()
+    self.jerry_ai = JerryAI(
+        jerry=self.jerry,
+        app=self,
+        conversation_log_path=os.path.join(app_dir, "conversation_log.json"),
+        jerry_memory_path=os.path.join(app_dir, "jerry_memory.json"),
+        api_key=api_key,
+    )
 
         return RootWidget()
 
