@@ -190,28 +190,28 @@ class JerryAI:
     MAX_HISTORY = 20
 
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
-        print("[JerryAI] Initialized with api_key:", api_key)
         self.jerry = jerry
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
         self.memory = JerryMemory(jerry_memory_path)
         self.api_key = api_key
-        self.chat_lock = threading.Lock()  # Thread safety lock
+        self.chat_lock = threading.Lock()
         self.is_thinking = False
         self.chat_history = []
 
-        # Load API key robustly
-        try:
-            app_dir = App.get_running_app().directory
-            config_path = os.path.join(app_dir, 'config.json')
-            print(f"[JerryAI] Loading config from: {config_path}")
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-                self.api_key = self.api_key or config.get('openai_api_key')
+        # Load API key from config.json if not provided
+        if not self.api_key:
+            config_path = './config.json'
+            if os.path.exists(config_path):
+                print(f"[JerryAI] Loading API key from {config_path}")
+                try:
+                    with open(config_path, 'r') as f:
+                        config = json.load(f)
+                        self.api_key = config.get('openai_api_key')
+                except Exception as e:
+                    print(f"[JerryAI] Failed to load config.json: {e}")
 
-            print(f"Loaded API key from {config_path}: {'****' if self.api_key else 'None'}")
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            print(f"Could not load config.json: {e}")
+        print(f"[JerryAI] Initialized with api_key: {'****' if self.api_key else 'None'}")
 
         if self.api_key:
             self.openai_client = OpenAIClient(api_key=self.api_key)
