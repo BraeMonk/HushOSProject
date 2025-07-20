@@ -35,6 +35,12 @@ from kivy.utils import platform, get_hex_from_color
 from kivy.metrics import dp
 from kivy.graphics import Color, Ellipse, Rectangle
 from kivy.lang import Builder
+
+if platform == 'android':
+    from android.storage import app_storage_path
+    app_dir = app_storage_path()
+else:
+    app_dir = os.path.dirname(os.path.abspath(__file__))
     
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
@@ -156,6 +162,7 @@ class OpenAIClient:
                 with open(os.path.join(app_dir, "config.json")) as f:
                     config = json.load(f)
                     api_key = config.get("openai_api_key")
+
             except Exception as e:
                 print(f"Failed to load OpenAI API key: {e}")
         self.api_key = api_key
@@ -197,9 +204,11 @@ class JerryAI:
         try:
             app_dir = App.get_running_app().directory
             config_path = os.path.join(app_dir, 'config.json')
+            print(f"[JerryAI] Loading config from: {config_path}")
             with open(config_path, 'r') as f:
                 config = json.load(f)
-                self.api_key = self.api_key or config.get('api_key') or config.get('openai_api_key')
+                self.api_key = self.api_key or config.get('openai_api_key')
+
             print(f"Loaded API key from {config_path}: {'****' if self.api_key else 'None'}")
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Could not load config.json: {e}")
