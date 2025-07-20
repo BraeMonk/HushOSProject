@@ -570,8 +570,7 @@ class CheckinScreen(Screen):
                 text=choice,
                 size_hint_y=None,
                 height=dp(50),
-                background_color=get_color_from_hex(theme[key]),
-                background_normal=''
+                background_color=theme_cls.primary_color
             )
             btn.bind(on_press=lambda x, cat=key, c=choice: self.next_step(cat, c))
             button_layout.add_widget(btn)
