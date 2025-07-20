@@ -435,11 +435,11 @@ class JerryScreen(Screen):
         and adds it to the 'chat_log' MDBoxLayout.
         """
         app = MDApp.get_running_app()
-        speaker_color_hex = app.theme_cls.primary_color if speaker == 'Jerry' else app.theme_cls.accent_color
-        
+        speaker_color = app.theme_cls.primary_color if speaker == 'Jerry' else app.theme_cls.accent_color
+
         # Create a new label widget for the message
         message_label = MDLabel(
-            text=f"[b][color=#{speaker_color_hex.hex}]{speaker}:[/color][/b] {message}",
+            text=f"[b][color={get_hex_from_color(speaker_color)}]{speaker}:[/color][/b] {message}",
             markup=True,
             size_hint_y=None,
             theme_text_color="Primary",
