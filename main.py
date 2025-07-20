@@ -10,6 +10,7 @@ from datetime import datetime
 
 # --- Kivy and App Dependencies ---
 from kivymd.app import MDApp
+from kivymd.uix.label import MDLabel
 from kivy.app import App
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.navigationdrawer import MDNavigationLayout
@@ -19,7 +20,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.button import Button
-from kivy.uix.label import Label, MDLabel
+from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.progressbar import ProgressBar
