@@ -199,8 +199,9 @@
 
         # MIDDLE: Chat Log
         ScrollView:
+            id: scroller  # <-- CORRECTION 1: ID added for scroll control
             MDBoxLayout:
-                id: conversation_log
+                id: chat_log  # <-- CORRECTION 2: Renamed from conversation_log
                 orientation: 'vertical'
                 size_hint_y: None
                 height: self.minimum_height
@@ -219,6 +220,7 @@
                 on_text_validate: root.send_message()
 
             MDIconButton:
+                id: send_button  # <-- CORRECTION 3: ID added for button control
                 icon: "send"
                 on_release: root.send_message()
 
