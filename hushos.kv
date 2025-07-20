@@ -136,7 +136,7 @@
         padding: dp(12)
         spacing: dp(12)
 
-        # Jerry Animator centered at top
+        # 1. Jerry Animation at top, centered and fixed height
         AnchorLayout:
             anchor_x: "center"
             anchor_y: "top"
@@ -163,84 +163,85 @@
                     size_hint_y: None
                     height: self.texture_size[1]
 
-        # Stats section
-       MDBoxLayout:
-    orientation: 'vertical'
-    spacing: dp(8)
+        # 2. Stats right below animation (fixed height)
+        MDBoxLayout:
+            orientation: 'vertical'
+            spacing: dp(8)
+            size_hint_y: None
+            height: self.minimum_height  # Shrink-wrap stats content
 
-    MDLabel:
-        id: level_label
-        text: "Level: 1"
-        font_style: "H6"
-        halign: "center"
-        size_hint_y: None
-        height: self.texture_size[1]
+            MDLabel:
+                id: level_label
+                text: "Level: 1"
+                font_style: "H6"
+                halign: "center"
+                size_hint_y: None
+                height: self.texture_size[1]
 
-    MDLabel:
-        id: xp_bar
-        text: "XP: 0 / 100"
-        font_style: "Caption"
-        halign: "center"
-        size_hint_y: None
-        height: self.texture_size[1]
+            MDLabel:
+                id: xp_bar
+                text: "XP: 0 / 100"
+                font_style: "Caption"
+                halign: "center"
+                size_hint_y: None
+                height: self.texture_size[1]
 
-    # Progress Bars with labels to the left
-    MDBoxLayout:
-        orientation: 'vertical'
-        spacing: dp(8)
-        size_hint_y: None
-        height: dp(30)
+            # Progress bars with labels (horizontal)
+            MDBoxLayout:
+                orientation: 'horizontal'
+                spacing: dp(8)
+                size_hint_y: None
+                height: dp(30)
 
-        MDLabel:
-            text: "Clarity"
-            size_hint_x: None
-            width: dp(80)
-            halign: "left"
-            # valign: "middle"  # <-- usually not needed or ignored on MDLabel
+                MDLabel:
+                    text: "Clarity"
+                    size_hint_x: None
+                    width: dp(80)
+                    halign: "left"
 
-        ColorProgressBar:
-            id: clarity_bar
-            max: 100
-            value: 100
+                ColorProgressBar:
+                    id: clarity_bar
+                    max: 100
+                    value: 100
 
-    MDBoxLayout:
-        orientation: 'horizontal'
-        spacing: dp(8)
-        size_hint_y: None
-        height: dp(30)
+            MDBoxLayout:
+                orientation: 'horizontal'
+                spacing: dp(8)
+                size_hint_y: None
+                height: dp(30)
 
-        MDLabel:
-            text: "Insight"
-            size_hint_x: None
-            width: dp(80)
-            halign: "left"
+                MDLabel:
+                    text: "Insight"
+                    size_hint_x: None
+                    width: dp(80)
+                    halign: "left"
 
-        ColorProgressBar:
-            id: insight_bar
-            max: 100
-            value: 100
+                ColorProgressBar:
+                    id: insight_bar
+                    max: 100
+                    value: 100
 
-    MDBoxLayout:
-        orientation: 'horizontal'
-        spacing: dp(8)
-        size_hint_y: None
-        height: dp(30)
+            MDBoxLayout:
+                orientation: 'horizontal'
+                spacing: dp(8)
+                size_hint_y: None
+                height: dp(30)
 
-        MDLabel:
-            text: "Calm"
-            size_hint_x: None
-            width: dp(80)
-            halign: "left"
+                MDLabel:
+                    text: "Calm"
+                    size_hint_x: None
+                    width: dp(80)
+                    halign: "left"
 
-        ColorProgressBar:
-            id: calm_bar
-            max: 100
-            value: 100
+                ColorProgressBar:
+                    id: calm_bar
+                    max: 100
+                    value: 100
 
-
-        # MIDDLE: Chat Log
+        # 3. Chat log takes all remaining space
         ScrollView:
             id: scroller
+            size_hint_y: 1  # Expand to fill available vertical space
 
             MDBoxLayout:
                 id: chat_log
@@ -249,7 +250,7 @@
                 height: self.minimum_height
                 spacing: dp(10)
 
-        # BOTTOM: Text Entry
+        # 4. Text input fixed at bottom
         MDBoxLayout:
             size_hint_y: None
             height: dp(56)
