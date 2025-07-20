@@ -31,7 +31,7 @@ from kivy.properties import ObjectProperty, StringProperty, NumericProperty, Lis
 from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.core.audio import SoundLoader
-from kivy.utils import get_color_from_hex
+from kivy.utils import get_hex_from_color
 from kivy.metrics import dp
 from kivy.graphics import Color, Ellipse, Rectangle
 from kivy.lang import Builder
