@@ -153,11 +153,43 @@ class JerryCompanion:
     def level_up(self):
         self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
+class OpenAIClient:
+    def __init__(self, api_key=None):
+        if api_key is None:
+            # Load from config.json
+            try:
+                app_dir = os.path.dirname(os.path.abspath(__file__))
+                with open(os.path.join(app_dir, "config.json")) as f:
+                    config = json.load(f)
+                    api_key = config.get("openai_api_key")
+            except Exception as e:
+                print(f"Failed to load OpenAI API key: {e}")
+        self.api_key = api_key
+        openai.api_key = self.api_key
+
+    def chat(self, messages, model="gpt-4", temperature=0.7, max_tokens=500):
+        """
+        messages: list of dicts, e.g.
+          [{"role": "system", "content": "You are a gentle CBT coach."},
+           {"role": "user", "content": "I feel anxious"}]
+        """
+        try:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"OpenAI API error: {e}")
+            return None
+
 class JerryAI:
     MAX_HISTORY = 20
 
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
-        print("[JerryAI] Initialized with api_key:", api_key) 
+        print("[JerryAI] Initialized with api_key:", api_key)
         self.jerry = jerry
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
@@ -167,50 +199,38 @@ class JerryAI:
         self.is_thinking = False
         self.chat_history = []
 
-        # Load API key from config.json robustly
+        # Load API key robustly
         try:
             app_dir = App.get_running_app().directory
             config_path = os.path.join(app_dir, 'config.json')
             with open(config_path, 'r') as f:
                 config = json.load(f)
-                self.api_key = config.get('api_key') or config.get('openai_api_key')
+                self.api_key = self.api_key or config.get('api_key') or config.get('openai_api_key')
             print(f"Loaded API key from {config_path}: {'****' if self.api_key else 'None'}")
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Could not load config.json: {e}")
 
         if self.api_key:
-            openai.api_key = self.api_key
+            self.openai_client = OpenAIClient(api_key=self.api_key)
             print("Jerry AI initialized with OpenAI support.")
         else:
+            self.openai_client = None
             print("Jerry AI initialized in basic mode (no API key provided).")
 
-        # Initialize system prompt for OpenAI chat
         self.system_prompt = "You are Jerry, a friendly, gentle, and supportive AI companion. Keep your responses brief and caring."
 
     def get_response(self, user_input, callback):
         self.is_thinking = True
         with self.chat_lock:
-            # Append user message
             self.chat_history.append({"role": "user", "content": user_input})
-            # Keep chat history within limit, include system prompt always at front
             if len(self.chat_history) > self.MAX_HISTORY:
                 self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
         def get_response_thread():
-            ai_response = None
-            if self.api_key:
-                try:
-                    # Prepare messages with system prompt at start
-                    messages = [{"role": "system", "content": self.system_prompt}] + self.chat_history
-                    response = openai.ChatCompletion.create(
-                        model="gpt-4",
-                        messages=messages,
-                        temperature=0.7,
-                        max_tokens=500,
-                    )
-                    ai_response = response.choices[0].message.content.strip()
-                except Exception as e:
-                    print(f"OpenAI API error: {e}")
+            if self.openai_client:
+                messages = [{"role": "system", "content": self.system_prompt}] + self.chat_history
+                ai_response = self.openai_client.chat(messages=messages)
+                if ai_response is None:
                     ai_response = self.get_fallback_response(user_input)
             else:
                 ai_response = self.get_fallback_response(user_input)
@@ -220,7 +240,6 @@ class JerryAI:
                 if len(self.chat_history) > self.MAX_HISTORY:
                     self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
-            # Schedule UI update callback on main thread
             Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
             Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
 
