@@ -434,23 +434,19 @@ class SplashScreen(Screen):
             self.manager.current = 'jerry'
 
 class JerryScreen(Screen):
+    last_known_level = 0 # <<< NEW: To track when the level changes
+
     def on_enter(self):
         Clock.schedule_once(self.setup_screen)
 
     def setup_screen(self, dt):
         self.update_ui()
-        # self.ids.animator.start() # This will only work if your 'animator' widget has a 'start' method
-        
-        # FIXED: Check if the layout has children, not if it has text
         if not self.ids.chat_log.children:
             self.add_message("Jerry", "It's good to see you again.")
-            
         self.ids.user_entry.focus = True
         MDApp.get_running_app().update_affirmation_banner(self.name)
 
     def on_leave(self):
-        # self.ids.animator.stop() # This will only work if your 'animator' widget has a 'stop' method
-        # MDApp.get_running_app().ai.end_session()
         pass
 
     def update_ui(self, *args):
@@ -460,39 +456,53 @@ class JerryScreen(Screen):
         self.ids.insight_bar.value = jerry.needs['insight']
         self.ids.calm_bar.value = jerry.needs['calm']
         self.ids.level_label.text = f"Level {jerry.level}"
-        
-        # FIXED: 'xp_bar' is a Label, so we set its .text property, not .value
         self.ids.xp_bar.text = f"XP: {jerry.xp} / {jerry.xp_to_next_level}"
 
+        # <<< NEW: Check for level up and trigger evolution if needed
+        if jerry.level > self.last_known_level:
+            self.check_for_evolution(jerry.level)
+            self.last_known_level = jerry.level
+
+    # <<< NEW: This entire function handles the evolution logic
+    def check_for_evolution(self, current_level):
+        """Checks the level and calls the animator's evolve method."""
+        animator = self.ids.animator
+        title_label = self.ids.jerry_title_label
+        
+        # Determine the evolution stage (e.g., one stage every 10 levels)
+        evolution_stage = current_level // 10
+
+        # Call the evolve() method you created in JerryAnimator
+        animator.evolve(evolution_stage)
+
+        # Update the title label based on the evolution stage
+        if evolution_stage == 1:
+            title_label.text = "Jerry the Listener"
+        elif evolution_stage == 2:
+            title_label.text = "Calm Companion"
+        elif evolution_stage == 3:
+            title_label.text = "Beacon of Insight"
+        else:
+            title_label.text = "" # No title at evolution stage 0
+
     def send_message(self):
-        # app = MDApp.get_running_app()
-        # if app.ai.is_thinking: return
         user_text = self.ids.user_entry.text.strip()
         if not user_text: return
         
         self.add_message("You", user_text)
         self.ids.user_entry.text = ""
-        # The AI call can be added back here. For now, we will simulate a response.
         self.handle_ai_response("This is a response from Jerry.")
-
 
     def handle_ai_response(self, response):
         if response.startswith("ACTION:"):
             MDApp.get_running_app().root.ids.sm.current = response.split(":")[1].strip()
         else:
-            # FIXED: Directly call add_message. The complex "typing" effect is removed
-            # as it's not compatible with adding widgets and is prone to errors.
             self.add_message("Jerry", response)
 
     def add_message(self, speaker, message):
-        """
-        FIXED: This function now creates a new MDLabel for each message
-        and adds it to the 'chat_log' MDBoxLayout.
-        """
         app = MDApp.get_running_app()
         speaker_color = app.theme_cls.primary_color if speaker == 'Jerry' else app.theme_cls.accent_color
-
-        # Create a new label widget for the message
+        
         message_label = MDLabel(
             text=f"[b][color={get_hex_from_color(speaker_color)}]{speaker}:[/color][/b] {message}",
             markup=True,
@@ -501,23 +511,17 @@ class JerryScreen(Screen):
             valign="top"
         )
         
-        # Allow the label to wrap text and define its height
         message_label.bind(
             width=lambda *x: message_label.setter('text_size')(message_label, (message_label.width, None)),
             texture_size=lambda *x: message_label.setter('height')(message_label, message_label.texture_size[1])
         )
         
-        # Add the new widget to the layout
         self.ids.chat_log.add_widget(message_label)
         self.scroll_to_bottom()
         
     def scroll_to_bottom(self):
-        # FIXED: Use the 'scroller' ID from the ScrollView to control scrolling
         scroll_view = self.ids.scroller
         Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0), 0.1)
-
-    # REMOVED: The 'type_out_message' function is not compatible with this corrected
-    # approach and has been removed to ensure the app works correctly.
 
 class CheckinScreen(Screen):
     checkin_step = NumericProperty(0)
