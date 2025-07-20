@@ -11,6 +11,7 @@ from datetime import datetime
 # --- Kivy and App Dependencies ---
 from kivymd.app import MDApp
 from kivymd.uix.label import MDLabel
+from kivymd.uix.card import MDCard
 from kivy.app import App
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.navigationdrawer import MDNavigationLayout
@@ -740,7 +741,7 @@ class EntriesScreen(Screen):
     def on_enter(self):
         app = MDApp.get_running_app()
         app.update_affirmation_banner(self.name)
-        body_box = self.ids.entries_log.ids.entries_text
+        body_box = self.ids.entries_text
         body_box.clear_widgets()
         body_label = self.ids.entries_text
         entries = app.entries_log.get_all_entries()
@@ -782,30 +783,65 @@ class EntriesScreen(Screen):
 
 class HistoryScreen(Screen):
     def on_enter(self):
-        MDApp.get_running_app().update_affirmation_banner(self.name)
-        log_label = self.ids.history_log.ids.history_text
-        log_label.text = ""
-        
-        convo_log = MDApp.get_running_app().ai.conversation_log.load_log()
+        app = MDApp.get_running_app()
+        app.update_affirmation_banner(self.name)
+
+        container = self.ids.history_text
+        container.clear_widgets()
+
+        convo_log = app.ai.conversation_log.load_log()
         if not convo_log:
-            log_label.text = "No conversation history."
-        else:
-            full_text = []
-            for session in convo_log:
-                timestamp = session.get('timestamp', 'Unknown Date')
-                full_text.append(f"[b]Session: {timestamp}[/b]\n")
-                
-                conversation = session.get('conversation', [])
-                for message in conversation:
-                    role = message.get('role', 'model')
-                    speaker = "Jerry" if role == 'model' else 'You'
-                    
-                    parts = message.get('parts', ['(Message not found)'])
-                    text = parts[0] if isinstance(parts, list) and parts else '(Empty message)'
-                    
-                    full_text.append(f"[b]{speaker}:[/b] {text}\n")
-                full_text.append("\n")
-            log_label.text = "".join(full_text)
+            container.add_widget(MDLabel(
+                text="No conversation history.",
+                halign="center",
+                theme_text_color="Hint",
+                adaptive_height=True
+            ))
+            return
+
+        for session in convo_log:
+            timestamp = session.get('timestamp', 'Unknown Date')
+
+            # Session header card
+            session_card = MDCard(
+                orientation="vertical",
+                padding=dp(10),
+                spacing=dp(5),
+                size_hint_y=None,
+                adaptive_height=True,
+                md_bg_color=app.theme_cls.surface_container_low_color
+            )
+            session_card.add_widget(MDLabel(
+                text=f"[b]Session: {timestamp}[/b]",
+                markup=True,
+                font_style="Overline",
+                adaptive_height=True
+            ))
+
+            container.add_widget(session_card)
+
+            conversation = session.get('conversation', [])
+            for message in conversation:
+                role = message.get('role', 'model')
+                speaker = "Jerry" if role == 'model' else 'You'
+
+                parts = message.get('parts', ['(Message not found)'])
+                text = parts[0] if isinstance(parts, list) and parts else '(Empty message)'
+
+                msg_card = MDCard(
+                    orientation="vertical",
+                    padding=dp(8),
+                    size_hint_y=None,
+                    adaptive_height=True,
+                    md_bg_color=app.theme_cls.surface_variant
+                )
+                msg_card.add_widget(MDLabel(
+                    text=f"[b]{speaker}:[/b] {text}",
+                    markup=True,
+                    adaptive_height=True
+                ))
+
+                container.add_widget(msg_card)
             
 class HushScreen(Screen):
     timer_seconds = NumericProperty(180)
