@@ -164,81 +164,78 @@
                     height: self.texture_size[1]
 
         # Stats section
-        MDBoxLayout:
-            orientation: 'vertical'
-            spacing: dp(8)
+       MDBoxLayout:
+    orientation: 'vertical'
+    spacing: dp(8)
 
-            MDLabel:
-                id: level_label
-                text: "Level: 1"
-                font_style: "H6"
-                halign: "center"
-                size_hint_y: None
-                height: self.texture_size[1]
+    MDLabel:
+        id: level_label
+        text: "Level: 1"
+        font_style: "H6"
+        halign: "center"
+        size_hint_y: None
+        height: self.texture_size[1]
 
+    MDLabel:
+        id: xp_bar
+        text: "XP: 0 / 100"
+        font_style: "Caption"
+        halign: "center"
+        size_hint_y: None
+        height: self.texture_size[1]
+
+    # Progress Bars with labels to the left
+    MDBoxLayout:
+        orientation: 'vertical'
+        spacing: dp(8)
+        size_hint_y: None
+        height: dp(30)
 
         MDLabel:
-            id: xp_bar
-            text: "XP: 0 / 100"
-            font_style: "Caption"
-            halign: "center"
-            size_hint_y: None
-            height: self.texture_size[1]
+            text: "Clarity"
+            size_hint_x: None
+            width: dp(80)
+            halign: "left"
+            # valign: "middle"  # <-- usually not needed or ignored on MDLabel
 
-        # Progress Bars with labels to the left
-        MDBoxLayout:
-            orientation: 'horizontal'
-            spacing: dp(8)
-            size_hint_y: None
-            height: dp(30)
+        ColorProgressBar:
+            id: clarity_bar
+            max: 100
+            value: 100
 
-            MDLabel:
-                text: "Clarity"
-                size_hint_x: None
-                width: dp(80)
-                halign: "left"
-                valign: "middle"
+    MDBoxLayout:
+        orientation: 'horizontal'
+        spacing: dp(8)
+        size_hint_y: None
+        height: dp(30)
 
-            ColorProgressBar:
-                id: clarity_bar
-                max: 100
-                value: 100
+        MDLabel:
+            text: "Insight"
+            size_hint_x: None
+            width: dp(80)
+            halign: "left"
 
-        MDBoxLayout:
-            orientation: 'horizontal'
-            spacing: dp(8)
-            size_hint_y: None
-            height: dp(30)
+        ColorProgressBar:
+            id: insight_bar
+            max: 100
+            value: 100
 
-            MDLabel:
-                text: "Insight"
-                size_hint_x: None
-                width: dp(80)
-                halign: "left"
-                valign: "middle"
+    MDBoxLayout:
+        orientation: 'horizontal'
+        spacing: dp(8)
+        size_hint_y: None
+        height: dp(30)
 
-            ColorProgressBar:
-                id: insight_bar
-                max: 100
-                value: 100
+        MDLabel:
+            text: "Calm"
+            size_hint_x: None
+            width: dp(80)
+            halign: "left"
 
-        MDBoxLayout:
-            orientation: 'horizontal'
-            spacing: dp(8)
-            size_hint_y: None
-            height: dp(30)
-
-            MDLabel:
-                text: "Calm"
-                size_hint_x: None
-                width: dp(80)
-                halign: "left"
-                valign: "middle"
-
-            ColorProgressBar:
-                id: calm_bar
-                max: 100
-                value: 100
+        ColorProgressBar:
+            id: calm_bar
+            max: 100
+            value: 100
 
 
         # MIDDLE: Chat Log
@@ -251,7 +248,6 @@
                 size_hint_y: None
                 height: self.minimum_height
                 spacing: dp(10)
-                adaptive_height: True
 
         # BOTTOM: Text Entry
         MDBoxLayout:
