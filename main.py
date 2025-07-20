@@ -33,7 +33,7 @@ from kivy.core.window import Window
 from kivy.core.audio import SoundLoader
 from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color, Ellipse, Rectangle
 from kivy.lang import Builder
     
 # --- PATHS & BASIC SETUP ---
@@ -265,6 +265,8 @@ class RootWidget(MDScreen):
 class JerryAnimator(FloatLayout):
     anim_frame = NumericProperty(0)
     is_thinking = BooleanProperty(False)
+    evolution_level = NumericProperty(0) # <<< NEW: To track Jerry's evolution state
+    aura_color = None # <<< NEW: To hold the aura's color instruction for animation
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -278,8 +280,10 @@ class JerryAnimator(FloatLayout):
         self.jerry = self.app.jerry
         self.theme = self.app.theme
         self._define_sprites()
+        self.start() # <<< MOVED: Start the animation once everything is ready
 
     def _define_sprites(self):
+        # ... (your sprite dictionary is unchanged) ...
         self.sprites = {
             "content": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
             "low_insight": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],[3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,4,4,1,1,1,1,1,1,3],[3,1,1,1,1,1,4,1,1,4,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],[3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,4,4,4,4,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
@@ -287,8 +291,33 @@ class JerryAnimator(FloatLayout):
             "thinking": [[[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],[0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,0,3,1,2,0,2,1,1,3,0],[0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],[0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],[0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,0,3,1,2,2,2,1,1,3,0],[0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],[0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]]
         }
         self.sprites["low_clarity"] = self.sprites["content"]
+        
+    # <<< NEW: This is the method you will call from JerryScreen to trigger an evolution
+    def evolve(self, level):
+        self.evolution_level = level
+        # Stop any existing aura animation
+        if self.aura_color:
+            Animation.cancel_all(self.aura_color)
+            self.aura_color = None
+
+        # Start a new aura animation if the level is high enough
+        if self.evolution_level >= 2:
+            self.start_aura_animation()
+
+    # <<< NEW: This method handles the aura animation
+    def start_aura_animation(self):
+        # We define the aura color here but add it to the canvas in draw_sprite
+        self.aura_color = Color(rgba=(0.5, 0.8, 1, 0)) # Start transparent
+        
+        # Animate the aura's transparency to make it "breathe"
+        # At level 3, we make the aura brighter (a=0.4)
+        max_alpha = 0.4 if self.evolution_level >= 3 else 0.2
+        anim = Animation(a=max_alpha, d=3) + Animation(a=0.05, d=3)
+        anim.repeat = True
+        anim.start(self.aura_color)
 
     def start(self):
+        # ... (start method is unchanged) ...
         if not hasattr(self, 'jerry'): return
         self.stop()
         self.is_thinking = False
@@ -296,14 +325,19 @@ class JerryAnimator(FloatLayout):
         self.anim_event = Clock.schedule_interval(self.animate, self.current_interval)
 
     def stop(self):
+        # ... (stop method is unchanged) ...
         if self.anim_event:
             self.anim_event.cancel()
             self.anim_event = None
         if self.thinking_event:
             self.thinking_event.cancel()
             self.thinking_event = None
+        if self.aura_color: # <<< NEW: Also stop aura animation
+            Animation.cancel_all(self.aura_color)
+            self.aura_color = None
 
     def animate(self, dt):
+        # ... (animate method is unchanged) ...
         self.jerry.update_needs()
         needs = self.jerry.needs
         min_need = min(needs, key=needs.get)
@@ -320,14 +354,18 @@ class JerryAnimator(FloatLayout):
         self.anim_frame = (self.anim_frame + 1) % len(frames)
         self.draw_sprite(frames[self.anim_frame], anim_key)
 
+
     def show_thinking_sprite(self):
+        # ... (show_thinking_sprite method is unchanged) ...
         self.stop(); self.is_thinking = True; self.anim_frame = 0
         self.thinking_event = Clock.schedule_interval(self.animate_thinking, 0.5)
 
     def animate_thinking(self, dt):
+        # ... (animate_thinking method is unchanged) ...
         frames = self.sprites["thinking"]
         self.anim_frame = (self.anim_frame + 1) % len(frames)
         self.draw_sprite(frames[self.anim_frame], 'thinking')
+
 
     def draw_sprite(self, data, anim_key):
         self.canvas.clear()
@@ -335,36 +373,52 @@ class JerryAnimator(FloatLayout):
         offset_x = (self.width - (16 * pixel_size)) / 2
         offset_y = (self.height - (16 * pixel_size)) / 2
 
-        # Medium bright blue body color (normalized 0-1)
-        body_c = (0.3, 0.6, 0.9, 1)  # medium bright blue
+        # --- Base Colors ---
+        body_c = (0.3, 0.6, 0.9, 1)      # Medium bright blue
+        outline_c = (0.5, 0.8, 1.0, 1)   # Bright blue
+        eye_c = (1, 1, 1, 1)             # White
+        feature_c = (0.6, 0.85, 1.0, 1)  # Lighter blue
 
-        # Brighter blue outline
-        outline_c = (0.5, 0.8, 1.0, 1)  # bright blue
+        # <<< --- EVOLUTION LOGIC STARTS HERE --- >>>
 
-        # White eyes
-        eye_c = (1, 1, 1, 1)
+        # LEVEL 1 EVOLUTION: Brighter Colors
+        if self.evolution_level >= 1:
+            # Make the body a slightly richer, more "insightful" purple-blue
+            body_c = (0.4, 0.6, 1.0, 1)
+            # Make the outline a brighter, almost glowing cyan
+            outline_c = (0.6, 0.9, 1.0, 1)
 
-        # Feature color: slightly lighter blue
-        feature_c = (0.6, 0.85, 1.0, 1)
+        # LEVEL 3 EVOLUTION: Golden Tint
+        if self.evolution_level >= 3:
+            # Add a golden sheen to the body and features
+            body_c = (body_c[0] * 0.9, body_c[1] * 0.9, body_c[2] * 0.7, 1) # Shift towards gold
+            feature_c = (1.0, 0.9, 0.5, 1) # Make features golden
 
-        # Optionally keep the low_insight tint adjustment
+        # <<< --- EVOLUTION LOGIC ENDS HERE --- >>>
+
         if anim_key == 'low_insight':
-            # Darker tint for body and features in low insight state
+            # This logic still applies on top of evolutions
             body_c = (body_c[0]*0.8, body_c[1]*0.8, body_c[2]*0.8, 1)
-            feature_c = (0.4, 0.57, 0.65, 1)  # darker feature blue
+            feature_c = (0.4, 0.57, 0.65, 1)
 
         with self.canvas:
+            # <<< NEW: Draw the aura first, if it exists
+            if self.evolution_level >= 2 and self.aura_color:
+                # Add the animated color instruction to the canvas
+                self.canvas.add(self.aura_color)
+                # Draw the ellipse shape for the aura
+                aura_size = (16 * pixel_size + 40, 16 * pixel_size + 40)
+                aura_pos = (offset_x - 20, offset_y - 20)
+                Ellipse(pos=aura_pos, size=aura_size)
+
+            # --- This is your original drawing loop ---
             for y, row in enumerate(data):
                 for x, p in enumerate(row):
                     if p > 0:
-                        if p == 1:
-                            Color(*body_c)
-                        elif p == 2:
-                            Color(*eye_c)
-                        elif p == 3:
-                            Color(*outline_c)
-                        elif p == 4:
-                            Color(*feature_c)
+                        if p == 1: Color(*body_c)
+                        elif p == 2: Color(*eye_c)
+                        elif p == 3: Color(*outline_c)
+                        elif p == 4: Color(*feature_c)
                         Rectangle(
                             pos=(x * pixel_size + offset_x, self.height - (y + 1) * pixel_size - offset_y),
                             size=(pixel_size, pixel_size)
