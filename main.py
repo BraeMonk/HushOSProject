@@ -34,13 +34,6 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.lang import Builder
-
-# --- AI & Media Dependencies ---
-try:
-    import google.generativeai as genai
-    GOOGLE_AI_AVAILABLE = True
-except ImportError:
-    GOOGLE_AI_AVAILABLE = False
     
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
