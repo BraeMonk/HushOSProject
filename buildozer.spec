@@ -14,7 +14,7 @@ version = 0.1
 # (list) List of modules to bundle with your application
 # Removed google-generativeai and google-api-python-client as they don't work with p4a
 # Added certifi for SSL certificate handling
-requirements = python3,kivy,kivymd,pillow,pyjnius,android,openssl,sqlite3,requests,urllib3,tqdm,certifi,openai,typing_extensions,pydantic,httpx
+requirements = python3,kivy,kivymd,pillow,pyjnius,android,openssl,sqlite3,requests,urllib3,tqdm,certifi,openai,typing_extensions,pydantic,httpx,anyio,sniffio,charset_normalizer
 # (str) Icon of the application
 icon.filename = %(source.dir)s/assets/icon.png
 # (str) Supported orientation
