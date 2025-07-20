@@ -731,7 +731,7 @@ class EntriesScreen(Screen):
     def on_enter(self):
         app = MDApp.get_running_app()
         app.update_affirmation_banner(self.name)
-        body_box = self.ids.entries_log
+        body_box = self.ids.entries_log.ids.entries_text
         body_box.clear_widgets()
         body_label = self.ids.entries_text
         entries = app.entries_log.get_all_entries()
@@ -774,7 +774,7 @@ class EntriesScreen(Screen):
 class HistoryScreen(Screen):
     def on_enter(self):
         MDApp.get_running_app().update_affirmation_banner(self.name)
-        log_label = self.ids.history_log
+        log_label = self.ids.history_log.ids.history_text
         log_label.text = ""
         
         convo_log = MDApp.get_running_app().ai.conversation_log.load_log()
