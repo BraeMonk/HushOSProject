@@ -500,7 +500,7 @@ class JerryScreen(Screen):
         
         self.add_message("You", user_text)
         self.ids.user_entry.text = ""
-        self.handle_ai_response("This is a response from Jerry.")
+        self.handle_ai_response("I'm sorry. I seem to be offline.")
 
     def handle_ai_response(self, response):
         if response.startswith("ACTION:"):
