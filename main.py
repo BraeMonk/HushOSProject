@@ -893,7 +893,7 @@ class HushOSApp(MDApp):
         try:
             with open("config.json") as f:
                 secrets = json.load(f)
-                api_key = secrets.get("api_key")
+                api_key = secrets.get("openai_api_key")
         except Exception as e:
             print(f"!!! Could not load API key from config.json: {e}. Jerry will be in basic mode.")
 
