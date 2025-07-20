@@ -337,14 +337,12 @@
             theme_text_color: "Custom"
             text_color: app.theme_cls.text_color
         ScrollView:
-            id: entries_log
-            MDLabel:
+            MDBoxLayout:
                 id: entries_text
-                markup: True
+                orientation: 'vertical'
                 adaptive_height: True
-                text_size: self.width - dp(20), None
-                theme_text_color: "Custom"
-                text_color: app.theme_cls.text_color
+                size_hint_y: None
+                height: self.minimum_height
 
 <HistoryScreen>:
     MDBoxLayout:
@@ -358,14 +356,12 @@
             theme_text_color: "Custom"
             text_color: app.theme_cls.text_color
         ScrollView:
-            id: history_log
-            MDLabel:
+            MDBoxLayout:
                 id: history_text
-                markup: True
+                orientation: 'vertical'
                 adaptive_height: True
-                text_size: self.width - dp(20), None
-                theme_text_color: "Custom"
-                text_color: app.theme_cls.text_color
+                size_hint_y: None
+                height: self.minimum_height
 
 <HushScreen>:
     MDBoxLayout:
