@@ -888,29 +888,29 @@ class HushScreen(Screen):
 
 class HushOSApp(MDApp):
     def build(self):
-    self.theme_cls.theme_style = "Dark"
-    self.theme_cls.primary_palette = "Indigo"
-
-    api_key = None
-    try:
-        config_path = os.path.join(app_dir, "config.json")
-        print(f"[HushOS] Trying to load API key from {config_path}")
-        with open(config_path, "r") as f:
-            secrets = json.load(f)
-            api_key = secrets.get("openai_api_key")
-        print(f"[HushOS] API key loaded: {'Yes' if api_key else 'No'}")
-    except Exception as e:
-        print(f"!!! Could not load API key from config.json: {e}. Jerry will be in basic mode.")
-
-    self.jerry_ai = JerryAI(
-        jerry=self.jerry,
-        app=self,
-        conversation_log_path=os.path.join(app_dir, "conversation_log.json"),
-        jerry_memory_path=os.path.join(app_dir, "jerry_memory.json"),
-        api_key=api_key,
-    )
-
-        return RootWidget()
+        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_palette = "Indigo"
+        
+        api_key = None
+        try:
+            config_path = os.path.join(app_dir, "config.json")
+            print(f"[HushOS] Trying to load API key from {config_path}")
+            with open(config_path, "r") as f:
+                secrets = json.load(f)
+                api_key = secrets.get("openai_api_key")
+                print(f"[HushOS] API key loaded: {'Yes' if api_key else 'No'}")
+        except Exception as e:
+            print(f"!!! Could not load API key from config.json: {e}. Jerry will be in basic mode.")
+            
+            self.jerry_ai = JerryAI(
+                jerry=self.jerry,
+                app=self,
+                conversation_log_path=os.path.join(app_dir, "conversation_log.json"),
+                jerry_memory_path=os.path.join(app_dir, "jerry_memory.json"),
+                api_key=api_key,
+            )
+            
+            return RootWidget()
 
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
