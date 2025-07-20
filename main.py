@@ -535,7 +535,7 @@ class CheckinScreen(Screen):
     def display_step(self):
         self.ids.checkin_content.clear_widgets()
         app = MDApp.get_running_app()
-        theme = app.theme.COLORS
+        theme_cls = app.theme_cls
 
         steps = [
             ("How are you feeling emotionally?", ["Good", "Okay", "Bad"], "emotion"),
@@ -636,14 +636,13 @@ class TherapyScreenBase(Screen):
             content_box.add_widget(rating_box)
         else:
             text_input = TextInput(
-                id='current_answer',
                 text=self.flow_data.get(question_data["key"], ''),
                 size_hint_y=None,
                 height=dp(150),
                 multiline=True,
                 hint_text=question_data.get("hint", "")
             )
-            content_box.add_widget(text_input)
+            text_input.id = 'current_answer'  # <-- Set the ID after creation
 
     def display_checklist_step(self):
         self.ids.title_label.text = "Did any of these apply?"
@@ -732,7 +731,7 @@ class EntriesScreen(Screen):
     def on_enter(self):
         app = MDApp.get_running_app()
         app.update_affirmation_banner(self.name)
-        body_box = self.ids.entries_log.ids.body_box
+        body_box = self.ids.entries_log
         body_box.clear_widgets()
         body_label = self.ids.entries_text
         entries = app.entries_log.get_all_entries()
@@ -775,7 +774,7 @@ class EntriesScreen(Screen):
 class HistoryScreen(Screen):
     def on_enter(self):
         MDApp.get_running_app().update_affirmation_banner(self.name)
-        log_label = self.ids.history_log.ids.history_text
+        log_label = self.ids.history_log
         log_label.text = ""
         
         convo_log = MDApp.get_running_app().ai.conversation_log.load_log()
