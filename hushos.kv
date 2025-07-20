@@ -144,15 +144,22 @@
             spacing: dp(12)
 
             # Jerry animation container (top-left)
-            BoxLayout:
-                id: animator
+            MDBoxLayout: # <<< NEW: A container to hold both the animation and title
+                orientation: 'vertical'
                 size_hint_x: 0.5
-                canvas.before:
-                    Color:
-                        rgba: 1, 1, 1, 0.05
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
+
+            JerryAnimator: # <<< RENAMED: Use your custom class name here
+                id: animator
+                # The canvas instructions are part of JerryAnimator now, so they are removed from here
+
+            MDLabel: # <<< NEW: The title label
+                id: jerry_title_label
+                text: "" # Start with an empty title
+                halign: "center"
+                theme_text_color: "Secondary"
+                font_style: "Caption"
+                size_hint_y: None
+                height: self.texture_size[1]
 
             # Stats (top-right)
             MDBoxLayout:
