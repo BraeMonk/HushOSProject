@@ -20,6 +20,13 @@ jobs:
           sudo apt-get autoremove -y
           sudo apt-get autoclean -y
           df -h
+
+      - name: Create config.json
+        run: |
+          echo '{
+          "openai_api_key": "${{ secrets.OPENAI_API_KEY }}"
+          }' > config.json
+
       
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
