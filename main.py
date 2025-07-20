@@ -902,15 +902,15 @@ class HushOSApp(MDApp):
         except Exception as e:
             print(f"!!! Could not load API key from config.json: {e}. Jerry will be in basic mode.")
             
-            self.jerry_ai = JerryAI(
-                jerry=self.jerry,
-                app=self,
-                conversation_log_path=os.path.join(app_dir, "conversation_log.json"),
-                jerry_memory_path=os.path.join(app_dir, "jerry_memory.json"),
-                api_key=api_key,
-            )
+        self.jerry_ai = JerryAI(
+            jerry=self.jerry,
+            app=self,
+            conversation_log_path=os.path.join(app_dir, "conversation_log.json"),
+            jerry_memory_path=os.path.join(app_dir, "jerry_memory.json"),
+            api_key=api_key,
+        )
             
-            return RootWidget()
+        return RootWidget()
 
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
