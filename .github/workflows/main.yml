@@ -9,6 +9,7 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,30 +31,29 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install buildozer cython
-          # Install your app's Python dependencies
           pip install -r requirements.txt
 
       - name: Build with Buildozer and Inject API Key
         run: |
-          # Step 1: Trigger Buildozer to download SDK and dependencies
+          # Step 1: Trigger Buildozer to set up SDK paths
           buildozer android update || true
 
-          # Step 2: Correct sdkmanager path
+          # Step 2: Define sdkmanager location (cmdline-tools/latest/bin)
           SDKMANAGER="${{ github.workspace }}/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager"
 
-          # Step 3: Accept licenses
+          # Step 3: Accept Android SDK licenses
           yes | $SDKMANAGER --licenses || true
 
-          # Step 4: Ensure required build-tools and platform-tools are installed
+          # Step 4: Install required Android SDK components manually
           $SDKMANAGER "platform-tools" "platforms;android-33" "build-tools;34.0.0"
 
-          # Step 5: Create assets/config.json
+          # Step 5: Create assets/config.json with OpenAI API key
           echo "Creating config.json in assets directory..."
           mkdir -p assets
           echo '{"openai_api_key": "${{ secrets.OPENAI_API_KEY }}"}' > assets/config.json
           echo "config.json created successfully."
 
-          # Step 6: Build APK
+          # Step 6: Final APK build
           buildozer -v android debug
         env:
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
@@ -61,11 +61,9 @@ jobs:
           _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
           GRADLE_MAX_WORKERS: 2
 
-
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
           path: bin/*.apk
           if-no-files-found: error
-
