@@ -59,7 +59,7 @@ gradle_options = --no-daemon, --parallel, --max-workers=2
 
 [p4a]
 # (str) The python-for-android branch to use. 'develop' often has more recent recipes.
-branch = develop
+branch = master
 # (int) Set the number of processes to use for compilation (reduce for memory)
 ndk_api = 21
 
