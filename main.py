@@ -1067,8 +1067,8 @@ class HushOSApp(MDApp):
             banner.height = 0
         else:
             banner.height = dp(40)
-            self.jerry.update_needs()
-            needs = self.jerry.needs
+            self.jerry_ai.update_needs()
+            needs = self.jerry_ai.needs
             min_need = min(needs, key=needs.get)
             if needs[min_need] < 50:
                 affirmation = f"Jerry is feeling a bit low on {min_need}. Maybe we can help?"
