@@ -1,53 +1,62 @@
 name: Build HushOS APK
+
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Free up disk space
         run: |
+          echo "Initial disk space:"
+          df -h
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo apt-get autoremove -y
           sudo apt-get autoclean -y
+          echo "Disk space after cleanup:"
           df -h
 
-      - name: Create config.json with API key
+      - name: Set up Python and Buildozer
         run: |
-          mkdir -p assets
-          echo '{
-          "openai_api_key": "${{ secrets.OPENAI_API_KEY }}"
-          }' > assets/config.json
+          pip install --upgrade pip
+          pip install "buildozer==1.5.0" # Pinning version for stability
+          # If you have a requirements.txt, you would install it here
+          # pip install -r requirements.txt
 
-      - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
-        with:
-          buildozer_version: "1.5.0"
-          command: |
-            # The buildozer.spec already has the correct versions, so we don't need to set them again
-            # Just run the build with verbose output
-            buildozer -v android debug
+      - name: Build with Buildozer and Inject API Key
+        run: |
+          # Step 1: Create the assets directory and the config.json file
+          # This ensures the file exists before Buildozer runs.
+          echo "Creating config.json in assets directory..."
+          mkdir -p assets
+          echo '{"openai_api_key": "${{ secrets.OPENAI_API_KEY }}"}' > assets/config.json
+          echo "config.json created successfully."
+
+          # Step 2: Run the Buildozer build
+          # Buildozer will now use your modified .spec file to find and package the assets directory.
+          buildozer -v android debug
         env:
-          # Memory settings for Gradle and Java processes
+          # Memory settings for Gradle and Java processes to prevent crashes
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
           JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
           _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
           # Reduce parallelism to save memory
           GRADLE_MAX_WORKERS: 2
-      
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
           path: bin/*.apk
           if-no-files-found: error
+
