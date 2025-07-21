@@ -462,18 +462,17 @@ class JerryScreen(Screen):
         pass
 
     def update_ui(self, *args):
-        jerry = MDApp.get_running_app().jerry
-        jerry.update_needs()
-        self.ids.clarity_bar.value = jerry.needs['clarity']
-        self.ids.insight_bar.value = jerry.needs['insight']
-        self.ids.calm_bar.value = jerry.needs['calm']
-        self.ids.level_label.text = f"Level {jerry.level}"
-        self.ids.xp_bar.text = f"XP: {jerry.xp} / {jerry.xp_to_next_level}"
-
-        # <<< NEW: Check for level up and trigger evolution if needed
-        if jerry.level > self.last_known_level:
-            self.check_for_evolution(jerry.level)
-            self.last_known_level = jerry.level
+        jerry_ai = MDApp.get_running_app().jerry_ai  # AI instance, not screen
+        jerry_ai.update_needs()
+        self.ids.clarity_bar.value = jerry_ai.needs['clarity']
+        self.ids.insight_bar.value = jerry_ai.needs['insight']
+        self.ids.calm_bar.value = jerry_ai.needs['calm']
+        self.ids.level_label.text = f"Level {jerry_ai.level}"
+        self.ids.xp_bar.text = f"XP: {jerry_ai.xp} / {jerry_ai.xp_to_next_level}"
+        
+        if jerry_ai.level > self.last_known_level:
+            self.check_for_evolution(jerry_ai.level)
+            self.last_known_level = jerry_ai.level
 
     # <<< NEW: This entire function handles the evolution logic
     def check_for_evolution(self, current_level):
