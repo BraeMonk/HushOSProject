@@ -185,7 +185,7 @@ class JerryAI:
     MAX_HISTORY = 20
 
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
-        self.needs = {'clarity': 100, 'insight': 100, 'calm': 100}
+        self.companion = JerryCompanion(state_filepath)
         self.jerry = jerry
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
@@ -216,6 +216,7 @@ class JerryAI:
             print("Jerry AI initialized in basic mode (no API key).")
 
         self.system_prompt = "You are Jerry, a friendly, gentle, and supportive AI companion. Keep your responses brief and caring."
+        
     def get_response(self, user_input, callback):
         self.is_thinking = True
         with self.chat_lock:
@@ -473,7 +474,7 @@ class JerryScreen(Screen):
         MDApp.get_running_app().update_affirmation_banner(self.name)
 
     def update_needs(self):
-        pass
+        self.companion.update_needs()
 
     def update_ui(self, *args):
         """
