@@ -192,6 +192,7 @@ class JerryAI:
     MAX_HISTORY = 20
 
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
+        self.needs = {'clarity': 100, 'insight': 100, 'calm': 100}
         self.jerry = jerry
         self.app = app
         self.conversation_log = ConversationLog(conversation_log_path)
@@ -203,7 +204,7 @@ class JerryAI:
 
         # Load API key from config.json if not provided
         if not self.api_key:
-            config_path = os.path.join(app_dir, 'config.json')  # Use same app_dir defined at module level
+            config_path = os.path.join(self.app.user_data_dir, 'config.json')  # Use same app_dir defined at module level
             print(f"[JerryAI] Looking for config.json at: {config_path}")
             if os.path.exists(config_path):
                 print(f"[JerryAI] Loading API key from {config_path}")
