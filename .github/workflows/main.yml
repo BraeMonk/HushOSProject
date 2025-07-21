@@ -33,46 +33,27 @@ jobs:
           pip install buildozer cython
           pip install -r requirements.txt
 
-      - name: Install Android cmdline-tools and dependencies (NO MORE LICENSE ERRORS)
-        run: |
-          ANDROID_SDK_ROOT="${{ github.workspace }}/.buildozer/android/platform/android-sdk"
-          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
-
-          echo "Downloading Android cmdline-tools..."
-          cd "$ANDROID_SDK_ROOT/cmdline-tools"
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-          unzip tools.zip -d temp
-          mv temp/cmdline-tools latest
-          rm -rf temp tools.zip
-
-          echo "cmdline-tools installed at $ANDROID_SDK_ROOT/cmdline-tools/latest"
-
-          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
-
-          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-
-          echo "Installing ONLY required components to AVOID license failures..."
-          $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --no_https --verbose \
-            "platform-tools" "platforms;android-33" "build-tools;34.0.0"
-
-          echo "Accepting licenses for REQUIRED components only..."
-          yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses || true
-          
-          echo "Creating symbolic link for build-tools to fix Buildozer pathing..."
-          ln -s $ANDROID_SDK_ROOT/build-tools/34.0.0 $ANDROID_SDK_ROOT/build-tools
-
-          echo "Verifying installed packages:"
-          $SDKMANAGER --list_installed
-
-      - name: Inject OpenAI API key
+      - name: Create config.json asset
         run: |
           echo "Creating config.json in assets directory..."
           mkdir -p assets
           echo '{"openai_api_key": "${{ secrets.OPENAI_API_KEY }}"}' > assets/config.json
           echo "config.json created successfully."
 
-      - name: Build APK with Buildozer
+      - name: Build APK with Buildozer (and handle licenses)
         run: |
+          # Step 1: Let Buildozer download its own SDK and tools first.
+          # We run the 'update' command which will trigger the downloads.
+          # The '|| true' ensures that even if this step fails (which we expect), the workflow won't stop.
+          buildozer android update || true
+
+          # Step 2: Now that Buildozer has created its SDK path, accept the licenses for it.
+          # We use ${{ github.workspace }} to create a reliable path to the sdkmanager.
+          # This is the crucial step that fixes the self-contained license issue.
+          yes | ${{ github.workspace }}/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses
+
+          # Step 3: Run the final build command.
+          # This time, it will find the licensed SDK and proceed.
           buildozer -v android debug
         env:
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
