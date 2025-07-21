@@ -33,34 +33,27 @@ jobs:
           # Install your app's Python dependencies
           pip install -r requirements.txt
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Pre-install Build Tools and Accept Licenses
-        run: |
-          echo "Accepting all SDK licenses..."
-          yes | sdkmanager --licenses > /dev/null || true
-          
-          echo "Installing required build-tools to prevent conflicts..."
-          yes | sdkmanager "build-tools;34.0.0" "build-tools;36.0.0" > /dev/null || true
-
       - name: Build with Buildozer and Inject API Key
         run: |
-          # Step 1: Create the assets directory and the config.json file
-          # This ensures the file exists before Buildozer runs.
+          # Step 1: Let Buildozer download its own SDK and tools first.
+          # We run the 'update' command which will trigger the downloads.
+          # We expect this to fail on the first pass due to licenses, which is normal.
+          buildozer android update || true
+
+          # Step 2: Now that Buildozer has created its SDK path, we can accept the licenses for it.
+          # This is the crucial step to fix the license error.
+          yes | /home/runner/work/HushOSProject/HushOSProject/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses
+
+          # Step 3: Create the assets directory and the config.json file
           echo "Creating config.json in assets directory..."
           mkdir -p assets
           echo '{"openai_api_key": "${{ secrets.OPENAI_API_KEY }}"}' > assets/config.json
           echo "config.json created successfully."
 
-          # Step 2: Run the Buildozer build
-          # Buildozer will now use your modified .spec file to find and package the assets directory.
+          # Step 4: Run the final build command.
+          # This time, it will find the licensed SDK and proceed.
           buildozer -v android debug
         env:
-          # Force Buildozer to use the system's pre-configured Android SDK and NDK
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-          
           # Memory settings for Gradle and Java processes to prevent crashes
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
           JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
