@@ -41,7 +41,6 @@ jobs:
           rm -rf temp tools.zip
           cd ${{ github.workspace }} # IMPORTANT: Go back to the project root
           SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          echo "Installing ONLY required components to AVOID license failures..."
           echo "Accepting all licenses first..."
           yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses
           echo "Installing required components (matching buildozer.spec)..."
@@ -60,15 +59,22 @@ jobs:
               cd $ANDROID_SDK_ROOT
               ln -sf build-tools/34.0.0 build-tools/latest
           fi
+          
           echo "Verifying installed packages and paths:"
           $SDKMANAGER --list_installed --sdk_root=$ANDROID_SDK_ROOT
           ls -l $ANDROID_SDK_ROOT
+          
           # --- PART 2: Create Config Asset ---
           echo "Creating config.json in assets directory..."
+          cd ${{ github.workspace }}
           mkdir -p assets
           echo '{"openai_api_key": "${{ secrets.OPENAI_API_KEY }}"}' > assets/config.json
+          
           # --- PART 3: Run the Build ---
-          echo "Starting the final Buildozer build..."
+          echo "Returning to project root and starting the final Buildozer build..."
+          cd ${{ github.workspace }}
+          pwd
+          ls -la buildozer.spec
           buildozer -v android debug
         env:
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
