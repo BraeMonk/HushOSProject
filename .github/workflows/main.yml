@@ -37,12 +37,12 @@ jobs:
         run: |
           # Step 1: Let Buildozer download its own SDK and tools first.
           # We run the 'update' command which will trigger the downloads.
-          # We expect this to fail on the first pass due to licenses, which is normal.
+          # The '|| true' ensures that even if this step fails (which we expect), the workflow won't stop.
           buildozer android update || true
 
           # Step 2: Now that Buildozer has created its SDK path, we can accept the licenses for it.
-          # This is the crucial step to fix the license error.
-          yes | /home/runner/work/HushOSProject/HushOSProject/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses
+          # We use ${{ github.workspace }} to create a reliable path to the sdkmanager.
+          yes | ${{ github.workspace }}/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses
 
           # Step 3: Create the assets directory and the config.json file
           echo "Creating config.json in assets directory..."
