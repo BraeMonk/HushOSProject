@@ -20,6 +20,7 @@ icon.filename = %(source.dir)s/assets/icon.png
 # (str) Supported orientation
 orientation = portrait
 android.add_assets = assets
+env.filename = .env
 
 [android]
 # (str) Presplash background color
