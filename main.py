@@ -893,18 +893,24 @@ class HushOSApp(MDApp):
         return RootWidget()
 
     def copy_config_from_assets(self):
-        config_path = os.path.join(app_dir, "config.json")
-        if not os.path.exists(config_path):
-            try:
-                if platform == 'android':
-                    from android import mActivity
-                    asset_manager = mActivity.getAssets()
-                    with asset_manager.open("config.json") as asset_file:
-                        with open(config_path, 'wb') as out_file:
-                            out_file.write(asset_file.read())
-                            print(f"[HushOS] Copied config.json from assets to {config_path}")
-            except Exception as e:
-                print(f"[HushOS] Failed to copy config.json: {e}")
+    config_path = os.path.join(app_dir, "config.json")
+    if not os.path.exists(config_path):
+        print(f"[HushOS] config.json not found at {config_path}, attempting to copy from assets...")
+        try:
+            if platform == 'android':
+                from android import mActivity
+                asset_manager = mActivity.getAssets()
+                with asset_manager.open("config.json") as asset_file:
+                    with open(config_path, 'wb') as out_file:
+                        data = asset_file.read()
+                        out_file.write(data)
+                print(f"[HushOS] Successfully copied config.json from assets to {config_path}")
+            else:
+                print("[HushOS] Not running on Android platform, skipping copy.")
+        except Exception as e:
+            print(f"[HushOS] Failed to copy config.json from assets: {e}")
+    else:
+        print(f"[HushOS] config.json already exists at {config_path}, no need to copy.")
 
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
