@@ -971,7 +971,7 @@ class HushOSApp(MDApp):
         # Only run this check if the config file doesn't already exist
         if not os.path.exists(config_path):
             # Check for the environment variable we set in the GitHub workflow
-            api_key = os.environ.get('HUSHOS_API_KEY')
+            api_key = os.environ.get('OPENAI_API_KEY')
 
             if api_key:
                 print("[HushOS] API key found in build environment. Creating config.json.")
