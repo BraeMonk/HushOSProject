@@ -437,6 +437,11 @@ class JerryAnimator(FloatLayout):
 
 class SplashScreen(Screen):
     def on_enter(self):
+        layout = BoxLayout()
+        splash = Image(source='assets/new_splash.png', allow_stretch=True, keep_ratio=False)
+        layout.add_widget(splash)
+        self.add_widget(layout)
+        
         Clock.schedule_once(self.go_to_jerry, 2)
 
     def go_to_jerry(self, dt):
