@@ -19,6 +19,7 @@ requirements = python3,kivy,kivymd,pillow,pyjnius,android,openssl,sqlite3,reques
 icon.filename = %(source.dir)s/assets/icon.png
 # (str) Supported orientation
 orientation = portrait
+android.add_assets = assets
 
 [android]
 # (str) Presplash background color
