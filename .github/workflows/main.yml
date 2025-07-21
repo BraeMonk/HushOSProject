@@ -28,16 +28,13 @@ jobs:
         id: buildozer
         with:
           buildozer_version: "1.5.0"
-          # We no longer create the file here. We just clean and build.
           command: |
             buildozer android clean
             buildozer -v android debug
+        # THIS IS THE FIX: The 'env' block must be at this indentation level,
+        # not nested inside the 'with' block.
         env:
-          # THIS IS THE KEY CHANGE: Pass the secret as an environment variable.
-          # The Python app will read this variable on startup.
           HUSHOS_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          
-          # Memory settings remain the same
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
           JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
           _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
@@ -47,6 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hush-os-apk
-          # Corrected path to capture any .apk file in the bin directory
           path: bin/*.apk
           if-no-files-found: error
