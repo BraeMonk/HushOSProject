@@ -7,6 +7,7 @@ import json
 import random
 import openai
 from datetime import datetime
+from shutil import copyfile
 
 # --- Kivy and App Dependencies ---
 from kivymd.app import MDApp
@@ -43,9 +44,6 @@ if platform == 'Linux':
     app_dir = app_storage_path()
 else:
     app_dir = os.path.dirname(os.path.abspath(__file__))
-
-dotenv_path = os.path.join(app_dir, '.env')
-load_dotenv(dotenv_path=dotenv_path)
     
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
@@ -934,8 +932,16 @@ class HushOSApp(MDApp):
         return RootWidget()
 
     def on_start(self):
-        app_dir = self.user_data_dir
-        load_dotenv(dotenv_path=os.path.join(app_dir, '.env'))
+        app_dir = App.get_running_app().user_data_dir
+        env_dest = os.path.join(app_dir, ".env")
+
+        if not os.path.exists(env_dest):
+            env_src = os.path.join(os.path.dirname(__file__), ".env")
+            if os.path.exists(env_src):
+                copyfile(env_src, env_dest)
+
+        load_dotenv(dotenv_path=env_dest)
+
         Window.bind(on_request_close=self.on_request_close)
         self.setup_api_key_from_environment()
         self.jerry = self.root.ids.sm.get_screen('jerry')
