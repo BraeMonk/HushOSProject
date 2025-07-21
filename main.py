@@ -223,24 +223,24 @@ class JerryAI:
             if len(self.chat_history) > self.MAX_HISTORY:
                 self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
-        def get_response_thread():
+    def get_response_thread(user_input, callback):
+        def run():
             if self.openai_client:
                 messages = [{"role": "system", "content": self.system_prompt}] + self.chat_history
                 ai_response = self.openai_client.chat(messages=messages)
+
                 if ai_response is None:
                     ai_response = self.get_fallback_response(user_input)
-            else:
-                ai_response = self.get_fallback_response(user_input)
 
-            with self.chat_lock:
-                self.chat_history.append({"role": "assistant", "content": ai_response})
-                if len(self.chat_history) > self.MAX_HISTORY:
-                    self.chat_history = self.chat_history[-self.MAX_HISTORY:]
+                with self.chat_lock:
+                    self.chat_history.append({"role": "assistant", "content": ai_response})
+                    if len(self.chat_history) > self.MAX_HISTORY:
+                        self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
-            Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
-            Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
+                Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
+                Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
 
-        threading.Thread(target=get_response_thread, daemon=True).start()
+        threading.Thread(target=run, daemon=True).start()
 
     def get_fallback_response(self, user_input):
         user_input = user_input.lower()
@@ -471,6 +471,9 @@ class JerryScreen(Screen):
         
         # Update the affirmation banner
         MDApp.get_running_app().update_affirmation_banner(self.name)
+
+    def update_needs(self):
+        pass
 
     def update_ui(self, *args):
         """
