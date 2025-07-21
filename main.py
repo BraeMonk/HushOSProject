@@ -350,7 +350,6 @@ class JerryAnimator(FloatLayout):
 
     def animate(self, dt):
     # ... (animate method is unchanged) ...
-        self.jerry.update_needs()
         needs = self.jerry.needs
         min_need = min(needs, key=needs.get)
         anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
