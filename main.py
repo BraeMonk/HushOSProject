@@ -36,6 +36,7 @@ from kivy.utils import platform, get_hex_from_color, get_color_from_hex
 from kivy.metrics import dp
 from kivy.graphics import Color, Ellipse, Rectangle
 from kivy.lang import Builder
+from dotenv import load_dotenv
 
 if platform == 'android':
     from android.storage import app_storage_path
