@@ -126,7 +126,6 @@ class EntriesLog:
 
 class JerryCompanion:
     def __init__(self, state_filepath):
-        state_filepath = os.path.join(self.user_data_dir, "jerry_state.json")
         self.state_filepath = state_filepath
         self.needs = {"clarity": 100, "insight": 100, "calm": 100}
         self.last_fed = {"clarity": time.time(), "insight": time.time(), "calm": time.time()}
@@ -186,6 +185,7 @@ class JerryAI:
     MAX_HISTORY = 20
 
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
+        state_filepath = os.path.join(self.user_data_dir, "jerry_state.json")
         self.companion = JerryCompanion(state_filepath)
         self.jerry = jerry
         self.app = app
