@@ -25,7 +25,7 @@ jobs:
         run: |
           echo '{
           "openai_api_key": "${{ secrets.OPENAI_API_KEY }}"
-          }' > assets/config.json
+          }' > ./assets/config.json
 
       
       - name: Build with Buildozer
