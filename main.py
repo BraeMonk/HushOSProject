@@ -185,6 +185,7 @@ class JerryAI:
     MAX_HISTORY = 20
 
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
+        app_dir = App.get_running_app().user_data_dir
         state_filepath = os.path.join(self.user_data_dir, "jerry_state.json")
         self.companion = JerryCompanion(state_filepath)
         self.jerry = jerry
