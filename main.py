@@ -38,7 +38,7 @@ from kivy.graphics import Color, Ellipse, Rectangle
 from kivy.lang import Builder
 from dotenv import load_dotenv
 
-if platform == 'android':
+if platform == 'Linux':
     from android.storage import app_storage_path
     app_dir = app_storage_path()
 else:
