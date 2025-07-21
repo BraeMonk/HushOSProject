@@ -289,7 +289,7 @@ class JerryAnimator(FloatLayout):
 
     def _post_init(self, dt):
         self.app = MDApp.get_running_app()
-        self.jerry = self.app.jerry
+        self.jerry = self.app.jerry_ai
         self.theme_cls = self.app.theme_cls
         self._define_sprites()
         self.start() # <<< MOVED: Start the animation once everything is ready
