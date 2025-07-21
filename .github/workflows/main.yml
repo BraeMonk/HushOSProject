@@ -57,6 +57,9 @@ jobs:
 
           echo "Accepting licenses for REQUIRED components only..."
           yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses || true
+          
+          echo "Creating symbolic link for build-tools to fix Buildozer pathing..."
+          ln -s $ANDROID_SDK_ROOT/build-tools/34.0.0 $ANDROID_SDK_ROOT/build-tools
 
           echo "Verifying installed packages:"
           $SDKMANAGER --list_installed
