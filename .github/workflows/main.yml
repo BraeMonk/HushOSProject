@@ -33,27 +33,37 @@ jobs:
           pip install buildozer cython
           pip install -r requirements.txt
 
-      - name: Build with Buildozer and Inject API Key
+      - name: Install Android cmdline-tools and dependencies
         run: |
-          # Step 1: Trigger Buildozer to set up SDK paths
-          buildozer android update || true
+          ANDROID_SDK_ROOT="${{ github.workspace }}/.buildozer/android/platform/android-sdk"
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
 
-          # Step 2: Define sdkmanager location (cmdline-tools/latest/bin)
-          SDKMANAGER="${{ github.workspace }}/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager"
+          echo "Downloading Android cmdline-tools..."
+          cd "$ANDROID_SDK_ROOT/cmdline-tools"
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+          unzip tools.zip -d latest
+          rm tools.zip
+          echo "cmdline-tools installed."
 
-          # Step 3: Accept Android SDK licenses
+          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          echo "Accepting licenses..."
           yes | $SDKMANAGER --licenses || true
 
-          # Step 4: Install required Android SDK components manually
+          echo "Installing required Android SDK components..."
           $SDKMANAGER "platform-tools" "platforms;android-33" "build-tools;34.0.0"
 
-          # Step 5: Create assets/config.json with OpenAI API key
+      - name: Inject OpenAI API key
+        run: |
           echo "Creating config.json in assets directory..."
           mkdir -p assets
           echo '{"openai_api_key": "${{ secrets.OPENAI_API_KEY }}"}' > assets/config.json
           echo "config.json created successfully."
 
-          # Step 6: Final APK build
+      - name: Build APK with Buildozer
+        run: |
           buildozer -v android debug
         env:
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
