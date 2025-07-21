@@ -9,6 +9,7 @@ package.domain = org.hushos
 source.dir = .
 # (list) Source file extensions to include
 source.include_exts = py,png,jpg,kv,atlas,wav,json,txt,env
+source.include_patterns = .env
 # (str) Application versioning
 version = 0.1
 # (list) List of modules to bundle with your application
