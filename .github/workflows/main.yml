@@ -21,13 +21,13 @@ jobs:
           sudo apt-get autoclean -y
           df -h
 
-      - name: Create config.json
+      - name: Create config.json with API key
         run: |
+          mkdir -p assets
           echo '{
           "openai_api_key": "${{ secrets.OPENAI_API_KEY }}"
-          }' > ./assets/config.json
+          }' > assets/config.json
 
-      
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
