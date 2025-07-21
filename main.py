@@ -444,132 +444,70 @@ class SplashScreen(Screen):
             self.manager.current = 'jerry'
 
 class JerryScreen(Screen):
-    last_known_level = 0 # <<< NEW: To track when the level changes
-    
+    last_known_level = NumericProperty(0) # Use Kivy property for robustness
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.jerry = None  # Will be set when app is ready
-    
+        # It's better to get the reference once in the app's on_start method,
+        # but for now, we'll get it on enter.
+        self.jerry_ai = None
+
     def on_enter(self):
-        # Set the reference when entering the screen (ensures app is fully loaded)
-        if not self.jerry:
-            self.jerry = MDApp.get_running_app().jerry_ai
-        Clock.schedule_once(self.setup_screen)
+        """
+        Called when the screen is displayed.
+        We set up the screen's initial state here.
+        """
+        # Ensure we have a reference to the main AI object
+        if not self.jerry_ai:
+            self.jerry_ai = MDApp.get_running_app().jerry_ai
         
+        # Schedule UI updates to run on the next frame
+        Clock.schedule_once(self.setup_screen)
+
     def setup_screen(self, dt):
+        """
+        Final setup after the screen is fully loaded.
+        """
         self.update_ui()
+        # Only add the initial message if the chat is empty
         if not self.ids.chat_log.children:
             self.add_message("Jerry", "It's good to see you again.")
             self.ids.user_entry.focus = True
-            MDApp.get_running_app().update_affirmation_banner(self.name)
-    
-    def on_leave(self):
-        pass
         
-    def update_ui(self, *args):
-        # Now use self.jerry consistently
-        self.jerry.update_needs()
-        self.ids.clarity_bar.value = self.jerry.needs['clarity']
-        self.ids.insight_bar.value = self.jerry.needs['insight']
-        self.ids.calm_bar.value = self.jerry.needs['calm']
-        self.ids.level_label.text = f"Level {self.jerry.level}"
-        self.ids.xp_bar.text = f"XP: {self.jerry.xp} / {self.jerry.xp_to_next_level}"
-        
-        if self.jerry.level > self.last_known_level:
-            self.check_for_evolution(self.jerry.level)
-            self.last_known_level = self.jerry.level
-    
-    def animate(self, dt):
-        # ... (animate method is unchanged) ...
-        self.jerry.update_needs()
-        needs = self.jerry.needs
-        min_need = min(needs, key=needs.get)
-        anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
-        new_interval = 0.15 if anim_key == "low_calm" else 0.35
-        # ... rest of your animate method
-    
-    # <<< NEW: This entire function handles the evolution logic
-    def check_for_evolution(self, current_level):
-        """Checks the level and calls the animator's evolve method."""
-        animator = self.ids.animator
-        title_label = self.ids.jerry_title_label
-        
-        # Determine the evolution stage (e.g., one stage every 10 levels)
-        evolution_stage = current_level // 10
-        # Call the evolve() method you created in JerryAnimator
-        animator.evolve(evolution_stage)
-        # Update the title label based on the evolution stage
-        if evolution_stage == 1:
-            title_label.text = "Jerry the Listener"
-        elif evolution_stage == 2:
-            title_label.text = "Calm Companion"
-        elif evolution_stage == 3:
-            title_label.text = "Beacon of Insight"
-        else:
-            title_label.text = "" # No title at evolution stage 0
-            
-    def send_message(self):
-        user_text = self.ids.user_entry.text.strip()
-        if not user_text: return
-        
-        self.add_message("You", user_text)
-        self.ids.user_entry.text = ""
-        self.handle_ai_response("I'm sorry. I seem to be offline.")
-        
-    def handle_ai_response(self, response):
-        if response.startswith("ACTION:"):
-            MDApp.get_running_app().root.ids.sm.current = response.split(":")[1].strip()
-        else:
-            self.add_message("Jerry", response)
-            
-    def add_message(self, speaker, message):
-        app = MDApp.get_running_app()
-        speaker_color = app.theme_cls.primary_color if speaker == 'Jerry' else app.theme_cls.accent_color
-        
-        message_label = MDLabel(
-            text=f"[b][color={get_hex_from_color(speaker_color)}]{speaker}:[/color][/b] {message}",
-            markup=True,
-            size_hint_y=None,
-            theme_text_color="Primary",
-            valign="top"
-        )
-        
-        message_label.bind(
-            width=lambda *x: message_label.setter('text_size')(message_label, (message_label.width, None)),
-            texture_size=lambda *x: message_label.setter('height')(message_label, message_label.texture_size[1])
-        )
-        
-        self.ids.chat_log.add_widget(message_label)
-        self.scroll_to_bottom()
-        
-    def scroll_to_bottom(self):
-        scroll_view = self.ids.scroller
-    def on_leave(self):
-        pass
+        # Update the affirmation banner
+        MDApp.get_running_app().update_affirmation_banner(self.name)
 
     def update_ui(self, *args):
-        jerry_ai = MDApp.get_running_app().jerry_ai  # AI instance, not screen
-        jerry_ai.update_needs()
-        self.ids.clarity_bar.value = jerry_ai.needs['clarity']
-        self.ids.insight_bar.value = jerry_ai.needs['insight']
-        self.ids.calm_bar.value = jerry_ai.needs['calm']
-        self.ids.level_label.text = f"Level {jerry_ai.level}"
-        self.ids.xp_bar.text = f"XP: {jerry_ai.xp} / {jerry_ai.xp_to_next_level}"
-        
-        if jerry_ai.level > self.last_known_level:
-            self.check_for_evolution(jerry_ai.level)
-            self.last_known_level = jerry_ai.level
+        """
+        Updates all UI elements with the latest data from the AI.
+        This is the single source of truth for UI updates.
+        """
+        if not self.jerry_ai:
+            return
 
-    # <<< NEW: This entire function handles the evolution logic
+        self.jerry_ai.update_needs()
+        self.ids.clarity_bar.value = self.jerry_ai.needs['clarity']
+        self.ids.insight_bar.value = self.jerry_ai.needs['insight']
+        self.ids.calm_bar.value = self.jerry_ai.needs['calm']
+        self.ids.level_label.text = f"Level {self.jerry_ai.level}"
+        self.ids.xp_bar.text = f"XP: {self.jerry_ai.xp} / {self.jerry_ai.xp_to_next_level}"
+
+        # Check if the level has changed to trigger evolution
+        if self.jerry_ai.level > self.last_known_level:
+            self.check_for_evolution(self.jerry_ai.level)
+            self.last_known_level = self.jerry_ai.level
+
     def check_for_evolution(self, current_level):
-        """Checks the level and calls the animator's evolve method."""
+        """
+        Checks the AI's level and tells the animator to evolve the sprite.
+        """
         animator = self.ids.animator
         title_label = self.ids.jerry_title_label
         
         # Determine the evolution stage (e.g., one stage every 10 levels)
         evolution_stage = current_level // 10
 
-        # Call the evolve() method you created in JerryAnimator
+        # Call the evolve() method in JerryAnimator
         animator.evolve(evolution_stage)
 
         # Update the title label based on the evolution stage
@@ -583,20 +521,32 @@ class JerryScreen(Screen):
             title_label.text = "" # No title at evolution stage 0
 
     def send_message(self):
+        """
+        Handles the user sending a message from the text input.
+        """
         user_text = self.ids.user_entry.text.strip()
-        if not user_text: return
+        if not user_text:
+            return
         
         self.add_message("You", user_text)
         self.ids.user_entry.text = ""
+        # This is a placeholder for your actual AI call
         self.handle_ai_response("I'm sorry. I seem to be offline.")
 
     def handle_ai_response(self, response):
+        """
+        Processes the response from the AI.
+        """
         if response.startswith("ACTION:"):
+            # Handle screen navigation actions
             MDApp.get_running_app().root.ids.sm.current = response.split(":")[1].strip()
         else:
             self.add_message("Jerry", response)
 
     def add_message(self, speaker, message):
+        """
+        Adds a formatted message bubble to the chat log.
+        """
         app = MDApp.get_running_app()
         speaker_color = app.theme_cls.primary_color if speaker == 'Jerry' else app.theme_cls.accent_color
         
@@ -608,6 +558,7 @@ class JerryScreen(Screen):
             valign="top"
         )
         
+        # Bind label size to its texture size for proper wrapping
         message_label.bind(
             width=lambda *x: message_label.setter('text_size')(message_label, (message_label.width, None)),
             texture_size=lambda *x: message_label.setter('height')(message_label, message_label.texture_size[1])
@@ -617,6 +568,9 @@ class JerryScreen(Screen):
         self.scroll_to_bottom()
         
     def scroll_to_bottom(self):
+        """
+        Scrolls the chat log to the most recent message.
+        """
         scroll_view = self.ids.scroller
         Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0), 0.1)
 
