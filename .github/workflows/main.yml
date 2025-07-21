@@ -36,14 +36,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install required Android build-tools
+      - name: Install required Android build-tools and accept licenses
         run: |
-          echo "Installing Android build-tools version 34.0.0..."
-          sdkmanager "build-tools;34.0.0"
-
-      - name: Accept Android SDK licenses
-        run: |
-          yes | sdkmanager --licenses
+          echo "Installing Android build-tools version 34.0.0 and accepting licenses..."
+          yes | sdkmanager "build-tools;34.0.0"
 
       - name: Build with Buildozer and Inject API Key
         run: |
@@ -58,6 +54,10 @@ jobs:
           # Buildozer will now use your modified .spec file to find and package the assets directory.
           buildozer -v android debug
         env:
+          # Force Buildozer to use the system's pre-configured Android SDK and NDK
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          
           # Memory settings for Gradle and Java processes to prevent crashes
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
           JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
@@ -71,4 +71,3 @@ jobs:
           name: hush-os-apk
           path: bin/*.apk
           if-no-files-found: error
-
