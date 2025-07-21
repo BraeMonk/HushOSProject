@@ -39,12 +39,6 @@ jobs:
           command: |
             buildozer android clean
             buildozer -v android debug
-        
-        env:
-          GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
-          JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
-          _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
-          GRADLE_MAX_WORKERS: 2
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
