@@ -1,5 +1,6 @@
 # HushOS Specific
-assets/config.json
+config.json
+.env
 *.key
 secrets.py
 api_keys.py
