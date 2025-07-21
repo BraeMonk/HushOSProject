@@ -23,6 +23,14 @@ jobs:
           echo "Disk space after cleanup:"
           df -h
 
+      - name: Create .env file for Buildozer
+        run: |
+          echo "HUSHOS_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
+          echo "GRADLE_OPTS=-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError" >> .env
+          echo "JAVA_OPTS=-Xmx3g -XX:MaxMetaspaceSize=512m" >> .env
+          echo "_JAVA_OPTIONS=-Xmx3g -XX:MaxMetaspaceSize=512m" >> .env
+          echo "GRADLE_MAX_WORKERS=2" >> .env
+
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
@@ -31,10 +39,8 @@ jobs:
           command: |
             buildozer android clean
             buildozer -v android debug
-        # THIS IS THE FIX: The 'env' block must be at this indentation level,
-        # not nested inside the 'with' block.
+        
         env:
-          HUSHOS_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
           JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
           _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
