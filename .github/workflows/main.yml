@@ -33,7 +33,7 @@ jobs:
           pip install buildozer cython
           pip install -r requirements.txt
 
-      - name: Install Android cmdline-tools and dependencies
+      - name: Install Android cmdline-tools and dependencies (NO MORE LICENSE ERRORS)
         run: |
           ANDROID_SDK_ROOT="${{ github.workspace }}/.buildozer/android/platform/android-sdk"
           mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
@@ -41,23 +41,25 @@ jobs:
           echo "Downloading Android cmdline-tools..."
           cd "$ANDROID_SDK_ROOT/cmdline-tools"
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-          unzip tools.zip
-          
-          # Rename the weirdly-nested folder to 'latest'
-          mv cmdline-tools latest
-          rm tools.zip
-          echo "cmdline-tools installed correctly."
+          unzip tools.zip -d temp
+          mv temp/cmdline-tools latest
+          rm -rf temp tools.zip
+
+          echo "cmdline-tools installed at $ANDROID_SDK_ROOT/cmdline-tools/latest"
 
           export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
 
           SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
 
-          echo "Accepting licenses..."
-          yes | $SDKMANAGER --licenses || true
+          echo "Installing ONLY required components to AVOID license failures..."
+          $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --no_https --verbose \
+            "platform-tools" "platforms;android-33" "build-tools;34.0.0"
 
-          echo "Installing required Android SDK components..."
-          $SDKMANAGER "platform-tools" "platforms;android-33" "build-tools;34.0.0"
+          echo "Accepting licenses for REQUIRED components only..."
+          yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses || true
 
+          echo "Verifying installed packages:"
+          $SDKMANAGER --list_installed
 
       - name: Inject OpenAI API key
         run: |
