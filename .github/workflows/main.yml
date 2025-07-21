@@ -36,10 +36,13 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install required Android build-tools and accept licenses
+      - name: Pre-install Build Tools and Accept Licenses
         run: |
-          echo "Installing Android build-tools version 34.0.0 and accepting licenses..."
-          yes | sdkmanager "build-tools;34.0.0"
+          echo "Accepting all SDK licenses..."
+          yes | sdkmanager --licenses > /dev/null || true
+          
+          echo "Installing required build-tools to prevent conflicts..."
+          yes | sdkmanager "build-tools;34.0.0" "build-tools;36.0.0" > /dev/null || true
 
       - name: Build with Buildozer and Inject API Key
         run: |
@@ -71,3 +74,4 @@ jobs:
           name: hush-os-apk
           path: bin/*.apk
           if-no-files-found: error
+
