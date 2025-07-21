@@ -26,10 +26,6 @@ jobs:
       - name: Create .env file for Buildozer
         run: |
           echo "HUSHOS_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
-          echo "GRADLE_OPTS=-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError" >> .env
-          echo "JAVA_OPTS=-Xmx3g -XX:MaxMetaspaceSize=512m" >> .env
-          echo "_JAVA_OPTIONS=-Xmx3g -XX:MaxMetaspaceSize=512m" >> .env
-          echo "GRADLE_MAX_WORKERS=2" >> .env
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
@@ -39,6 +35,11 @@ jobs:
           command: |
             buildozer android clean
             buildozer -v android debug
+        env:
+          GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
+          JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
+          _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
+
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
