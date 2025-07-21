@@ -23,22 +23,21 @@ jobs:
           echo "Disk space after cleanup:"
           df -h
 
-      - name: Build with Buildozer and Inject API Key
+      - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
           buildozer_version: "1.5.0"
+          # We no longer create the file here. We just clean and build.
           command: |
-            # 1. Create the assets directory if it doesn't exist
-            mkdir -p assets
-            
-            # 2. Inject the OpenAI API key from secrets into the config file
-            echo '{"openai_api_key": "${{ secrets.OPENAI_API_KEY }}"}' > assets/config.json
-            
-            # 3. Run the Buildozer build command
+            buildozer android clean
             buildozer -v android debug
-        # NOTE: The 'env' block for the action's environment variables is defined here
         env:
+          # THIS IS THE KEY CHANGE: Pass the secret as an environment variable.
+          # The Python app will read this variable on startup.
+          HUSHOS_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          
+          # Memory settings remain the same
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
           JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
           _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
