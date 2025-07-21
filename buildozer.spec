@@ -26,7 +26,7 @@ env.filename = .env
 # (str) Presplash background color
 presplash_color = #fdfae6
 # (str) Presplash image
-presplash_png = %(source.dir)s/assets/icon.png
+presplash_png = %(source.dir)s/assets/new_splash.png
 # (list) The Android archs to build for - reduced to save memory
 archs = arm64-v8a
 # (list) Permissions
