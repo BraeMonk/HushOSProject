@@ -56,7 +56,10 @@ jobs:
           echo "Accepting licenses for REQUIRED components only..."
           yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses
 
-          echo "THE CRITICAL FIX: Creating symbolic link for build-tools..."
+          echo "THE DEFINITIVE FIX: Forcibly remove build-tools dir to prevent conflict..."
+          rm -rf $ANDROID_SDK_ROOT/build-tools
+          
+          echo "Creating symbolic link for build-tools to fix Buildozer pathing..."
           ln -s $ANDROID_SDK_ROOT/build-tools/34.0.0 $ANDROID_SDK_ROOT/build-tools
 
           echo "Verifying installed packages and paths:"
@@ -74,7 +77,7 @@ jobs:
         env:
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
           JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
-          _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
+          _JAVA_OPTIONS: -Xmx3g -XX:MaxMetas-paceSize=512m
           GRADLE_MAX_WORKERS: 2
 
       - name: Upload APK artifact
