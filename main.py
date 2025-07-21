@@ -893,8 +893,23 @@ class HushOSApp(MDApp):
             
         return RootWidget()
 
+    def copy_config_from_assets(self):
+        config_path = os.path.join(app_dir, "config.json")
+        if not os.path.exists(config_path):
+            try:
+                if platform == 'android':
+                    from android import mActivity
+                    asset_manager = mActivity.getAssets()
+                    with asset_manager.open("config.json") as asset_file:
+                        with open(config_path, 'wb') as out_file:
+                            out_file.write(asset_file.read())
+                            print(f"[HushOS] Copied config.json from assets to {config_path}")
+            except Exception as e:
+                print(f"[HushOS] Failed to copy config.json: {e}")
+
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
+        self.copy_config_from_assets()
         self.jerry = self.root.ids.sm.get_screen('jerry')
 
         api_key = None
