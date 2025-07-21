@@ -1,19 +1,15 @@
 name: Build HushOS APK
-
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-
 jobs:
   build-android:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Free up disk space
         run: |
           echo "Initial disk space:"
@@ -26,20 +22,17 @@ jobs:
           sudo apt-get autoclean -y
           echo "Disk space after cleanup:"
           df -h
-
       - name: Set up Python, Buildozer, and Dependencies
         run: |
           pip install --upgrade pip
           pip install buildozer cython
           pip install -r requirements.txt
-
       - name: Install SDK, Create Config, and Build APK
         run: |
           # --- PART 1: Manual SDK Setup ---
           # All commands are in one step to ensure the environment and paths are consistent.
           ANDROID_SDK_ROOT="${{ github.workspace }}/.buildozer/android/platform/android-sdk"
           mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
-
           echo "Downloading Android cmdline-tools..."
           cd "$ANDROID_SDK_ROOT/cmdline-tools"
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
@@ -47,30 +40,33 @@ jobs:
           mv temp/cmdline-tools latest
           rm -rf temp tools.zip
           cd ${{ github.workspace }} # IMPORTANT: Go back to the project root
-
           SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-
           echo "Installing ONLY required components to AVOID license failures..."
-          yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;34.0.0"
-
-          echo "Accepting licenses for REQUIRED components only..."
+          echo "Accepting all licenses first..."
           yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses
-
-          echo "THE DEFINITIVE FIX: Forcibly remove build-tools dir to prevent conflict..."
-          rm -rf $ANDROID_SDK_ROOT/build-tools
+          echo "Installing required components (matching buildozer.spec)..."
+          yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;34.0.0"
+          echo "Accepting licenses again after installation..."
+          yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses
           
-          echo "Creating symbolic link for build-tools to fix Buildozer pathing..."
-          ln -s $ANDROID_SDK_ROOT/build-tools/34.0.0 $ANDROID_SDK_ROOT/build-tools
-
+          echo "Verifying build-tools installation..."
+          ls -la $ANDROID_SDK_ROOT/build-tools/
+          
+          echo "Creating build-tools symlink for Buildozer compatibility..."
+          # Remove any existing build-tools link
+          rm -f $ANDROID_SDK_ROOT/build-tools/build-tools
+          # Create the expected path structure
+          if [ ! -L "$ANDROID_SDK_ROOT/build-tools" ] && [ -d "$ANDROID_SDK_ROOT/build-tools/34.0.0" ]; then
+              cd $ANDROID_SDK_ROOT
+              ln -sf build-tools/34.0.0 build-tools/latest
+          fi
           echo "Verifying installed packages and paths:"
           $SDKMANAGER --list_installed --sdk_root=$ANDROID_SDK_ROOT
           ls -l $ANDROID_SDK_ROOT
-
           # --- PART 2: Create Config Asset ---
           echo "Creating config.json in assets directory..."
           mkdir -p assets
           echo '{"openai_api_key": "${{ secrets.OPENAI_API_KEY }}"}' > assets/config.json
-
           # --- PART 3: Run the Build ---
           echo "Starting the final Buildozer build..."
           buildozer -v android debug
@@ -79,7 +75,6 @@ jobs:
           JAVA_OPTS: -Xmx3g -XX:MaxMetaspaceSize=512m
           _JAVA_OPTIONS: -Xmx3g -XX:MaxMetaspaceSize=512m
           GRADLE_MAX_WORKERS: 2
-
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
