@@ -26,12 +26,15 @@ jobs:
           echo "Disk space after cleanup:"
           df -h
 
-      - name: Set up Python and Buildozer
+      - name: Set up Python, Buildozer, and Dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer cython # Pinning version for stability
-          # If you have a requirements.txt, you would install it here
+          pip install buildozer cython
+          # Install your app's Python dependencies
           pip install -r requirements.txt
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Accept Android SDK licenses
         run: |
