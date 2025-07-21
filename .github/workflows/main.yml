@@ -36,6 +36,11 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install required Android build-tools
+        run: |
+          echo "Installing Android build-tools version 34.0.0..."
+          sdkmanager "build-tools;34.0.0"
+
       - name: Accept Android SDK licenses
         run: |
           yes | sdkmanager --licenses
