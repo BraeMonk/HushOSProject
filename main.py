@@ -890,7 +890,13 @@ class HushOSApp(MDApp):
     def build(self):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Indigo"
-        
+            
+        return RootWidget()
+
+    def on_start(self):
+        Window.bind(on_request_close=self.on_request_close)
+        self.jerry = self.root.ids.sm.get_screen('jerry')
+
         api_key = None
         try:
             config_path = os.path.join(app_dir, "config.json")
@@ -909,11 +915,7 @@ class HushOSApp(MDApp):
             jerry_memory_path=os.path.join(app_dir, "jerry_memory.json"),
             api_key=api_key,
         )
-            
-        return RootWidget()
-
-    def on_start(self):
-        Window.bind(on_request_close=self.on_request_close)
+        
         self.root.ids.sm.current = 'splash'
         
     def on_stop(self):
