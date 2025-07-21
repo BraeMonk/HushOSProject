@@ -44,7 +44,7 @@ jobs:
           echo "Accepting all licenses first..."
           yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses
           echo "Installing required components (matching buildozer.spec)..."
-          yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;34.0.0"
+          yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-31" "build-tools;34.0.0"
           echo "Accepting licenses again after installation..."
           yes | $SDKMANAGER --sdk_root=$ANDROID_SDK_ROOT --licenses
           
