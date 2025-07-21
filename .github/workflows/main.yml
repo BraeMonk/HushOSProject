@@ -33,6 +33,10 @@ jobs:
           # If you have a requirements.txt, you would install it here
           pip install -r requirements.txt
 
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses
+
       - name: Build with Buildozer and Inject API Key
         run: |
           # Step 1: Create the assets directory and the config.json file
