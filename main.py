@@ -43,6 +43,9 @@ if platform == 'android':
     app_dir = app_storage_path()
 else:
     app_dir = os.path.dirname(os.path.abspath(__file__))
+
+dotenv_path = os.path.join(app_dir, '.env')
+load_dotenv(dotenv_path=dotenv_path)
     
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
@@ -157,37 +160,26 @@ class JerryCompanion:
 
 class OpenAIClient:
     def __init__(self, api_key=None):
-        global app_dir
+        # Try to load from .env if not provided
         if api_key is None:
-            # Load from config.json
-            try:
-                app_dir = os.path.dirname(os.path.abspath(__file__))
-                with open(os.path.join(app_dir, "config.json")) as f:
-                    config = json.load(f)
-                    api_key = config.get("openai_api_key")
+            from dotenv import load_dotenv
+            load_dotenv()
+            api_key = os.getenv("OPENAI_API_KEY")
 
-            except Exception as e:
-                print(f"Failed to load OpenAI API key: {e}")
+            # Fallback to config.json if still not found
+            if not api_key:
+                try:
+                    app_dir = os.path.dirname(os.path.abspath(__file__))
+                    config_path = os.path.join(app_dir, "config.json")
+                    with open(config_path) as f:
+                        config = json.load(f)
+                        api_key = config.get("openai_api_key")
+                        print(f"[OpenAIClient] Loaded API key from config.json: {'Yes' if api_key else 'No'}")
+                except Exception as e:
+                    print(f"[OpenAIClient] Failed to load API key: {e}")
+
         self.api_key = api_key
         openai.api_key = self.api_key
-
-    def chat(self, messages, model="gpt-4", temperature=0.7, max_tokens=500):
-        """
-        messages: list of dicts, e.g.
-          [{"role": "system", "content": "You are a gentle CBT coach."},
-           {"role": "user", "content": "I feel anxious"}]
-        """
-        try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"OpenAI API error: {e}")
-            return None
 
 class JerryAI:
     MAX_HISTORY = 20
@@ -203,30 +195,27 @@ class JerryAI:
         self.is_thinking = False
         self.chat_history = []
 
-        # Load API key from config.json if not provided
+        # Fallback to config.json inside the app's data dir
         if not self.api_key:
-            config_path = os.path.join(self.app.user_data_dir, 'config.json')  # Use same app_dir defined at module level
-            print(f"[JerryAI] Looking for config.json at: {config_path}")
-            if os.path.exists(config_path):
-                print(f"[JerryAI] Loading API key from {config_path}")
-                try:
-                    with open(config_path, 'r') as f:
-                        config = json.load(f)
-                        print(f"[JerryAI] Config keys found: {list(config.keys())}")
-                        self.api_key = config.get('openai_api_key')
-                        print(f"[JerryAI] API key found: {'Yes' if self.api_key else 'No'}")
-                except Exception as e:
-                    print(f"[JerryAI] Failed to load config.json: {e}")
+            config_path = os.path.join(app.user_data_dir, "config.json")
+            print(f"[JerryAI] Looking for config at {config_path}")
+            try:
+                with open(config_path, "r") as f:
+                    config = json.load(f)
+                    self.api_key = config.get("openai_api_key")
+                    print(f"[JerryAI] API key loaded: {'Yes' if self.api_key else 'No'}")
+            except Exception as e:
+                print(f"[JerryAI] Failed to load config.json: {e}")
 
+        # Initialize OpenAI client
         if self.api_key:
             self.openai_client = OpenAIClient(api_key=self.api_key)
             print("Jerry AI initialized with OpenAI support.")
         else:
             self.openai_client = None
-            print("Jerry AI initialized in basic mode (no API key provided).")
+            print("Jerry AI initialized in basic mode (no API key).")
 
         self.system_prompt = "You are Jerry, a friendly, gentle, and supportive AI companion. Keep your responses brief and caring."
-
     def get_response(self, user_input, callback):
         self.is_thinking = True
         with self.chat_lock:
@@ -939,21 +928,27 @@ class HushOSApp(MDApp):
         return RootWidget()
 
     def on_start(self):
+        load_dotenv(dotenv_path=os.path.join(app_dir, '.env'))
         Window.bind(on_request_close=self.on_request_close)
         self.setup_api_key_from_environment()
         self.jerry = self.root.ids.sm.get_screen('jerry')
         app_dir = self.user_data_dir
 
         api_key = None
+        # Priority 1: Try loading from config.json
         try:
             config_path = os.path.join(app_dir, "config.json")
             print(f"[HushOS] Trying to load API key from {config_path}")
             with open(config_path, "r") as f:
                 secrets = json.load(f)
                 api_key = secrets.get("openai_api_key")
-                print(f"[HushOS] API key loaded: {'Yes' if api_key else 'No'}")
+                print(f"[HushOS] API key loaded from config.json: {'Yes' if api_key else 'No'}")
         except Exception as e:
-            print(f"!!! Could not load API key from config.json: {e}. Jerry will be in basic mode.")
+            print(f"[HushOS] Could not load API key from config.json: {e}")
+            # Priority 2: Try loading from .env if config.json failed
+        if not api_key:
+            api_key = os.environ.get("OPENAI_API_KEY")
+            print(f"[HushOS] API key loaded from .env: {'Yes' if api_key else 'No'}")
             
         self.jerry_ai = JerryAI(
             jerry=self.jerry,
