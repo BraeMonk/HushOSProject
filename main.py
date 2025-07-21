@@ -928,7 +928,7 @@ class HushOSApp(MDApp):
         return RootWidget()
 
     def on_start(self):
-        app_dir = self.user_app_dir
+        app_dir = self.user_data_dir
         load_dotenv(dotenv_path=os.path.join(app_dir, '.env'))
         Window.bind(on_request_close=self.on_request_close)
         self.setup_api_key_from_environment()
