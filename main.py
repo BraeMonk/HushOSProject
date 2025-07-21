@@ -932,30 +932,11 @@ class HushOSApp(MDApp):
             
         return RootWidget()
 
-    def copy_config_from_assets(self):
-        config_path = os.path.join(app_dir, "config.json")
-        if not os.path.exists(config_path):
-            print(f"[HushOS] config.json not found at {config_path}, attempting to copy from assets...")
-            try:
-                if platform == 'android':
-                    from android import mActivity
-                    asset_manager = mActivity.getAssets()
-                    with asset_manager.open("config.json") as asset_file:
-                        with open(config_path, 'wb') as out_file:
-                            data = asset_file.read()
-                            out_file.write(data)
-                            print(f"[HushOS] Successfully copied config.json from assets to {config_path}")
-                else:
-                    print("[HushOS] Not running on Android platform, skipping copy.")
-            except Exception as e:
-                print(f"[HushOS] Failed to copy config.json from assets: {e}")
-            else:
-                print(f"[HushOS] config.json already exists at {config_path}, no need to copy.")
-
     def on_start(self):
         Window.bind(on_request_close=self.on_request_close)
-        self.copy_config_from_assets()
+        self.setup_api_key_from_environment()
         self.jerry = self.root.ids.sm.get_screen('jerry')
+        app_dir = self.user_data_dir
 
         api_key = None
         try:
@@ -977,9 +958,35 @@ class HushOSApp(MDApp):
         )
         
         self.root.ids.sm.current = 'splash'
+
+    def setup_api_key_from_environment(self):
+        """
+        Checks for an API key from the build environment and creates
+        config.json in the app's private data directory if found.
+        This is the most reliable way to inject secrets from a CI/CD build.
+        """
+        # self.user_data_dir is a safe, private directory for your app's data
+        config_path = os.path.join(self.user_data_dir, 'config.json')
+
+        # Only run this check if the config file doesn't already exist
+        if not os.path.exists(config_path):
+            # Check for the environment variable we set in the GitHub workflow
+            api_key = os.environ.get('HUSHOS_API_KEY')
+
+            if api_key:
+                print("[HushOS] API key found in build environment. Creating config.json.")
+                config_data = {"openai_api_key": api_key}
+                try:
+                    with open(config_path, 'w') as f:
+                        json.dump(config_data, f)
+                    print(f"[HushOS] Successfully created config.json at {config_path}")
+                except Exception as e:
+                    print(f"[HushOS] ERROR: Failed to write config.json: {e}")
+            else:
+                print("[HushOS] Build environment API key not found. App will run in basic mode.")
         
     def on_stop(self):
-        self.ai.end_session()
+        self.jerry_ai.end_session()
         self.jerry.save_state()
         
     def on_request_close(self, *args):
