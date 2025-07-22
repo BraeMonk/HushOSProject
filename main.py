@@ -156,29 +156,6 @@ class JerryCompanion:
     def level_up(self):
         self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
-class OpenAIClient:
-    def __init__(self, api_key=None):
-        # Try to load from .env if not provided
-        if api_key is None:
-            from dotenv import load_dotenv
-            load_dotenv()
-            api_key = os.getenv("HUSHOS_API_KEY")
-
-            # Fallback to config.json if still not found
-            if not api_key:
-                try:
-                    app_dir = os.path.dirname(os.path.abspath(__file__))
-                    config_path = os.path.join(app_dir, "config.json")
-                    with open(config_path) as f:
-                        config = json.load(f)
-                        api_key = config.get("HUSHOS_API_KEY")
-                        print(f"[OpenAIClient] Loaded API key from config.json: {'Yes' if api_key else 'No'}")
-                except Exception as e:
-                    print(f"[OpenAIClient] Failed to load API key: {e}")
-
-        self.api_key = api_key
-        openai.api_key = self.api_key
-
 class JerryAI:
     MAX_HISTORY = 20
 
@@ -209,11 +186,11 @@ class JerryAI:
 
         # Initialize OpenAI client
         if self.api_key:
-            self.openai_client = OpenAIClient(api_key=self.api_key)
-            print("Jerry AI initialized with OpenAI support.")
+            openai.api_key = self.api_key
+            print("[JerryAI] Initialized with OpenAI support.")
         else:
-            self.openai_client = None
-            print("Jerry AI initialized in basic mode (no API key).")
+            print("[JerryAI] No API key found — running in basic mode.")
+
 
         self.system_prompt = "You are Jerry, a friendly, gentle, and supportive AI companion. Keep your responses brief and caring."
 
@@ -228,22 +205,31 @@ class JerryAI:
             if len(self.chat_history) > self.MAX_HISTORY:
                 self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
-    def get_response_thread(user_input, callback):
+    def get_response_thread(self, user_input, callback):
         def run():
-            if self.openai_client:
-                messages = [{"role": "system", "content": self.system_prompt}] + self.chat_history
-                ai_response = self.openai_client.chat(messages=messages)
-
-                if ai_response is None:
+            if self.api_key:
+                try:
+                    messages = [{"role": "system", "content": self.system_prompt}] + self.chat_history
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        temperature=0.7
+                    )
+                    ai_response = response.choices[0].message.content.strip()
+                except Exception as e:
+                    print(f"[JerryAI]OpenAI error: {e}")
                     ai_response = self.get_fallback_response(user_input)
+            else:
+                ai_response = self.get_fallback_response(user_input)
 
-                with self.chat_lock:
-                    self.chat_history.append({"role": "assistant", "content": ai_response})
-                    if len(self.chat_history) > self.MAX_HISTORY:
-                        self.chat_history = self.chat_history[-self.MAX_HISTORY:]
+            with self.chat_lock:
+                self.chat_history.append({"role": "user", "content": user_input})
+                self.chat_history.append({"role": "assistant", "content": ai_response})
+                if len(self.chat_history) > self.MAX_HISTORY:
+                    self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
-                Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
-                Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
+            Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
+            Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
 
         threading.Thread(target=run, daemon=True).start()
 
