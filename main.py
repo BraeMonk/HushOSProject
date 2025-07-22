@@ -1051,7 +1051,7 @@ class HushOSApp(MDApp):
             banner.height = 0
         else:
             banner.height = dp(40)
-            self.jerry_ai.update_needs()
+            self.jerry_ai.companion.update_needs()
             needs = self.jerry_ai.needs
             min_need = min(needs, key=needs.get)
             if needs[min_need] < 50:
