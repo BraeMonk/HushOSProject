@@ -342,18 +342,19 @@ class JerryAnimator(FloatLayout):
 
     def animate(self, dt):
     # ... (animate method is unchanged) ...
-        needs = self.jerry.needs
-        min_need = min(needs, key=needs.get)
-        anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
-        new_interval = 0.15 if anim_key == "low_calm" else 0.35
-        if new_interval != self.current_interval:
-            if self.anim_event:
-                self.anim_event.cancel()
-                self.anim_event = Clock.schedule_interval(self.animate, new_interval)
-                self.current_interval = new_interval
-            frames = self.sprites[anim_key]
-            self.anim_frame = (self.anim_frame + 1) % len(frames)
-            self.draw_sprite(frames[self.anim_frame], anim_key)
+    needs = self.companion.needs
+    min_need = min(needs, key=needs.get)
+    anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
+    new_interval = 0.15 if anim_key == "low_calm" else 0.35
+    
+    if new_interval != self.current_interval:
+        if self.anim_event:
+            self.anim_event.cancel()
+            self.anim_event = Clock.schedule_interval(self.animate, new_interval)
+            self.current_interval = new_interval
+        frames = self.sprites[anim_key]
+        self.anim_frame = (self.anim_frame + 1) % len(frames)
+        self.draw_sprite(frames[self.anim_frame], anim_key)
 
 
     def show_thinking_sprite(self):
@@ -953,13 +954,13 @@ class HushOSApp(MDApp):
             print(f"[HushOS] Trying to load API key from {config_path}")
             with open(config_path, "r") as f:
                 secrets = json.load(f)
-                api_key = secrets.get("openai_api_key")
+                api_key = secrets.get("HUSHOS_API_KEY")
                 print(f"[HushOS] API key loaded from config.json: {'Yes' if api_key else 'No'}")
         except Exception as e:
             print(f"[HushOS] Could not load API key from config.json: {e}")
             # Priority 2: Try loading from .env if config.json failed
         if not api_key:
-            api_key = os.environ.get("OPENAI_API_KEY")
+            api_key = os.environ.get("HUSHOS_API_KEY")
             print(f"[HushOS] API key loaded from .env: {'Yes' if api_key else 'No'}")
             
         self.jerry_ai = JerryAI(
