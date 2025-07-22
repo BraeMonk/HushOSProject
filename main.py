@@ -902,7 +902,7 @@ class HushScreen(Screen):
         self.timer_active = not self.timer_active
         if self.timer_active:
             app = MDApp.get_running_app()
-            app.jerry.feed("calm", 100); app.jerry.add_xp(5)
+            app.jerry_ai.feed("calm", 100); app.jerry_ai.add_xp(5)
             self.timer_event = Clock.schedule_interval(self.update_timer, 1)
         else:
             if hasattr(self, 'timer_event'): self.timer_event.cancel()
