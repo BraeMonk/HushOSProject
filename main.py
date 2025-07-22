@@ -162,7 +162,7 @@ class OpenAIClient:
         if api_key is None:
             from dotenv import load_dotenv
             load_dotenv()
-            api_key = os.getenv("OPENAI_API_KEY")
+            api_key = os.getenv("HUSHOS_API_KEY")
 
             # Fallback to config.json if still not found
             if not api_key:
@@ -171,7 +171,7 @@ class OpenAIClient:
                     config_path = os.path.join(app_dir, "config.json")
                     with open(config_path) as f:
                         config = json.load(f)
-                        api_key = config.get("openai_api_key")
+                        api_key = config.get("HUSHOS_API_KEY")
                         print(f"[OpenAIClient] Loaded API key from config.json: {'Yes' if api_key else 'No'}")
                 except Exception as e:
                     print(f"[OpenAIClient] Failed to load API key: {e}")
@@ -202,7 +202,7 @@ class JerryAI:
             try:
                 with open(config_path, "r") as f:
                     config = json.load(f)
-                    self.api_key = config.get("openai_api_key")
+                    self.api_key = config.get("HUSHOS_API_KEY")
                     print(f"[JerryAI] API key loaded: {'Yes' if self.api_key else 'No'}")
             except Exception as e:
                 print(f"[JerryAI] Failed to load config.json: {e}")
@@ -989,7 +989,7 @@ class HushOSApp(MDApp):
 
             if api_key:
                 print("[HushOS] API key found in build environment. Creating config.json.")
-                config_data = {"openai_api_key": api_key}
+                config_data = {"HUSHOS_API_KEY": api_key}
                 try:
                     with open(config_path, 'w') as f:
                         json.dump(config_data, f)
