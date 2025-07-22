@@ -494,13 +494,13 @@ class JerryScreen(Screen):
         self.ids.clarity_bar.value = self.jerry_ai.needs['clarity']
         self.ids.insight_bar.value = self.jerry_ai.needs['insight']
         self.ids.calm_bar.value = self.jerry_ai.needs['calm']
-        self.ids.level_label.text = f"Level {self.jerry_ai.level}"
-        self.ids.xp_bar.text = f"XP: {self.jerry_ai.xp} / {self.jerry_ai.xp_to_next_level}"
+        self.ids.level_label.text = f"Level {self.jerry_ai.companion.level}"
+        self.ids.xp_bar.text = f"XP: {self.jerry_ai.companion.xp} / {self.jerry_ai.companion.xp_to_next_level}"
 
         # Check if the level has changed to trigger evolution
-        if self.jerry_ai.level > self.last_known_level:
-            self.check_for_evolution(self.jerry_ai.level)
-            self.last_known_level = self.jerry_ai.level
+        if self.jerry_ai.companion.level > self.last_known_level:
+            self.check_for_evolution(self.jerry_ai.companion.level)
+            self.last_known_level = self.jerry_ai.companion.level
 
     def check_for_evolution(self, current_level):
         """
