@@ -928,6 +928,8 @@ class HushScreen(Screen):
         self.reset_timer()
 
 class HushOSApp(MDApp):
+    sound = None
+    current_track_index = 0
     def build(self):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Indigo"
@@ -972,6 +974,8 @@ class HushOSApp(MDApp):
             jerry_memory_path=os.path.join(app_dir, "jerry_memory.json"),
             api_key=api_key,
         )
+
+        self.jerry.ids.animator.companion = self.jerry_ai.companion
         
         self.root.ids.sm.current = 'splash'
 
