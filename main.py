@@ -978,7 +978,9 @@ class HushOSApp(MDApp):
             api_key=api_key,
         )
 
-        self.jerry.ids.animator.companion = self.jerry_ai.companion
+        animator = self.jerry.ids.animator
+        animator.companion = self.jerry_ai.companion
+        animator.start()
         
         self.root.ids.sm.current = 'splash'
 
