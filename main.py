@@ -272,8 +272,9 @@ class JerryAnimator(FloatLayout):
     evolution_level = NumericProperty(0) # <<< NEW: To track Jerry's evolution state
     aura_color = None # <<< NEW: To hold the aura's color instruction for animation
 
-    def __init__(self, **kwargs):
+    def __init__(self, companion=None, **kwargs):
         super().__init__(**kwargs)
+        self.companion = companion
         Clock.schedule_once(self._post_init)
         self.anim_event = None
         self.thinking_event = None
