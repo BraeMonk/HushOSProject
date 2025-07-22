@@ -27,6 +27,10 @@ jobs:
         run: |
           echo "HUSHOS_API_KEY=${{ secrets.HUSHOS_API_KEY }}" > .env
 
+      - name: Move .env to source directory
+        run: |
+          mv .env .buildozer/android/app/
+
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
