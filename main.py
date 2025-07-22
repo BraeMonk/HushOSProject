@@ -491,7 +491,7 @@ class JerryScreen(Screen):
         if not self.jerry_ai:
             return
 
-        self.jerry_ai.update_needs()
+        self.jerry_ai.companion.update_needs()
         self.ids.clarity_bar.value = self.jerry_ai.needs['clarity']
         self.ids.insight_bar.value = self.jerry_ai.needs['insight']
         self.ids.calm_bar.value = self.jerry_ai.needs['calm']
