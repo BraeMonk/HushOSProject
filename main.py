@@ -341,20 +341,20 @@ class JerryAnimator(FloatLayout):
             self.aura_color = None
 
     def animate(self, dt):
-    # ... (animate method is unchanged) ...
-    needs = self.companion.needs
-    min_need = min(needs, key=needs.get)
-    anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
-    new_interval = 0.15 if anim_key == "low_calm" else 0.35
+        # ... (animate method is unchanged) ...
+        needs = self.companion.needs
+        min_need = min(needs, key=needs.get)
+        anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
+        new_interval = 0.15 if anim_key == "low_calm" else 0.35
     
-    if new_interval != self.current_interval:
-        if self.anim_event:
-            self.anim_event.cancel()
-            self.anim_event = Clock.schedule_interval(self.animate, new_interval)
-            self.current_interval = new_interval
-        frames = self.sprites[anim_key]
-        self.anim_frame = (self.anim_frame + 1) % len(frames)
-        self.draw_sprite(frames[self.anim_frame], anim_key)
+        if new_interval != self.current_interval:
+            if self.anim_event:
+                self.anim_event.cancel()
+                self.anim_event = Clock.schedule_interval(self.animate, new_interval)
+                self.current_interval = new_interval
+            frames = self.sprites[anim_key]
+            self.anim_frame = (self.anim_frame + 1) % len(frames)
+            self.draw_sprite(frames[self.anim_frame], anim_key)
 
 
     def show_thinking_sprite(self):
