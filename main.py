@@ -217,6 +217,10 @@ class JerryAI:
             print("Jerry AI initialized in basic mode (no API key).")
 
         self.system_prompt = "You are Jerry, a friendly, gentle, and supportive AI companion. Keep your responses brief and caring."
+
+    @property
+    def needs(self):
+        return self.companion.needs
         
     def get_response(self, user_input, callback):
         self.is_thinking = True
