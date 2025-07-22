@@ -984,29 +984,33 @@ class HushOSApp(MDApp):
 
     def setup_api_key_from_environment(self):
         """
-        Checks for an API key from the build environment and creates
-        config.json in the app's private data directory if found.
-        This is the most reliable way to inject secrets from a CI/CD build.
+        Loads API key from .env (if present) and persists it to config.json
+        for consistent use across app sessions. Ensures Android runtime reads
+        the correct file from the private app storage path.
         """
-        # self.user_data_dir is a safe, private directory for your app's data
-        config_path = os.path.join(self.user_data_dir, 'config.json')
 
-        # Only run this check if the config file doesn't already exist
-        if not os.path.exists(config_path):
-            # Check for the environment variable we set in the GitHub workflow
-            api_key = os.environ.get('HUSHOS_API_KEY')
+        env_path = os.path.join(self.user_data_dir, ".env")
+        config_path = os.path.join(self.user_data_dir, "config.json")
 
-            if api_key:
-                print("[HushOS] API key found in build environment. Creating config.json.")
-                config_data = {"HUSHOS_API_KEY": api_key}
+        # First try to load the .env file directly
+        if os.path.exists(env_path):
+            load_dotenv(dotenv_path=env_path)
+        else:
+            print(f"[HushOS] WARNING: .env not found at {env_path}")
+
+        api_key = os.environ.get("HUSHOS_API_KEY")
+
+        if api_key:
+            print("[HushOS] API key loaded from .env — preparing config.json")
+            if not os.path.exists(config_path):
                 try:
                     with open(config_path, 'w') as f:
-                        json.dump(config_data, f)
+                        json.dump({"HUSHOS_API_KEY": api_key}, f)
                     print(f"[HushOS] Successfully created config.json at {config_path}")
                 except Exception as e:
                     print(f"[HushOS] ERROR: Failed to write config.json: {e}")
-            else:
-                print("[HushOS] Build environment API key not found. App will run in basic mode.")
+        else:
+            print("[HushOS] API key not found in environment — basic mode enabled")
         
     def on_stop(self):
         self.jerry_ai.end_session()
