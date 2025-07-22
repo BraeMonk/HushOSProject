@@ -39,12 +39,11 @@ from kivy.graphics import Color, Ellipse, Rectangle
 from kivy.lang import Builder
 from dotenv import load_dotenv
 
-if platform == 'Linux':
-    try:
-        from android.storage import app_storage_path
-        app_dir = app_storage_path()
-    except ImportError:
-        app_dir = os.path.dirname(os.path.abspath(__file__))
+if platform == "android":
+    from android.storage import app_storage_path
+    app_dir = app_storage_path()
+else:
+    app_dir = os.path.dirname(os.path.abspath(__file__))
     
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
