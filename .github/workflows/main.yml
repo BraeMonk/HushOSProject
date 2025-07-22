@@ -27,10 +27,6 @@ jobs:
         run: |
           echo "HUSHOS_API_KEY=${{ secrets.HUSHOS_API_KEY }}" > .env
 
-      - name: Move .env to source directory
-        run: |
-          mv .env .buildozer/android/app/
-
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
@@ -38,6 +34,7 @@ jobs:
           buildozer_version: "1.5.0"
           command: |
             buildozer android clean
+            echo "HUSHOS_API_KEY=${{ secrets.HUSHOS_API_KEY }}" > .buildozer/android/app/.env
             buildozer -v android debug
         env:
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
