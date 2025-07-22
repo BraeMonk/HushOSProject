@@ -964,7 +964,6 @@ class HushOSApp(MDApp):
             api_key=api_key,
         )
 
-        from entries_log import EntriesLog  # If this class lives in a separate file
         log_path = os.path.join(app_dir, "entries_log.json")
         self.entries_log = EntriesLog(log_path)
         
