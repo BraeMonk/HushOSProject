@@ -835,7 +835,7 @@ class HistoryScreen(Screen):
         container = self.ids.history_text
         container.clear_widgets()
 
-        convo_log = app.ai.conversation_log.load_log()
+        convo_log = app.jerry_ai.conversation_log.load_log()
         if not convo_log:
             container.add_widget(MDLabel(
                 text="No conversation history.",
@@ -978,6 +978,12 @@ class HushOSApp(MDApp):
             api_key=api_key,
         )
 
+        from entries_log import EntriesLog  # If this class lives in a separate file
+        log_path = os.path.join(app_dir, "entries_log.json")
+        self.entries_log = EntriesLog(log_path)
+        
+        print(f"[HushOS] EntriesLog initialized with {len(self.entries_log.get_all_entries())} entries")
+
         animator = self.jerry.ids.animator
         animator.companion = self.jerry_ai.companion
         animator.start()
@@ -1015,6 +1021,7 @@ class HushOSApp(MDApp):
             print("[HushOS] API key not found in environment — basic mode enabled")
         
     def on_stop(self):
+        self.entries_log.save_entries()
         self.jerry_ai.end_session()
         self.jerry.save_state()
         
