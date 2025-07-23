@@ -982,36 +982,6 @@ class HushOSApp(MDApp):
         animator.companion = self.jerry_ai.companion
         animator.start()
 
-    def setup_api_key_from_environment(self):
-        """
-        Loads API key from .env (if present) and persists it to config.json
-        for consistent use across app sessions. Ensures Android runtime reads
-        the correct file from the private app storage path.
-        """
-
-        env_path = os.path.join(self.user_data_dir, ".env")
-        config_path = os.path.join(self.user_data_dir, "config.json")
-
-        # First try to load the .env file directly
-        if os.path.exists(env_path):
-            load_dotenv(dotenv_path=env_path)
-        else:
-            print(f"[HushOS] WARNING: .env not found at {env_path}")
-
-        api_key = os.environ.get("HUSHOS_API_KEY")
-
-        if api_key:
-            print("[HushOS] API key loaded from .env — preparing config.json")
-            if not os.path.exists(config_path):
-                try:
-                    with open(config_path, 'w') as f:
-                        json.dump({"HUSHOS_API_KEY": api_key}, f)
-                    print(f"[HushOS] Successfully created config.json at {config_path}")
-                except Exception as e:
-                    print(f"[HushOS] ERROR: Failed to write config.json: {e}")
-        else:
-            print("[HushOS] API key not found in environment — basic mode enabled")
-        
     def on_stop(self):
         self.entries_log.save_entries()
         self.jerry_ai.end_session()
