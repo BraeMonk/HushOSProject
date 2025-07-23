@@ -171,20 +171,7 @@ class JerryAI:
         self.chat_lock = threading.Lock()
         self.is_thinking = False
         self.chat_history = []
-
-        # Fallback to config.json inside the app's data dir
-        if not self.api_key:
-            config_path = os.path.join(app.user_data_dir, "config.json")
-            print(f"[JerryAI] Looking for config at {config_path}")
-            try:
-                with open(config_path, "r") as f:
-                    config = json.load(f)
-                    self.api_key = config.get("HUSHOS_API_KEY")
-                    print(f"[JerryAI] API key loaded: {'Yes' if self.api_key else 'No'}")
-            except Exception as e:
-                print(f"[JerryAI] Failed to load config.json: {e}")
-
-        # Initialize OpenAI client
+        
         if self.api_key:
             openai.api_key = self.api_key
             print("[JerryAI] Initialized with OpenAI support.")
