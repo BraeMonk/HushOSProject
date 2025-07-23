@@ -972,8 +972,15 @@ class HushOSApp(MDApp):
         animator = self.jerry.ids.animator
         animator.companion = self.jerry_ai.companion
         animator.start()
+
+        Clock.schedule_once(self.initialize_jerry_animator, 0)
         
         self.root.ids.sm.current = 'splash'
+    
+    def initialize_jerry_animator(self, dt):
+        animator = self.jerry.ids.animator
+        animator.companion = self.jerry_ai.companion
+        animator.start()
 
     def setup_api_key_from_environment(self):
         """
