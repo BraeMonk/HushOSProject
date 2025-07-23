@@ -917,7 +917,7 @@ class HushOSApp(MDApp):
         env_dest = os.path.join(app_dir, ".env")
 
         if not os.path.exists(env_dest):
-            env_src = os.path.join(os.path.dirname(__file__), "data", ".env")
+            env_src = os.path.join(os.path.dirname(__file__), ".env")
             if os.path.exists(env_src):
                 copyfile(env_src, env_dest)
 
