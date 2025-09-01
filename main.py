@@ -184,13 +184,6 @@ class JerryAI:
     @property
     def needs(self):
         return self.companion.needs
-        
-    def get_response(self, user_input, callback):
-        self.is_thinking = True
-        with self.chat_lock:
-            self.chat_history.append({"role": "user", "content": user_input})
-            if len(self.chat_history) > self.MAX_HISTORY:
-                self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
     def get_response_thread(self, user_input, callback):
         def run():
@@ -453,7 +446,8 @@ class JerryScreen(Screen):
         MDApp.get_running_app().update_affirmation_banner(self.name)
 
     def update_needs(self):
-        self.companion.update_needs()
+        if self.jerry_ai:
+            self.jerry_ai.companion.update_needs()
 
     def update_ui(self, *args):
         """
@@ -509,8 +503,8 @@ class JerryScreen(Screen):
         self.add_message("You", user_text)
         self.ids.user_entry.text = ""
         # This is a placeholder for your actual AI call
-        self.handle_ai_response("I'm sorry. I seem to be offline.")
-
+        self.jerry_ai.get_response_thread(user_text, self.handle_ai_response)
+        
     def handle_ai_response(self, response):
         """
         Processes the response from the AI.
@@ -875,7 +869,7 @@ class HushScreen(Screen):
         self.timer_active = not self.timer_active
         if self.timer_active:
             app = MDApp.get_running_app()
-            app.jerry_ai.feed("calm", 100); app.jerry_ai.add_xp(5)
+            app.jerry_ai.companion.feed("calm", 100); app.jerry_ai.companion.add_xp(5)
             self.timer_event = Clock.schedule_interval(self.update_timer, 1)
         else:
             if hasattr(self, 'timer_event'): self.timer_event.cancel()
