@@ -69,6 +69,8 @@
                     name: 'history'
                 HushScreen:
                     name: 'hush'
+                SettingsScreen:
+                    name: 'settings'
 
             MDNavigationDrawer:
                 id: nav_drawer
@@ -108,6 +110,10 @@
                         text: "Hush"
                         icon: "timer-sand"
                         screen_name: 'hush'
+                    NavDrawerItem:
+                        text: "Settings"
+                        icon: "cog"
+                        screen_name: 'settings'
 
                     MDNavigationDrawerDivider:
                     MDLabel:
@@ -395,3 +401,67 @@
             text: "Start Timer" if not root.timer_active else "Stop Timer"
             on_release: root.start_stop_timer()
             pos_hint: {'center_x': 0.5}
+
+<SettingsScreen>:
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+
+        MDLabel:
+            text: "Settings"
+            font_style: 'H4'
+            halign: 'center'
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: app.theme_cls.text_color
+
+        ScrollView:
+            MDBoxLayout:
+                orientation: 'vertical'
+                adaptive_height: True
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(10)
+                padding: dp(10)
+
+                MDBoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: dp(56)
+                    padding: dp(10)
+                    spacing: dp(10)
+                    MDIcon:
+                        icon: 'theme-light-dark'
+                        size_hint_x: None
+                        width: dp(48)
+                    MDLabel:
+                        text: "Dark Mode"
+                        size_hint_x: 1
+                        valign: 'middle'
+                    MDSwitch:
+                        id: dark_mode_switch
+                        on_active: app.toggle_theme_style()
+                        active: app.theme_cls.theme_style == 'Dark'
+
+                MDBoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: dp(56)
+                    padding: dp(10)
+                    spacing: dp(10)
+                    MDIcon:
+                        icon: 'format-text-size-increase'
+                        size_hint_x: None
+                        width: dp(48)
+                    MDLabel:
+                        text: "Font Size"
+                        size_hint_x: 1
+                        valign: 'middle'
+                    MDTextField:
+                        id: font_size_input
+                        hint_text: "12"
+                        size_hint_x: None
+                        width: dp(80)
+                        input_type: 'number'
+                        on_text_validate: app.set_font_size(self.text)
