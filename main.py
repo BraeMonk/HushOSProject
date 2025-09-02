@@ -1,3 +1,16 @@
+#!/usr/bin/env python3
+"""
+main.py — monolithic Hush app (all logic, sprites, screens, and data classes included)
+
+Notes:
+- This file contains all classes in a single module as requested.
+- It errs on the side of defensive checks (many hasattr checks) so the app won't crash
+  immediately if parts of the UI/KV aren't present at load time.
+- The app expects a KV file (or Builder string) to create widgets with ids such as:
+  root.ids.sm, root.ids.jerry_screen, etc. If you don't use KV, you will need to create
+  those widgets in Python before on_start accesses them.
+"""
+
 import os
 import sys
 import time
@@ -40,7 +53,13 @@ from kivy.metrics import dp
 from kivy.graphics import Color, Ellipse, Rectangle
 from kivy.lang import Builder
 from dotenv import load_dotenv
-    
+
+# attempt to load .env if present (harmless)
+try:
+    load_dotenv()
+except Exception:
+    pass
+
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
 
@@ -79,44 +98,74 @@ DBT_SKILLS = {
 class ColorProgressBar(ProgressBar):
     # RGBA color list property for the bar's fill color
     bar_color = ListProperty([1, 0, 0, 1])  # default red color
-    
+
 class ConversationLog:
-    def __init__(self, filepath): self.filepath = filepath
+    def __init__(self, filepath):
+        self.filepath = filepath
+
     def load_log(self):
         try:
-            with open(self.filepath, 'r') as f: return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError): return []
+            with open(self.filepath, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
     def add_session(self, chat_history):
-        if not chat_history: return
+        if not chat_history:
+            return
         log = self.load_log()
         session = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "conversation": chat_history}
         log.insert(0, session)
-        with open(self.filepath, 'w') as f: json.dump(log, f, indent=4)
+        try:
+            with open(self.filepath, 'w') as f:
+                json.dump(log, f, indent=4)
+        except Exception as e:
+            print(f"[ConversationLog] Error saving log: {e}")
 
 class JerryMemory:
-    def __init__(self, filepath): self.filepath = filepath
+    def __init__(self, filepath):
+        self.filepath = filepath
+
     def load_memory(self):
         try:
-            with open(self.filepath, 'r') as f: return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError): return {}
+            with open(self.filepath, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+
     def save_memory(self, memory_dict):
-        with open(self.filepath, 'w') as f: json.dump(memory_dict, f, indent=4)
+        try:
+            with open(self.filepath, 'w') as f:
+                json.dump(memory_dict, f, indent=4)
+        except Exception as e:
+            print(f"[JerryMemory] Error saving memory: {e}")
 
 class EntriesLog:
     def __init__(self, entries_filepath):
         self.filepath = entries_filepath
         self.entries = self.load_entries()
+
     def load_entries(self):
         try:
-            with open(self.filepath, 'r') as f: return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError): return []
+            with open(self.filepath, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
     def add_entry(self, entry_type, data):
         entry = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "type": entry_type, "data": data}
         self.entries.insert(0, entry)
         self.save_entries()
+
     def save_entries(self):
-        with open(self.filepath, 'w') as f: json.dump(self.entries, f, indent=4)
-    def get_all_entries(self): return self.entries
+        try:
+            with open(self.filepath, 'w') as f:
+                json.dump(self.entries, f, indent=4)
+        except Exception as e:
+            print(f"[EntriesLog] Error saving entries: {e}")
+
+    def get_all_entries(self):
+        return self.entries
 
 class JerryCompanion:
     def __init__(self, state_filepath):
@@ -124,8 +173,11 @@ class JerryCompanion:
         self.needs = {"clarity": 100, "insight": 100, "calm": 100}
         self.last_fed = {"clarity": time.time(), "insight": time.time(), "calm": time.time()}
         self.decay_rates_hours = {"clarity": 24, "insight": 48, "calm": 12}
-        self.xp = 0; self.level = 1; self.xp_to_next_level = 100
+        self.xp = 0
+        self.level = 1
+        self.xp_to_next_level = 100
         self.load_state()
+
     def load_state(self):
         try:
             with open(self.state_filepath, 'r') as f:
@@ -135,22 +187,52 @@ class JerryCompanion:
                 self.xp = state.get("xp", self.xp)
                 self.level = state.get("level", self.level)
                 self.xp_to_next_level = state.get("xp_to_next_level", self.xp_to_next_level)
-        except (FileNotFoundError, json.JSONDecodeError): self.save_state()
+        except (FileNotFoundError, json.JSONDecodeError):
+            # create initial state file
+            self.save_state()
+        except Exception as e:
+            print(f"[JerryCompanion] Error loading state: {e}")
+            self.save_state()
+
     def save_state(self):
-        with open(self.state_filepath, 'w') as f:
-            json.dump({"needs": self.needs, "last_fed": self.last_fed, "xp": self.xp, "level": self.level, "xp_to_next_level": self.xp_to_next_level}, f, indent=4)
+        try:
+            with open(self.state_filepath, 'w') as f:
+                json.dump({
+                    "needs": self.needs,
+                    "last_fed": self.last_fed,
+                    "xp": self.xp,
+                    "level": self.level,
+                    "xp_to_next_level": self.xp_to_next_level
+                }, f, indent=4)
+        except Exception as e:
+            print(f"[JerryCompanion] Error saving state: {e}")
+
     def update_needs(self):
         now = time.time()
         for n, t in self.last_fed.items():
-            self.needs[n] = max(0, 100 - ((now - t) / 3600 / self.decay_rates_hours[n]) * 100)
+            try:
+                decay_rate = self.decay_rates_hours.get(n, 24)
+                self.needs[n] = max(0, 100 - ((now - t) / 3600 / decay_rate) * 100)
+            except Exception:
+                self.needs[n] = self.needs.get(n, 100)
+
     def feed(self, n, a=100):
-        self.update_needs(); self.needs[n] = min(100, self.needs[n] + a); self.last_fed[n] = time.time(); self.save_state()
+        self.update_needs()
+        if n in self.needs:
+            self.needs[n] = min(100, self.needs[n] + a)
+            self.last_fed[n] = time.time()
+            self.save_state()
+
     def add_xp(self, a):
         self.xp += a
-        if self.xp >= self.xp_to_next_level: self.level_up()
+        if self.xp >= self.xp_to_next_level:
+            self.level_up()
         self.save_state()
+
     def level_up(self):
-        self.level += 1; self.xp -= self.xp_to_next_level; self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
+        self.level += 1
+        self.xp -= self.xp_to_next_level
+        self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
 
 class JerryAI:
     MAX_HISTORY = 20
@@ -167,7 +249,7 @@ class JerryAI:
         self.chat_lock = threading.Lock()
         self.is_thinking = False
         self.chat_history = []
-        
+
         if self.api_key:
             openai.api_key = self.api_key
             print("[JerryAI] Initialized with OpenAI support.")
@@ -190,9 +272,16 @@ class JerryAI:
                         messages=messages,
                         temperature=0.7
                     )
-                    ai_response = response.choices[0].message.content.strip()
+                    # compatibility: response.choices[0].message.content or response.choices[0].text
+                    ai_response = ""
+                    try:
+                        ai_response = response.choices[0].message.content.strip()
+                    except Exception:
+                        ai_response = getattr(response.choices[0], "text", "").strip()
+                        if not ai_response:
+                            ai_response = "I'm here to listen."
                 except Exception as e:
-                    print(f"[JerryAI]OpenAI error: {e}")
+                    print(f"[JerryAI] OpenAI error: {e}")
                     ai_response = self.get_fallback_response(user_input)
             else:
                 ai_response = self.get_fallback_response(user_input)
@@ -203,8 +292,16 @@ class JerryAI:
                 if len(self.chat_history) > self.MAX_HISTORY:
                     self.chat_history = self.chat_history[-self.MAX_HISTORY:]
 
-            Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
-            Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
+            # send response back to UI thread
+            try:
+                Clock.schedule_once(lambda dt, resp=ai_response: callback(resp))
+                Clock.schedule_once(lambda dt: setattr(self, 'is_thinking', False))
+            except Exception:
+                # fallback: call directly (dangerous, but doesn't crash)
+                try:
+                    callback(ai_response)
+                except Exception as e:
+                    print(f"[JerryAI] Callback error: {e}")
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -241,10 +338,10 @@ class JerryAnimator(FloatLayout):
     def __init__(self, companion=None, **kwargs):
         super().__init__(**kwargs)
         self.companion = companion
-        Clock.schedule_once(self._post_init)
         self.anim_event = None
         self.thinking_event = None
         self.current_interval = None
+        Clock.schedule_once(self._post_init)
 
     def _post_init(self, dt):
         app = MDApp.get_running_app()
@@ -254,27 +351,160 @@ class JerryAnimator(FloatLayout):
                 self.jerry = app.jerry_ai
             self.theme_cls = app.theme_cls
             self._define_sprites()
+            # Start only if companion exists or will exist
             self.start()
 
     def _define_sprites(self):
+        # Sprites: lists of 16x16 integer matrices, multiple frames per animation.
+        # Kept the original sprite data provided by you.
         self.sprites = {
-            "content": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
-            "low_insight": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],[3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,4,4,1,1,1,1,1,1,3],[3,1,1,1,1,1,4,1,1,4,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],[3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,4,4,4,4,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
-            "low_calm": [[[0,0,0,3,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,1,1,1,1,1,1,1,1,1,3,0,0,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,3,0,0],[3,1,1,1,4,4,1,1,1,4,4,1,1,1,3,0],[3,1,1,1,4,4,1,1,1,4,4,1,1,1,3,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,3,0,0],[0,0,3,1,1,1,1,1,1,1,1,1,3,0,0,0],[0,0,0,3,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,3,1,1,1,4,4,1,1,1,4,4,1,1,3,0],[0,3,1,1,1,4,4,1,1,1,4,4,1,1,3,0],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],[0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],[0,3,1,1,1,1,1,1,1,1,1,1,1,3,0,0],[0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],[0,0,0,3,3,3,3,3,3,3,3,3,3,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
-            "thinking": [[[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],[0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,0,3,1,2,0,2,1,1,3,0],[0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],[0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],[[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],[0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],[0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,0,3,1,2,2,2,1,1,3,0],[0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],[0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],[0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]]
+            "content": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                         [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                         [3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],
+                         [3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],
+                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                         [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                         [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
+                        [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                         [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                         [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                         [3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],
+                         [3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],
+                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                         [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                         [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
+            "low_insight": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                             [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                             [3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],
+                             [3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],
+                             [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                             [3,1,1,1,1,1,1,4,4,1,1,1,1,1,1,3],
+                             [3,1,1,1,1,1,4,1,1,4,1,1,1,1,1,3],
+                             [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                             [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                             [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
+                            [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                             [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                             [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                             [3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],
+                             [3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],
+                             [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                             [3,1,1,1,1,1,4,4,4,4,1,1,1,1,1,3],
+                             [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                             [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                             [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                             [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
+            "low_calm": [[[0,0,0,3,3,3,3,3,3,3,3,3,0,0,0,0],
+                          [0,0,3,1,1,1,1,1,1,1,1,1,3,0,0,0],
+                          [0,3,1,1,1,1,1,1,1,1,1,1,1,3,0,0],
+                          [3,1,1,1,4,4,1,1,1,4,4,1,1,1,3,0],
+                          [3,1,1,1,4,4,1,1,1,4,4,1,1,1,3,3],
+                          [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                          [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                          [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                          [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                          [0,3,1,1,1,1,1,1,1,1,1,1,1,3,0,0],
+                          [0,0,3,1,1,1,1,1,1,1,1,1,3,0,0,0],
+                          [0,0,0,3,3,3,3,3,3,3,3,3,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
+                         [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
+                          [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                          [0,3,1,1,1,4,4,1,1,1,4,4,1,1,3,0],
+                          [0,3,1,1,1,4,4,1,1,1,4,4,1,1,3,0],
+                          [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                          [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                          [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                          [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
+                          [0,3,1,1,1,1,1,1,1,1,1,1,1,3,0,0],
+                          [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
+                          [0,0,0,3,3,3,3,3,3,3,3,3,3,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
+            "thinking": [[[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],
+                          [0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],
+                          [0,0,0,0,0,0,0,3,1,2,0,2,1,1,3,0],
+                          [0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],
+                          [0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],
+                          [0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
+                         [[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],
+                          [0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],
+                          [0,0,0,0,0,0,0,3,1,2,2,2,1,1,3,0],
+                          [0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],
+                          [0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],
+                          [0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]]
         }
+        # alias
         self.sprites["low_clarity"] = self.sprites["content"]
-        
+
     def evolve(self, level):
         self.evolution_level = level
         if self.aura_color:
-            Animation.cancel_all(self.aura_color)
+            try:
+                Animation.cancel_all(self.aura_color)
+            except Exception:
+                pass
             self.aura_color = None
 
         if self.evolution_level >= 2:
             self.start_aura_animation()
 
     def start_aura_animation(self):
+        # aura_color is an Instruction; animate its 'rgba' alpha component via property 'a'
+        # Create a Color instruction; animate attribute 'a' on that Color object.
         self.aura_color = Color(rgba=(0.5, 0.8, 1, 0))
         max_alpha = 0.4 if self.evolution_level >= 3 else 0.2
         anim = Animation(a=max_alpha, d=3) + Animation(a=0.05, d=3)
@@ -282,120 +512,158 @@ class JerryAnimator(FloatLayout):
         anim.start(self.aura_color)
 
     def start(self):
-        if not hasattr(self, 'jerry') or not hasattr(self, 'companion') or not self.companion: 
+        # ensure necessary attributes exist
+        if not hasattr(self, 'jerry') and not hasattr(self, 'companion'):
+            # still ok — start will be attempted after post_init
             return
         self.stop()
         self.is_thinking = False
         self.current_interval = 0.35
-        self.anim_event = Clock.schedule_interval(self.animate, self.current_interval)
+        try:
+            self.anim_event = Clock.schedule_interval(self.animate, self.current_interval)
+        except Exception as e:
+            print(f"[JerryAnimator] schedule error: {e}")
 
     def stop(self):
-        if self.anim_event:
-            self.anim_event.cancel()
-            self.anim_event = None
-        if self.thinking_event:
-            self.thinking_event.cancel()
-            self.thinking_event = None
-        if self.aura_color:
-            Animation.cancel_all(self.aura_color)
-            self.aura_color = None
+        try:
+            if self.anim_event:
+                self.anim_event.cancel()
+                self.anim_event = None
+            if self.thinking_event:
+                self.thinking_event.cancel()
+                self.thinking_event = None
+            if self.aura_color:
+                try:
+                    Animation.cancel_all(self.aura_color)
+                except Exception:
+                    pass
+                self.aura_color = None
+        except Exception as e:
+            print(f"[JerryAnimator] stop error: {e}")
 
     def animate(self, dt):
         if not self.companion:
             return
-        needs = self.companion.needs
-        min_need = min(needs, key=needs.get)
-        anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
-        new_interval = 0.15 if anim_key == "low_calm" else 0.35
-    
-        if new_interval != self.current_interval:
-            if self.anim_event:
-                self.anim_event.cancel()
+        try:
+            self.companion.update_needs()
+            needs = self.companion.needs
+            # find min need key
+            min_need = min(needs, key=needs.get)
+            anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
+            new_interval = 0.15 if anim_key == "low_calm" else 0.35
+
+            if new_interval != self.current_interval:
+                if self.anim_event:
+                    self.anim_event.cancel()
                 self.anim_event = Clock.schedule_interval(self.animate, new_interval)
                 self.current_interval = new_interval
-        
-        if hasattr(self, 'sprites') and anim_key in self.sprites:
-            frames = self.sprites[anim_key]
-            self.anim_frame = (self.anim_frame + 1) % len(frames)
-            self.draw_sprite(frames[self.anim_frame], anim_key)
+
+            if hasattr(self, 'sprites') and anim_key in self.sprites:
+                frames = self.sprites[anim_key]
+                self.anim_frame = (self.anim_frame + 1) % len(frames)
+                self.draw_sprite(frames[self.anim_frame], anim_key)
+        except Exception as e:
+            print(f"[JerryAnimator] animate error: {e}")
 
     def show_thinking_sprite(self):
-        self.stop(); self.is_thinking = True; self.anim_frame = 0
-        self.thinking_event = Clock.schedule_interval(self.animate_thinking, 0.5)
+        try:
+            self.stop()
+            self.is_thinking = True
+            self.anim_frame = 0
+            self.thinking_event = Clock.schedule_interval(self.animate_thinking, 0.5)
+        except Exception as e:
+            print(f"[JerryAnimator] show_thinking_sprite error: {e}")
 
     def animate_thinking(self, dt):
-        if hasattr(self, 'sprites') and 'thinking' in self.sprites:
-            frames = self.sprites["thinking"]
-            self.anim_frame = (self.anim_frame + 1) % len(frames)
-            self.draw_sprite(frames[self.anim_frame], 'thinking')
+        try:
+            if hasattr(self, 'sprites') and 'thinking' in self.sprites:
+                frames = self.sprites["thinking"]
+                self.anim_frame = (self.anim_frame + 1) % len(frames)
+                self.draw_sprite(frames[self.anim_frame], 'thinking')
+        except Exception as e:
+            print(f"[JerryAnimator] animate_thinking error: {e}")
 
     def draw_sprite(self, data, anim_key):
-        if self.width == 0 or self.height == 0:
+        # safety check for size
+        if not data or self.width == 0 or self.height == 0:
             return
-            
-        self.canvas.clear()
-        pixel_size = self.width / 18
-        offset_x = (self.width - (16 * pixel_size)) / 2
-        offset_y = (self.height - (16 * pixel_size)) / 2
 
-        body_c = (0.3, 0.6, 0.9, 1)
-        outline_c = (0.5, 0.8, 1.0, 1)
-        eye_c = (1, 1, 1, 1)
-        feature_c = (0.6, 0.85, 1.0, 1)
+        try:
+            self.canvas.clear()
+            pixel_size = self.width / 18
+            offset_x = (self.width - (16 * pixel_size)) / 2
+            offset_y = (self.height - (16 * pixel_size)) / 2
 
-        if self.evolution_level >= 1:
-            body_c = (0.4, 0.6, 1.0, 1)
-            outline_c = (0.6, 0.9, 1.0, 1)
+            body_c = (0.3, 0.6, 0.9, 1)
+            outline_c = (0.5, 0.8, 1.0, 1)
+            eye_c = (1, 1, 1, 1)
+            feature_c = (0.6, 0.85, 1.0, 1)
 
-        if self.evolution_level >= 3:
-            body_c = (body_c[0] * 0.9, body_c[1] * 0.9, body_c[2] * 0.7, 1)
-            feature_c = (1.0, 0.9, 0.5, 1)
+            if self.evolution_level >= 1:
+                body_c = (0.4, 0.6, 1.0, 1)
+                outline_c = (0.6, 0.9, 1.0, 1)
 
-        if anim_key == 'low_insight':
-            body_c = (body_c[0]*0.8, body_c[1]*0.8, body_c[2]*0.8, 1)
-            feature_c = (0.4, 0.57, 0.65, 1)
+            if self.evolution_level >= 3:
+                body_c = (body_c[0] * 0.9, body_c[1] * 0.9, body_c[2] * 0.7, 1)
+                feature_c = (1.0, 0.9, 0.5, 1)
 
-        with self.canvas:
-            if self.evolution_level >= 2 and self.aura_color:
-                self.canvas.add(self.aura_color)
-                aura_size = (16 * pixel_size + 40, 16 * pixel_size + 40)
-                aura_pos = (offset_x - 20, offset_y - 20)
-                Ellipse(pos=aura_pos, size=aura_size)
+            if anim_key == 'low_insight':
+                body_c = (body_c[0]*0.8, body_c[1]*0.8, body_c[2]*0.8, 1)
+                feature_c = (0.4, 0.57, 0.65, 1)
 
-            for y, row in enumerate(data):
-                for x, p in enumerate(row):
-                    if p > 0:
-                        if p == 1: Color(*body_c)
-                        elif p == 2: Color(*eye_c)
-                        elif p == 3: Color(*outline_c)
-                        elif p == 4: Color(*feature_c)
-                        Rectangle(
-                            pos=(x * pixel_size + offset_x, self.height - (y + 1) * pixel_size - offset_y),
-                            size=(pixel_size, pixel_size)
-                        )
+            with self.canvas:
+                if self.evolution_level >= 2 and self.aura_color:
+                    try:
+                        self.canvas.add(self.aura_color)
+                    except Exception:
+                        pass
+                    aura_size = (16 * pixel_size + 40, 16 * pixel_size + 40)
+                    aura_pos = (offset_x - 20, offset_y - 20)
+                    Ellipse(pos=aura_pos, size=aura_size)
+
+                for y, row in enumerate(data):
+                    for x, p in enumerate(row):
+                        if p > 0:
+                            if p == 1:
+                                Color(*body_c)
+                            elif p == 2:
+                                Color(*eye_c)
+                            elif p == 3:
+                                Color(*outline_c)
+                            elif p == 4:
+                                Color(*feature_c)
+                            Rectangle(
+                                pos=(x * pixel_size + offset_x, self.height - (y + 1) * pixel_size - offset_y),
+                                size=(pixel_size, pixel_size)
+                            )
+        except Exception as e:
+            print(f"[JerryAnimator] draw_sprite error: {e}")
 
 class SplashScreen(Screen):
     def on_enter(self):
         layout = BoxLayout()
         # Check if splash image exists, use placeholder if not
         try:
-            if os.path.exists('assets/new_splash.png'):
-                splash = Image(source='assets/new_splash.png', allow_stretch=True, keep_ratio=False)
+            if os.path.exists(os.path.join(ASSETS_PATH, 'new_splash.png')):
+                splash = Image(source=os.path.join(ASSETS_PATH, 'new_splash.png'), allow_stretch=True, keep_ratio=False)
             else:
                 splash = Label(text='HUSH\nLoading...', font_size='24sp', halign='center')
         except Exception as e:
             print(f"Error loading splash image: {e}")
             splash = Label(text='HUSH\nLoading...', font_size='24sp', halign='center')
-        
+
         layout.add_widget(splash)
         self.add_widget(layout)
-        
+
         Clock.schedule_once(self.go_to_jerry, 2)
 
     def go_to_jerry(self, dt):
         if self.manager:
-            self.manager.transition = FadeTransition(duration=0.5)
-            self.manager.current = 'jerry'
+            try:
+                self.manager.transition = FadeTransition(duration=0.5)
+                self.manager.current = 'jerry'
+            except Exception as e:
+                print(f"[SplashScreen] go_to_jerry error: {e}")
 
 class JerryScreen(Screen):
     last_known_level = NumericProperty(0)
@@ -408,18 +676,21 @@ class JerryScreen(Screen):
         app = MDApp.get_running_app()
         if app and hasattr(app, 'jerry_ai'):
             self.jerry_ai = app.jerry_ai
-        
+
         Clock.schedule_once(self.setup_screen)
 
     def setup_screen(self, dt):
         self.update_ui()
         # Check if chat_log exists before accessing
         if hasattr(self, 'ids') and hasattr(self.ids, 'chat_log'):
-            if not self.ids.chat_log.children:
-                self.add_message("Jerry", "It's good to see you again.")
-            if hasattr(self.ids, 'user_entry'):
-                self.ids.user_entry.focus = True
-        
+            try:
+                if not self.ids.chat_log.children:
+                    self.add_message("Jerry", "It's good to see you again.")
+                if hasattr(self.ids, 'user_entry'):
+                    self.ids.user_entry.focus = True
+            except Exception as e:
+                print(f"[JerryScreen] setup_screen error: {e}")
+
         app = MDApp.get_running_app()
         if app and hasattr(app, 'update_affirmation_banner'):
             app.update_affirmation_banner(self.name)
@@ -432,20 +703,23 @@ class JerryScreen(Screen):
         if not self.jerry_ai or not hasattr(self.jerry_ai, 'companion'):
             return
 
-        self.jerry_ai.companion.update_needs()
-        
-        # Safely access UI elements
-        if hasattr(self, 'ids'):
-            if hasattr(self.ids, 'clarity_bar'):
-                self.ids.clarity_bar.value = self.jerry_ai.needs['clarity']
-            if hasattr(self.ids, 'insight_bar'):
-                self.ids.insight_bar.value = self.jerry_ai.needs['insight']
-            if hasattr(self.ids, 'calm_bar'):
-                self.ids.calm_bar.value = self.jerry_ai.needs['calm']
-            if hasattr(self.ids, 'level_label'):
-                self.ids.level_label.text = f"Level {self.jerry_ai.companion.level}"
-            if hasattr(self.ids, 'xp_bar'):
-                self.ids.xp_bar.text = f"XP: {self.jerry_ai.companion.xp} / {self.jerry_ai.companion.xp_to_next_level}"
+        try:
+            self.jerry_ai.companion.update_needs()
+
+            # Safely access UI elements
+            if hasattr(self, 'ids'):
+                if hasattr(self.ids, 'clarity_bar'):
+                    self.ids.clarity_bar.value = self.jerry_ai.needs.get('clarity', 0)
+                if hasattr(self.ids, 'insight_bar'):
+                    self.ids.insight_bar.value = self.jerry_ai.needs.get('insight', 0)
+                if hasattr(self.ids, 'calm_bar'):
+                    self.ids.calm_bar.value = self.jerry_ai.needs.get('calm', 0)
+                if hasattr(self.ids, 'level_label'):
+                    self.ids.level_label.text = f"Level {self.jerry_ai.companion.level}"
+                if hasattr(self.ids, 'xp_bar'):
+                    self.ids.xp_bar.text = f"XP: {self.jerry_ai.companion.xp} / {self.jerry_ai.companion.xp_to_next_level}"
+        except Exception as e:
+            print(f"[JerryScreen] update_ui error: {e}")
 
         if self.jerry_ai.companion.level > self.last_known_level:
             self.check_for_evolution(self.jerry_ai.companion.level)
@@ -454,77 +728,89 @@ class JerryScreen(Screen):
     def check_for_evolution(self, current_level):
         if not hasattr(self, 'ids'):
             return
-            
-        if hasattr(self.ids, 'animator'):
-            animator = self.ids.animator
-            evolution_stage = current_level // 10
-            animator.evolve(evolution_stage)
 
-        if hasattr(self.ids, 'jerry_title_label'):
-            title_label = self.ids.jerry_title_label
-            evolution_stage = current_level // 10
-            
-            if evolution_stage == 1:
-                title_label.text = "Jerry the Listener"
-            elif evolution_stage == 2:
-                title_label.text = "Calm Companion"
-            elif evolution_stage == 3:
-                title_label.text = "Beacon of Insight"
-            else:
-                title_label.text = ""
+        try:
+            if hasattr(self.ids, 'animator'):
+                animator = self.ids.animator
+                evolution_stage = current_level // 10
+                animator.evolve(evolution_stage)
+
+            if hasattr(self.ids, 'jerry_title_label'):
+                title_label = self.ids.jerry_title_label
+                evolution_stage = current_level // 10
+
+                if evolution_stage == 1:
+                    title_label.text = "Jerry the Listener"
+                elif evolution_stage == 2:
+                    title_label.text = "Calm Companion"
+                elif evolution_stage == 3:
+                    title_label.text = "Beacon of Insight"
+                else:
+                    title_label.text = ""
+        except Exception as e:
+            print(f"[JerryScreen] check_for_evolution error: {e}")
 
     def send_message(self):
         if not hasattr(self, 'ids') or not hasattr(self.ids, 'user_entry'):
             return
-            
+
         user_text = self.ids.user_entry.text.strip()
         if not user_text:
             return
-        
+
         self.add_message("You", user_text)
         self.ids.user_entry.text = ""
-        
+
         if self.jerry_ai:
             self.jerry_ai.get_response_thread(user_text, self.handle_ai_response)
-        
+
     def handle_ai_response(self, response):
-        if response.startswith("ACTION:"):
-            app = MDApp.get_running_app()
-            if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
-                app.root.ids.sm.current = response.split(":")[1].strip()
-        else:
-            self.add_message("Jerry", response)
+        try:
+            if response.startswith("ACTION:"):
+                app = MDApp.get_running_app()
+                if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and 'sm' in app.root.ids:
+                    app.root.ids.sm.current = response.split(":", 1)[1].strip()
+            else:
+                self.add_message("Jerry", response)
+        except Exception as e:
+            print(f"[JerryScreen] handle_ai_response error: {e}")
 
     def add_message(self, speaker, message):
         if not hasattr(self, 'ids') or not hasattr(self.ids, 'chat_log'):
             return
-            
+
         app = MDApp.get_running_app()
         if not app:
             return
-            
+
         speaker_color = app.theme_cls.primary_color if speaker == 'Jerry' else app.theme_cls.accent_color
-        
-        message_label = MDLabel(
-            text=f"[b][color={get_hex_from_color(speaker_color)}]{speaker}:[/color][/b] {message}",
-            markup=True,
-            size_hint_y=None,
-            theme_text_color="Primary",
-            valign="top"
-        )
-        
-        message_label.bind(
-            width=lambda *x: message_label.setter('text_size')(message_label, (message_label.width, None)),
-            texture_size=lambda *x: message_label.setter('height')(message_label, message_label.texture_size[1])
-        )
-        
-        self.ids.chat_log.add_widget(message_label)
-        self.scroll_to_bottom()
-        
+
+        try:
+            message_label = MDLabel(
+                text=f"[b][color={get_hex_from_color(speaker_color)}]{speaker}:[/color][/b] {message}",
+                markup=True,
+                size_hint_y=None,
+                theme_text_color="Primary",
+                valign="top"
+            )
+
+            message_label.bind(
+                width=lambda *x: message_label.setter('text_size')(message_label, (message_label.width, None)),
+                texture_size=lambda *x: message_label.setter('height')(message_label, message_label.texture_size[1])
+            )
+
+            self.ids.chat_log.add_widget(message_label)
+            self.scroll_to_bottom()
+        except Exception as e:
+            print(f"[JerryScreen] add_message error: {e}")
+
     def scroll_to_bottom(self):
         if hasattr(self, 'ids') and hasattr(self.ids, 'scroller'):
             scroll_view = self.ids.scroller
-            Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0), 0.1)
+            try:
+                Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0), 0.1)
+            except Exception:
+                pass
 
 class SettingsScreen(Screen):
     def __init__(self, **kwargs):
@@ -533,10 +819,10 @@ class SettingsScreen(Screen):
 
     def on_enter(self):
         app = MDApp.get_running_app()
-        
+
         if not self.is_first_setup and app and hasattr(app, 'update_affirmation_banner'):
             app.update_affirmation_banner(self.name)
-        
+
         self.load_current_settings()
 
     def load_current_settings(self):
@@ -547,7 +833,7 @@ class SettingsScreen(Screen):
     def save_api_key(self):
         if not hasattr(self, 'ids') or not hasattr(self.ids, 'api_key_input'):
             return
-            
+
         api_key = self.ids.api_key_input.text.strip()
         app = MDApp.get_running_app()
         if app and hasattr(app, 'set_api_key'):
@@ -557,12 +843,14 @@ class SettingsScreen(Screen):
 
         if self.is_first_setup:
             self.is_first_setup = False
-            if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+            app = MDApp.get_running_app()
+            if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and 'sm' in app.root.ids:
                 app.root.ids.sm.current = "splash"
         else:
-            if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+            app = MDApp.get_running_app()
+            if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and 'sm' in app.root.ids:
                 app.root.ids.sm.current = "jerry"
-       
+
     def skip_setup(self):
         if self.is_first_setup:
             app = MDApp.get_running_app()
@@ -571,23 +859,23 @@ class SettingsScreen(Screen):
                 if hasattr(app, 'save_settings'):
                     app.save_settings()
                 self.is_first_setup = False
-                if hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+                if hasattr(app, 'root') and hasattr(app.root, 'ids') and 'sm' in app.root.ids:
                     app.root.ids.sm.current = "splash"
 
     def show_message(self, message):
         if hasattr(self, 'ids') and hasattr(self.ids, 'message_label'):
             self.ids.message_label.text = message
             self.ids.message_label.opacity = 1
-            
+
             def fade_message(dt):
                 anim = Animation(opacity=0, duration=0.5)
                 anim.start(self.ids.message_label)
-            
+
             Clock.schedule_once(fade_message, 3)
 
 class CheckinScreen(Screen):
     checkin_step = NumericProperty(0)
-    
+
     def on_enter(self):
         app = MDApp.get_running_app()
         if app and hasattr(app, 'update_affirmation_banner'):
@@ -599,66 +887,72 @@ class CheckinScreen(Screen):
     def display_step(self):
         if not hasattr(self, 'ids') or not hasattr(self.ids, 'checkin_content'):
             return
-            
-        self.ids.checkin_content.clear_widgets()
-        app = MDApp.get_running_app()
-        if not app:
-            return
-            
-        theme_cls = app.theme_cls
 
-        steps = [
-            ("How are you feeling emotionally?", ["Good", "Okay", "Bad"], "emotion"),
-            ("How is your body feeling?", ["Energetic", "Tired", "Pain"], "physical"),
-            ("How is your mind today?", ["Clear", "Foggy", "Overwhelmed"], "mental")
-        ]
+        try:
+            self.ids.checkin_content.clear_widgets()
+            app = MDApp.get_running_app()
+            if not app:
+                return
 
-        if self.checkin_step >= len(steps):
-            self.complete_checkin()
-            return
+            theme_cls = app.theme_cls
 
-        title, choices, key = steps[self.checkin_step]
-        
-        if hasattr(self.ids, 'progress_bar'):
-            self.ids.progress_bar.value = (self.checkin_step + 1) / len(steps) * 100
-        if hasattr(self.ids, 'checkin_title_label'):
-            self.ids.checkin_title_label.text = title
+            steps = [
+                ("How are you feeling emotionally?", ["Good", "Okay", "Bad"], "emotion"),
+                ("How is your body feeling?", ["Energetic", "Tired", "Pain"], "physical"),
+                ("How is your mind today?", ["Clear", "Foggy", "Overwhelmed"], "mental")
+            ]
 
-        button_layout = GridLayout(cols=1, spacing=dp(15), size_hint_y=None)
-        button_layout.bind(minimum_height=button_layout.setter('height'))
+            if self.checkin_step >= len(steps):
+                self.complete_checkin()
+                return
 
-        for choice in choices:
-            btn = Button(
-                text=choice,
-                size_hint_y=None,
-                height=dp(50),
-                background_color=theme_cls.primary_color
-            )
-            btn.bind(on_press=lambda x, cat=key, c=choice: self.next_step(cat, c))
-            button_layout.add_widget(btn)
-        
-        self.ids.checkin_content.add_widget(button_layout)
+            title, choices, key = steps[self.checkin_step]
+
+            if hasattr(self.ids, 'progress_bar'):
+                self.ids.progress_bar.value = (self.checkin_step + 1) / len(steps) * 100
+            if hasattr(self.ids, 'checkin_title_label'):
+                self.ids.checkin_title_label.text = title
+
+            button_layout = GridLayout(cols=1, spacing=dp(15), size_hint_y=None)
+            button_layout.bind(minimum_height=button_layout.setter('height'))
+
+            for choice in choices:
+                btn = Button(
+                    text=choice,
+                    size_hint_y=None,
+                    height=dp(50),
+                    background_color=theme_cls.primary_color
+                )
+                btn.bind(on_press=lambda x, cat=key, c=choice: self.next_step(cat, c))
+                button_layout.add_widget(btn)
+
+            self.ids.checkin_content.add_widget(button_layout)
+        except Exception as e:
+            print(f"[CheckinScreen] display_step error: {e}")
 
     def next_step(self, category, choice):
-        self.checkin_data[category] = choice
-        self.checkin_step += 1
-        self.display_step()
+        try:
+            self.checkin_data[category] = choice
+            self.checkin_step += 1
+            self.display_step()
+        except Exception as e:
+            print(f"[CheckinScreen] next_step error: {e}")
 
     def complete_checkin(self):
         app = MDApp.get_running_app()
         if not app:
             return
-            
+
         summary = f"Emotionally feeling {self.checkin_data.get('emotion', 'N/A')}, physically {self.checkin_data.get('physical', 'N/A')}, mentally {self.checkin_data.get('mental', 'N/A')}."
         log_data = {"summary": summary, "details": self.checkin_data}
-        
+
         if hasattr(app, 'entries_log'):
             app.entries_log.add_entry("Check-in", log_data)
         if hasattr(app, 'jerry_ai') and app.jerry_ai and hasattr(app.jerry_ai, 'companion'):
             app.jerry_ai.companion.feed("clarity", 50)
             app.jerry_ai.companion.add_xp(10)
-        
-        if hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+
+        if hasattr(app, 'root') and hasattr(app.root, 'ids') and 'sm' in app.root.ids:
             app.root.ids.sm.current = 'jerry'
 
 class TherapyScreenBase(Screen):
@@ -682,134 +976,158 @@ class TherapyScreenBase(Screen):
     def display_step(self):
         if not hasattr(self, 'ids') or not hasattr(self.ids, 'content_box'):
             return
-            
-        content_box = self.ids.content_box
-        content_box.clear_widgets()
-        num_questions = len(self.questions)
-        if self.flow_step < num_questions:
-            self.display_question_step()
-        elif self.flow_step == num_questions and self.checklist:
-            self.display_checklist_step()
-        else:
-            self.complete_flow()
+
+        try:
+            content_box = self.ids.content_box
+            content_box.clear_widgets()
+            num_questions = len(self.questions)
+            if self.flow_step < num_questions:
+                self.display_question_step()
+            elif self.flow_step == num_questions and self.checklist:
+                self.display_checklist_step()
+            else:
+                self.complete_flow()
+        except Exception as e:
+            print(f"[TherapyScreenBase] display_step error: {e}")
 
     def display_question_step(self):
-        if not self.questions or self.flow_step >= len(self.questions):
-            return
-            
-        question_data = self.questions[self.flow_step]
-        
-        if hasattr(self.ids, 'title_label'):
-            self.ids.title_label.text = question_data["question"]
-        if hasattr(self.ids, 'next_button'):
-            self.ids.next_button.text = 'Next'
-            
-        if not hasattr(self.ids, 'content_box'):
-            return
-            
-        content_box = self.ids.content_box
-        content_box.clear_widgets()
-        
-        if question_data.get("type") == "rating":
-            def make_callback(key, val):
-                return lambda instance: self.set_rating_answer(key, val)
+        try:
+            if not self.questions or self.flow_step >= len(self.questions):
+                return
 
-            rating_box = GridLayout(cols=6, size_hint_y=None, height=dp(48))
-            for i in range(6):
-                val = str(i)
-                btn = ToggleButton(
-                    text=val,
-                    group=question_data["key"],
-                    size_hint_y=None,
-                    height=dp(48)
-                )
-                if self.flow_data.get(question_data["key"]) == val:
-                    btn.state = 'down'
-                btn.bind(on_press=make_callback(question_data["key"], val))
-                rating_box.add_widget(btn)
-            content_box.add_widget(rating_box)
-        else:
-            text_input = TextInput(
-                text=self.flow_data.get(question_data["key"], ""),
-                multiline=True,
-                size_hint_y=None,
-                height=dp(100),
-                hint_text=question_data.get("hint", "")
-            )
-            # Clear existing bindings before adding new ones
+            question_data = self.questions[self.flow_step]
+
+            if hasattr(self.ids, 'title_label'):
+                self.ids.title_label.text = question_data["question"]
             if hasattr(self.ids, 'next_button'):
-                self.ids.next_button.unbind(on_press=self.get_text_input_answer)
-                self.ids.next_button.bind(on_press=self.get_text_input_answer(question_data["key"], text_input))
-            content_box.add_widget(text_input)
+                self.ids.next_button.text = 'Next'
+
+            if not hasattr(self.ids, 'content_box'):
+                return
+
+            content_box = self.ids.content_box
+            content_box.clear_widgets()
+
+            if question_data.get("type") == "rating":
+                def make_callback(key, val):
+                    return lambda instance: self.set_rating_answer(key, val)
+
+                rating_box = GridLayout(cols=6, size_hint_y=None, height=dp(48))
+                for i in range(6):
+                    val = str(i)
+                    btn = ToggleButton(
+                        text=val,
+                        group=question_data["key"],
+                        size_hint_y=None,
+                        height=dp(48)
+                    )
+                    if self.flow_data.get(question_data["key"]) == val:
+                        btn.state = 'down'
+                    btn.bind(on_press=make_callback(question_data["key"], val))
+                    rating_box.add_widget(btn)
+                content_box.add_widget(rating_box)
+            else:
+                text_input = TextInput(
+                    text=self.flow_data.get(question_data["key"], ""),
+                    multiline=True,
+                    size_hint_y=None,
+                    height=dp(100),
+                    hint_text=question_data.get("hint", "")
+                )
+                # Clear existing bindings before adding new ones
+                if hasattr(self.ids, 'next_button'):
+                    try:
+                        self.ids.next_button.unbind(on_press=self.get_text_input_answer)
+                    except Exception:
+                        pass
+                    self.ids.next_button.bind(on_press=self.get_text_input_answer(question_data["key"], text_input))
+                content_box.add_widget(text_input)
+        except Exception as e:
+            print(f"[TherapyScreenBase] display_question_step error: {e}")
 
     def get_text_input_answer(self, key, text_input):
         def on_press_callback(instance):
-            self.flow_data[key] = text_input.text
-            self.flow_step += 1
-            self.display_step()
+            try:
+                self.flow_data[key] = text_input.text
+                self.flow_step += 1
+                self.display_step()
+            except Exception as e:
+                print(f"[TherapyScreenBase] get_text_input_answer callback error: {e}")
         return on_press_callback
 
     def set_rating_answer(self, key, value):
         self.flow_data[key] = value
 
     def display_checklist_step(self):
-        if not hasattr(self.ids, 'title_label') or not hasattr(self.ids, 'next_button') or not hasattr(self.ids, 'content_box'):
+        if not hasattr(self, 'ids') or not hasattr(self.ids, 'title_label') or not hasattr(self.ids, 'next_button') or not hasattr(self.ids, 'content_box'):
             return
-            
-        self.ids.title_label.text = "Which cognitive distortions apply?"
-        self.ids.next_button.text = 'Complete'
-        content_box = self.ids.content_box
-        content_box.clear_widgets()
-        
-        scroll_view = ScrollView()
-        checklist_grid = GridLayout(cols=1, size_hint_y=None, spacing=dp(10))
-        checklist_grid.bind(minimum_height=checklist_grid.setter('height'))
-        
-        for distortion, definition in self.checklist.items():
-            box = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40), padding=dp(5), spacing=dp(10))
-            chk = CheckBox(size_hint_x=None, width=dp(30))
-            chk.bind(active=lambda instance, value, d=distortion: self.toggle_checklist_item(d, value))
-            
-            label = MDLabel(text=f"[b]{distortion}:[/b] {definition}", markup=True)
-            box.add_widget(chk)
-            box.add_widget(label)
-            checklist_grid.add_widget(box)
-        
-        scroll_view.add_widget(checklist_grid)
-        content_box.add_widget(scroll_view)
-        
-        # Clear existing bindings
-        self.ids.next_button.unbind(on_press=self.get_text_input_answer)
-        self.ids.next_button.bind(on_press=lambda x: self.complete_flow())
+
+        try:
+            self.ids.title_label.text = "Which cognitive distortions apply?"
+            self.ids.next_button.text = 'Complete'
+            content_box = self.ids.content_box
+            content_box.clear_widgets()
+
+            scroll_view = ScrollView()
+            checklist_grid = GridLayout(cols=1, size_hint_y=None, spacing=dp(10))
+            checklist_grid.bind(minimum_height=checklist_grid.setter('height'))
+
+            for distortion, definition in self.checklist.items():
+                box = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40), padding=dp(5), spacing=dp(10))
+                chk = CheckBox(size_hint_x=None, width=dp(30))
+                chk.bind(active=lambda instance, value, d=distortion: self.toggle_checklist_item(d, value))
+
+                label = MDLabel(text=f"[b]{distortion}:[/b] {definition}", markup=True)
+                box.add_widget(chk)
+                box.add_widget(label)
+                checklist_grid.add_widget(box)
+
+            scroll_view.add_widget(checklist_grid)
+            content_box.add_widget(scroll_view)
+
+            # Clear existing bindings
+            try:
+                self.ids.next_button.unbind(on_press=self.get_text_input_answer)
+            except Exception:
+                pass
+            self.ids.next_button.bind(on_press=lambda x: self.complete_flow())
+        except Exception as e:
+            print(f"[TherapyScreenBase] display_checklist_step error: {e}")
 
     def toggle_checklist_item(self, item, is_active):
-        if is_active:
-            if "distortions" not in self.flow_data:
-                self.flow_data["distortions"] = []
-            if item not in self.flow_data["distortions"]:
-                self.flow_data["distortions"].append(item)
-        else:
-            if "distortions" in self.flow_data and item in self.flow_data["distortions"]:
-                self.flow_data["distortions"].remove(item)
+        try:
+            if is_active:
+                if "distortions" not in self.flow_data:
+                    self.flow_data["distortions"] = []
+                if item not in self.flow_data["distortions"]:
+                    self.flow_data["distortions"].append(item)
+            else:
+                if "distortions" in self.flow_data and item in self.flow_data["distortions"]:
+                    self.flow_data["distortions"].remove(item)
+        except Exception as e:
+            print(f"[TherapyScreenBase] toggle_checklist_item error: {e}")
 
     def complete_flow(self):
         app = MDApp.get_running_app()
         if not app:
             return
-            
-        if hasattr(app, 'entries_log'):
-            app.entries_log.add_entry(self.entry_type, self.flow_data)
-        
-        if hasattr(app, 'jerry_ai') and app.jerry_ai and hasattr(app.jerry_ai, 'companion'):
-            if self.entry_type == "CBT":
-                app.jerry_ai.companion.feed("insight", 50)
-                app.jerry_ai.companion.add_xp(20)
-            elif self.entry_type == "DBT":
-                app.jerry_ai.companion.feed("calm", 50)
-                app.jerry_ai.companion.add_xp(20)
 
-        if hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
-            app.root.ids.sm.current = 'jerry'
+        try:
+            if hasattr(app, 'entries_log'):
+                app.entries_log.add_entry(self.entry_type, self.flow_data)
+
+            if hasattr(app, 'jerry_ai') and app.jerry_ai and hasattr(app.jerry_ai, 'companion'):
+                if self.entry_type == "CBT":
+                    app.jerry_ai.companion.feed("insight", 50)
+                    app.jerry_ai.companion.add_xp(20)
+                elif self.entry_type == "DBT":
+                    app.jerry_ai.companion.feed("calm", 50)
+                    app.jerry_ai.companion.add_xp(20)
+
+            if hasattr(app, 'root') and hasattr(app.root, 'ids') and 'sm' in app.root.ids:
+                app.root.ids.sm.current = 'jerry'
+        except Exception as e:
+            print(f"[TherapyScreenBase] complete_flow error: {e}")
 
 class CBTFlowScreen(TherapyScreenBase):
     def setup_flow(self):
@@ -830,20 +1148,40 @@ class HushApp(MDApp):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        Window.bind(on_request_close=self.on_request_close)
+        # Avoid exceptions if on_request_close isn't present yet; bind to Window safely
+        try:
+            Window.bind(on_request_close=self.on_request_close)
+        except Exception:
+            pass
         self.setup_completed = False
         self.font_size_multiplier = 1.0
-        self.theme_cls.theme_style = "Dark"
+        # default theme settings (will be overridden by load_settings)
+        try:
+            self.theme_cls.theme_style = "Dark"
+        except Exception:
+            pass
         self.api_key = ""
 
     def build(self):
-        self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Indigo"
+        # Set up theme defaults
+        try:
+            self.theme_cls.theme_style = "Dark"
+            self.theme_cls.primary_palette = "Indigo"
+        except Exception:
+            pass
+
+        # load settings (uses self.user_data_dir)
         self.load_settings()
+
+        # Return RootWidget — make sure your KV or Python creates expected child widgets (screen manager etc.)
         return RootWidget()
 
     def load_settings(self):
-        settings_path = os.path.join(self.user_data_dir, "app_settings.json")
+        # user_data_dir should exist (MDApp provides it). Use fallback if not present.
+        try:
+            settings_path = os.path.join(self.user_data_dir, "app_settings.json")
+        except Exception:
+            settings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_settings.json")
 
         if not os.path.exists(settings_path):
             self.save_settings()
@@ -852,22 +1190,34 @@ class HushApp(MDApp):
         try:
             with open(settings_path, "r") as f:
                 settings = json.load(f)
-                self.theme_cls.theme_style = settings.get("theme_style", "Dark")
+                try:
+                    self.theme_cls.theme_style = settings.get("theme_style", "Dark")
+                except Exception:
+                    pass
                 self.set_font_size(settings.get("font_size", 1.0))
                 self.api_key = settings.get("HUSHOS_API_KEY", "")
                 self.setup_completed = settings.get("setup_completed", False)
         except (FileNotFoundError, json.JSONDecodeError):
             self.font_size_multiplier = 1.0
-            self.theme_cls.theme_style = "Dark"
+            try:
+                self.theme_cls.theme_style = "Dark"
+            except Exception:
+                pass
             self.api_key = ""
             self.setup_completed = False
             self.save_settings()
+        except Exception as e:
+            print(f"[HushApp] load_settings unexpected error: {e}")
 
     def save_settings(self):
         try:
             settings_path = os.path.join(self.user_data_dir, "app_settings.json")
+        except Exception:
+            settings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_settings.json")
+
+        try:
             settings = {
-                "theme_style": self.theme_cls.theme_style,
+                "theme_style": getattr(self.theme_cls, "theme_style", "Dark"),
                 "font_size": self.font_size_multiplier,
                 "HUSHOS_API_KEY": self.api_key,
                 "setup_completed": self.setup_completed,
@@ -875,40 +1225,65 @@ class HushApp(MDApp):
             with open(settings_path, "w") as f:
                 json.dump(settings, f, indent=4)
         except Exception as e:
-            print(f"Error saving settings: {e}")
+            print(f"[HushApp] Error saving settings: {e}")
 
     def toggle_theme_style(self):
-        self.theme_cls.theme_style = "Dark" if self.theme_cls.theme_style == "Light" else "Light"
-        self.save_settings()
+        try:
+            current = getattr(self.theme_cls, "theme_style", "Dark")
+            self.theme_cls.theme_style = "Dark" if current == "Light" else "Light"
+            self.save_settings()
+        except Exception as e:
+            print(f"[HushApp] toggle_theme_style error: {e}")
 
     def set_font_size(self, multiplier):
-        self.font_size_multiplier = multiplier
-        self.save_settings()
+        try:
+            self.font_size_multiplier = float(multiplier)
+            self.save_settings()
+        except Exception as e:
+            print(f"[HushApp] set_font_size error: {e}")
 
     def set_api_key(self, api_key):
-        self.api_key = api_key.strip()
-        self.setup_completed = True
-        self.save_settings()
-        if hasattr(self, "jerry_ai") and self.jerry_ai:
-            self.jerry_ai.api_key = self.api_key
-            if self.api_key:
-                openai.api_key = self.api_key
+        try:
+            self.api_key = api_key.strip()
+            self.setup_completed = True
+            self.save_settings()
+            if hasattr(self, "jerry_ai") and self.jerry_ai:
+                self.jerry_ai.api_key = self.api_key
+                if self.api_key:
+                    openai.api_key = self.api_key
+        except Exception as e:
+            print(f"[HushApp] set_api_key error: {e}")
 
     def on_start(self):
         try:
-            self.conversation_log_path = os.path.join(self.user_data_dir, "conversation_log.json")
-            self.jerry_memory_path = os.path.join(self.user_data_dir, "jerry_memory.json")
-            self.entries_filepath = os.path.join(self.user_data_dir, "entries.json")
+            # Ensure user data paths exist
+            try:
+                base_dir = self.user_data_dir
+            except Exception:
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+
+            self.conversation_log_path = os.path.join(base_dir, "conversation_log.json")
+            self.jerry_memory_path = os.path.join(base_dir, "jerry_memory.json")
+            self.entries_filepath = os.path.join(base_dir, "entries.json")
 
             self.entries_log = EntriesLog(self.entries_filepath)
 
-            # Safely add screens
+            # Safely add screens if screen manager exists in root ids
             if hasattr(self.root, "ids") and "sm" in self.root.ids:
                 sm = self.root.ids.sm
-                sm.add_widget(SettingsScreen(name="settings"))
-                sm.add_widget(CheckinScreen(name="checkin"))
-                sm.add_widget(CBTFlowScreen(name="cbt_flow"))
-                sm.add_widget(DBTFlowScreen(name="dbt_flow"))
+                # avoid adding duplicates; check names
+                existing_names = set()
+                for w in sm.children:
+                    if hasattr(w, 'name'):
+                        existing_names.add(w.name)
+                if 'settings' not in existing_names:
+                    sm.add_widget(SettingsScreen(name="settings"))
+                if 'checkin' not in existing_names:
+                    sm.add_widget(CheckinScreen(name="checkin"))
+                if 'cbt_flow' not in existing_names:
+                    sm.add_widget(CBTFlowScreen(name="cbt_flow"))
+                if 'dbt_flow' not in existing_names:
+                    sm.add_widget(DBTFlowScreen(name="dbt_flow"))
 
             # Initialize JerryAI with safe access to animator
             jerry_animator = None
@@ -932,8 +1307,24 @@ class HushApp(MDApp):
             if not self.setup_completed:
                 if hasattr(self.root, "ids") and "sm" in self.root.ids:
                     self.root.ids.sm.current = "settings"
+                # flag first-setup if settings_screen widget is named differently,
+                # the SettingsScreen added above uses name 'settings'
                 if hasattr(self.root, "ids") and "settings_screen" in self.root.ids:
-                    self.root.ids.settings_screen.is_first_setup = True
+                    try:
+                        self.root.ids.settings_screen.is_first_setup = True
+                    except Exception:
+                        pass
+                # if using the 'settings' name in sm children, set attribute if present
+                try:
+                    if hasattr(self.root, "ids") and 'sm' in self.root.ids:
+                        for w in self.root.ids.sm.children:
+                            if getattr(w, 'name', '') == 'settings':
+                                try:
+                                    w.is_first_setup = True
+                                except Exception:
+                                    pass
+                except Exception:
+                    pass
             else:
                 if hasattr(self.root, "ids") and "sm" in self.root.ids:
                     self.root.ids.sm.current = "jerry"
@@ -941,62 +1332,82 @@ class HushApp(MDApp):
             # Schedule Jerry updates
             if hasattr(self, "jerry_ai") and self.jerry_ai:
                 Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
-            self.update_affirmation_banner(self.root.ids.sm.current)
+            # Update affirmation banner safely (only if sm exists)
+            if hasattr(self.root, "ids") and "sm" in self.root.ids:
+                try:
+                    self.update_affirmation_banner(self.root.ids.sm.current)
+                except Exception:
+                    pass
             Clock.schedule_interval(lambda dt: self.update_affirmation_banner(), 10)
 
         except Exception as e:
-            print(f"Error in on_start: {e}")
+            print(f"[HushApp] Error in on_start: {e}")
 
     def on_stop(self):
-        if hasattr(self, "jerry_ai"):
-            self.jerry_ai.end_session()
-        # Window.close() removed – let the OS handle lifecycle
+        try:
+            if hasattr(self, "jerry_ai"):
+                self.jerry_ai.end_session()
+        except Exception as e:
+            print(f"[HushApp] on_stop error: {e}")
+        # Let the OS manage window closing and lifecycle
 
     def update_affirmation_banner(self, screen_name=None):
-        if not (hasattr(self.root, "ids") and "sm" in self.root.ids):
-            return
-        if screen_name is None:
-            screen_name = self.root.ids.sm.current
+        # If screen_name not provided, try to determine from screen manager
+        try:
+            if not (hasattr(self.root, "ids") and "sm" in self.root.ids):
+                return
+            if screen_name is None:
+                screen_name = self.root.ids.sm.current
 
-        if screen_name in ("jerry", "checkin"):
-            self.affirmation_text = random.choice(AFFIRMATIONS)
-        else:
-            self.affirmation_text = ""
+            if screen_name in ("jerry", "checkin"):
+                self.affirmation_text = random.choice(AFFIRMATIONS)
+            else:
+                self.affirmation_text = ""
+        except Exception as e:
+            print(f"[HushApp] update_affirmation_banner error: {e}")
 
     def show_exit_dialog(self):
-        if not self.dialog:
-            self.dialog = MDDialog(
-                title="Exit Hush?",
-                text="Are you sure you want to exit?",
-                buttons=[
-                    MDFlatButton(
-                        text="CANCEL",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                        on_release=self.dismiss_dialog,
-                    ),
-                    MDRaisedButton(
-                        text="EXIT",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                        on_release=lambda x: self.stop(),
-                    ),
-                ],
-            )
-        self.dialog.open()
+        try:
+            if not self.dialog:
+                self.dialog = MDDialog(
+                    title="Exit Hush?",
+                    text="Are you sure you want to exit?",
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=self.dismiss_dialog,
+                        ),
+                        MDRaisedButton(
+                            text="EXIT",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=lambda x: self.stop(),
+                        ),
+                    ],
+                )
+            self.dialog.open()
+        except Exception as e:
+            print(f"[HushApp] show_exit_dialog error: {e}")
 
     def dismiss_dialog(self, obj):
-        if self.dialog:
-            self.dialog.dismiss()
+        try:
+            if self.dialog:
+                self.dialog.dismiss()
+        except Exception as e:
+            print(f"[HushApp] dismiss_dialog error: {e}")
 
     def on_request_close(self, *args):
-        self.show_exit_dialog()
-        return True  # Prevent default OS close, handle with dialog
-
+        # show dialog and prevent immediate close
+        try:
+            self.show_exit_dialog()
+            return True
+        except Exception:
+            return True
 
 # --- Main Entry Point ---
 if __name__ == "__main__":
     if not os.path.exists(ASSETS_PATH):
         print("Assets folder not found!")
-
     HushApp().run()
