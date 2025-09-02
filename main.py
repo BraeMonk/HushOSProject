@@ -85,7 +85,7 @@ class ConversationLog:
     def load_log(self):
         try:
             with open(self.filepath, 'r') as f: return json.load(f)
-        except (FileNotFoundNError, json.JSONDecodeError): return []
+        except (FileNotFoundError, json.JSONDecodeError): return []
     def add_session(self, chat_history):
         if not chat_history: return
         log = self.load_log()
