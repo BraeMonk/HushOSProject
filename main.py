@@ -40,12 +40,6 @@ from kivy.metrics import dp
 from kivy.graphics import Color, Ellipse, Rectangle
 from kivy.lang import Builder
 from dotenv import load_dotenv
-
-if platform == "android":
-    from android.storage import app_storage_path
-    app_dir = app_storage_path()
-else:
-    app_dir = os.path.dirname(os.path.abspath(__file__))
     
 # --- PATHS & BASIC SETUP ---
 ASSETS_PATH = "assets"
@@ -722,6 +716,13 @@ class DBTFlowScreen(TherapyScreenBase):
 class HushApp(MDApp):
     dialog = None
     affirmation_text = StringProperty("")
+
+    def app_dir(self):
+        if platform == "android":
+            from android.storage import app_storage_path
+            app_dir = app_storage_path()
+        else:
+            return os.path.dirname(os.path.abspath(__file__))
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -736,8 +737,7 @@ class HushApp(MDApp):
         self.theme_cls.primary_palette = "Indigo"
         
         self.load_settings()
-        
-        self.user_data_dir = self.root.user_data_dir
+       
         self.conversation_log_path = os.path.join(self.user_data_dir, "conversation_log.json")
         self.jerry_memory_path = os.path.join(self.user_data_dir, "jerry_memory.json")
         self.entries_filepath = os.path.join(self.user_data_dir, "entries.json")
@@ -774,7 +774,7 @@ class HushApp(MDApp):
                 self.setup_completed = settings.get("setup_completed", False)
         except (FileNotFoundError, json.JSONDecodeError):
             self.font_size_multiplier = 1.0
-            slef.theme_cls.theme_style = "Dark"
+            self.theme_cls.theme_style = "Dark"
             self.api_key = ""
             self.setup_completed = False
             self.save_settings()
@@ -813,7 +813,7 @@ class HushApp(MDApp):
     def on_start(self):
         Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
         self.update_affirmation_banner(self.root.ids.sm.current)
-        Clock.schedule_interval(self.update_affirmation_banner, 10)
+        Clock.schedule_interval(lambda dt: self.update_affirmation_banner(), 10)
 
     def on_stop(self):
         if hasattr(self, 'jerry_ai'):
