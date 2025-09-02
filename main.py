@@ -492,70 +492,30 @@ class SettingsScreen(Screen):
         self.load_current_settings()
 
     def load_current_settings(self):
-        app_dir = App.get_running_app().user_data_dir
-        
-        api_key = None
-        try:
-            config_path = os.path.join(app_dir, "config.json")
-            with open(config_path, "r") as f:
-                config = json.load(f)
-                api_key = config.get("HUSHOS_API_KEY", "")
-        except:
-            api_key = os.environ.get("HUSHOS_API_KEY", "")
-        
-        if api_key:
-            self.ids.api_key_input.text = api_key
+        app = MDApp.get_running_app()
+        if app.api_key:
+            self.ids.api_key_input.text = app.api_key
 
     def save_api_key(self):
         api_key = self.ids.api_key_input.text.strip()
-        app_dir = App.get_running_app().user_data_dir
-        config_path = os.path.join(app_dir, "config.json")
-        
-        config = {}
-        try:
-            with open(config_path, "r") as f:
-                config = json.load(f)
-        except:
-            pass
-        
-        config["HUSHOS_API_KEY"] = api_key
-        config["setup_completed"] = True
-        
-        try:
-            with open(config_path, "w") as f:
-                json.dump(config, f, indent=4)
-            
-            self.show_message("API key saved successfully!")
-            
-            app = MDApp.get_running_app()
-            if hasattr(app, 'jerry_ai'):
-                app.jerry_ai.api_key = api_key
-                if api_key:
-                    openai.api_key = api_key
-            
-            if self.is_first_setup:
-                self.is_first_setup = False
-                app.root.ids.sm.current = 'splash'
-            else:
-                app.root.ids.sm.current = 'jerry'
-            
-        except Exception as e:
-            self.show_message(f"Error saving settings: {str(e)}")
+        app_dir = MDApp.get_running_app()
+        app.set_api_key(api_key)
 
+        self.show_message("API key saved successfully!")
+
+        if self.is_first_setup:
+            self.is_first_setup = False
+            app.root.ids.sm.current = "splash"
+        else:
+            app.root.ids.sm.current = "jerry"
+       
     def skip_setup(self):
         if self.is_first_setup:
-            app_dir = App.get_running_app().user_data_dir
-            config_path = os.path.join(app_dir, "config.json")
-            
-            config = {"setup_completed": True}
-            try:
-                with open(config_path, "w") as f:
-                    json.dump(config, f, indent=4)
-            except:
-                pass
-            
+            app = MDApp.get_running_app()
+            app.setup_completed = True
+            app.save_settings()
             self.is_first_setup = False
-            MDApp.get_running_app().root.ids.sm.current = 'splash'
+            app.root.ids.sm.current = "splash"
 
     def show_message(self, message):
         self.ids.message_label.text = message
@@ -767,6 +727,9 @@ class HushApp(MDApp):
         super().__init__(**kwargs)
         Window.bind(on_request_close=self.on_request_close)
         self.is_setup_completed = False
+        self.font_size_multiplier = 1.0
+        self.theme_cls.theme_style = "Dark"
+        self.api_key = ""
 
     def build(self):
         self.theme_cls.theme_style = "Dark"
@@ -797,19 +760,32 @@ class HushApp(MDApp):
 
     def load_settings(self):
         settings_path = os.path.join(self.user_data_dir, "app_settings.json")
+        
+        if not os.path.exists(settings_path):
+            self.save_settings()
+            return
+            
         try:
-            with open(settings_path, 'r') as f:
+            with open(settings_path, "r") as f:
                 settings = json.load(f)
                 self.theme_cls.theme_style = settings.get("theme_style", "Dark")
                 self.set_font_size(settings.get("font_size", 1.0))
+                self.api_key = settings.get("HUSHOS_API_KEY", "")
+                self.setup_completed = settings.get("setup_completed", False)
         except (FileNotFoundError, json.JSONDecodeError):
+            self.font_size_multiplier = 1.0
+            slef.theme_cls.theme_style = "Dark"
+            self.api_key = ""
+            self.setup_completed = False
             self.save_settings()
 
     def save_settings(self):
         settings_path = os.path.join(self.user_data_dir, "app_settings.json")
         settings = {
             "theme_style": self.theme_cls.theme_style,
-            "font_size": self.font_size_multiplier
+            "font_size": self.font_size_multiplier,
+            "HUSHOS_API_KEY": self.api_key,
+            "setup_completed": self.setup_completed,
         }
         with open(settings_path, 'w') as f:
             json.dump(settings, f, indent=4)
@@ -825,6 +801,14 @@ class HushApp(MDApp):
         # This is a conceptual implementation. A real app might need to
         # iterate through a list of labels or use a more dynamic method.
         # For now, let's just save the setting.
+    def set_api_key(self, api_key):
+        self.api_key = api_key.strip()
+        self.setup_completed = True
+        self.save_settings()
+        if hasattr(self, "jerry_ai"):
+            self.jerry_ai.api_key = self.api_key
+            if self.api_key:
+                openai.api_key = self.api_key
 
     def on_start(self):
         Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
