@@ -726,7 +726,7 @@ class HushApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         Window.bind(on_request_close=self.on_request_close)
-        self.is_setup_completed = False
+        self.setup_completed = False
         self.font_size_multiplier = 1.0
         self.theme_cls.theme_style = "Dark"
         self.api_key = ""
@@ -750,7 +750,7 @@ class HushApp(MDApp):
         self.root.ids.sm.add_widget(CBTFlowScreen(name='cbt_flow'))
         self.root.ids.sm.add_widget(DBTFlowScreen(name='dbt_flow'))
 
-        if not self.is_setup_completed:
+        if not self.setup_completed:
             self.root.ids.sm.current = 'settings'
             self.root.ids.settings_screen.is_first_setup = True
         else:
