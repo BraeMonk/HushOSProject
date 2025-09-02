@@ -156,7 +156,7 @@ class JerryAI:
     MAX_HISTORY = 20
 
     def __init__(self, jerry, app, conversation_log_path, jerry_memory_path, api_key=None):
-        app_dir = App.get_running_app().user_data_dir
+        app_dir = app.user_data_dir if hasattr(app, 'user_data_dir') else os.path.dirname(os.path.abspath(__file__))
         state_filepath = os.path.join(app_dir, "jerry_state.json")
         self.companion = JerryCompanion(state_filepath)
         self.jerry = jerry
@@ -247,11 +247,14 @@ class JerryAnimator(FloatLayout):
         self.current_interval = None
 
     def _post_init(self, dt):
-        self.app = MDApp.get_running_app()
-        self.jerry = self.app.jerry_ai
-        self.theme_cls = self.app.theme_cls
-        self._define_sprites()
-        self.start()
+        app = MDApp.get_running_app()
+        if app:
+            self.app = app
+            if hasattr(app, 'jerry_ai'):
+                self.jerry = app.jerry_ai
+            self.theme_cls = app.theme_cls
+            self._define_sprites()
+            self.start()
 
     def _define_sprites(self):
         self.sprites = {
@@ -279,7 +282,8 @@ class JerryAnimator(FloatLayout):
         anim.start(self.aura_color)
 
     def start(self):
-        if not hasattr(self, 'jerry'): return
+        if not hasattr(self, 'jerry') or not hasattr(self, 'companion') or not self.companion: 
+            return
         self.stop()
         self.is_thinking = False
         self.current_interval = 0.35
@@ -297,6 +301,8 @@ class JerryAnimator(FloatLayout):
             self.aura_color = None
 
     def animate(self, dt):
+        if not self.companion:
+            return
         needs = self.companion.needs
         min_need = min(needs, key=needs.get)
         anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
@@ -307,6 +313,8 @@ class JerryAnimator(FloatLayout):
                 self.anim_event.cancel()
                 self.anim_event = Clock.schedule_interval(self.animate, new_interval)
                 self.current_interval = new_interval
+        
+        if hasattr(self, 'sprites') and anim_key in self.sprites:
             frames = self.sprites[anim_key]
             self.anim_frame = (self.anim_frame + 1) % len(frames)
             self.draw_sprite(frames[self.anim_frame], anim_key)
@@ -316,11 +324,15 @@ class JerryAnimator(FloatLayout):
         self.thinking_event = Clock.schedule_interval(self.animate_thinking, 0.5)
 
     def animate_thinking(self, dt):
-        frames = self.sprites["thinking"]
-        self.anim_frame = (self.anim_frame + 1) % len(frames)
-        self.draw_sprite(frames[self.anim_frame], 'thinking')
+        if hasattr(self, 'sprites') and 'thinking' in self.sprites:
+            frames = self.sprites["thinking"]
+            self.anim_frame = (self.anim_frame + 1) % len(frames)
+            self.draw_sprite(frames[self.anim_frame], 'thinking')
 
     def draw_sprite(self, data, anim_key):
+        if self.width == 0 or self.height == 0:
+            return
+            
         self.canvas.clear()
         pixel_size = self.width / 18
         offset_x = (self.width - (16 * pixel_size)) / 2
@@ -365,7 +377,16 @@ class JerryAnimator(FloatLayout):
 class SplashScreen(Screen):
     def on_enter(self):
         layout = BoxLayout()
-        splash = Image(source='assets/new_splash.png', allow_stretch=True, keep_ratio=False)
+        # Check if splash image exists, use placeholder if not
+        try:
+            if os.path.exists('assets/new_splash.png'):
+                splash = Image(source='assets/new_splash.png', allow_stretch=True, keep_ratio=False)
+            else:
+                splash = Label(text='HUSH\nLoading...', font_size='24sp', halign='center')
+        except Exception as e:
+            print(f"Error loading splash image: {e}")
+            splash = Label(text='HUSH\nLoading...', font_size='24sp', halign='center')
+        
         layout.add_widget(splash)
         self.add_widget(layout)
         
@@ -384,72 +405,104 @@ class JerryScreen(Screen):
         self.jerry_ai = None
 
     def on_enter(self):
-        if not self.jerry_ai:
-            self.jerry_ai = MDApp.get_running_app().jerry_ai
+        app = MDApp.get_running_app()
+        if app and hasattr(app, 'jerry_ai'):
+            self.jerry_ai = app.jerry_ai
         
         Clock.schedule_once(self.setup_screen)
 
     def setup_screen(self, dt):
         self.update_ui()
-        if not self.ids.chat_log.children:
-            self.add_message("Jerry", "It's good to see you again.")
-            self.ids.user_entry.focus = True
+        # Check if chat_log exists before accessing
+        if hasattr(self, 'ids') and hasattr(self.ids, 'chat_log'):
+            if not self.ids.chat_log.children:
+                self.add_message("Jerry", "It's good to see you again.")
+            if hasattr(self.ids, 'user_entry'):
+                self.ids.user_entry.focus = True
         
-        MDApp.get_running_app().update_affirmation_banner(self.name)
+        app = MDApp.get_running_app()
+        if app and hasattr(app, 'update_affirmation_banner'):
+            app.update_affirmation_banner(self.name)
 
     def update_needs(self):
-        if self.jerry_ai:
+        if self.jerry_ai and hasattr(self.jerry_ai, 'companion'):
             self.jerry_ai.companion.update_needs()
 
     def update_ui(self, *args):
-        if not self.jerry_ai:
+        if not self.jerry_ai or not hasattr(self.jerry_ai, 'companion'):
             return
 
         self.jerry_ai.companion.update_needs()
-        self.ids.clarity_bar.value = self.jerry_ai.needs['clarity']
-        self.ids.insight_bar.value = self.jerry_ai.needs['insight']
-        self.ids.calm_bar.value = self.jerry_ai.needs['calm']
-        self.ids.level_label.text = f"Level {self.jerry_ai.companion.level}"
-        self.ids.xp_bar.text = f"XP: {self.jerry_ai.companion.xp} / {self.jerry_ai.companion.xp_to_next_level}"
+        
+        # Safely access UI elements
+        if hasattr(self, 'ids'):
+            if hasattr(self.ids, 'clarity_bar'):
+                self.ids.clarity_bar.value = self.jerry_ai.needs['clarity']
+            if hasattr(self.ids, 'insight_bar'):
+                self.ids.insight_bar.value = self.jerry_ai.needs['insight']
+            if hasattr(self.ids, 'calm_bar'):
+                self.ids.calm_bar.value = self.jerry_ai.needs['calm']
+            if hasattr(self.ids, 'level_label'):
+                self.ids.level_label.text = f"Level {self.jerry_ai.companion.level}"
+            if hasattr(self.ids, 'xp_bar'):
+                self.ids.xp_bar.text = f"XP: {self.jerry_ai.companion.xp} / {self.jerry_ai.companion.xp_to_next_level}"
 
         if self.jerry_ai.companion.level > self.last_known_level:
             self.check_for_evolution(self.jerry_ai.companion.level)
             self.last_known_level = self.jerry_ai.companion.level
 
     def check_for_evolution(self, current_level):
-        animator = self.ids.animator
-        title_label = self.ids.jerry_title_label
-        
-        evolution_stage = current_level // 10
+        if not hasattr(self, 'ids'):
+            return
+            
+        if hasattr(self.ids, 'animator'):
+            animator = self.ids.animator
+            evolution_stage = current_level // 10
+            animator.evolve(evolution_stage)
 
-        animator.evolve(evolution_stage)
-
-        if evolution_stage == 1:
-            title_label.text = "Jerry the Listener"
-        elif evolution_stage == 2:
-            title_label.text = "Calm Companion"
-        elif evolution_stage == 3:
-            title_label.text = "Beacon of Insight"
-        else:
-            title_label.text = ""
+        if hasattr(self.ids, 'jerry_title_label'):
+            title_label = self.ids.jerry_title_label
+            evolution_stage = current_level // 10
+            
+            if evolution_stage == 1:
+                title_label.text = "Jerry the Listener"
+            elif evolution_stage == 2:
+                title_label.text = "Calm Companion"
+            elif evolution_stage == 3:
+                title_label.text = "Beacon of Insight"
+            else:
+                title_label.text = ""
 
     def send_message(self):
+        if not hasattr(self, 'ids') or not hasattr(self.ids, 'user_entry'):
+            return
+            
         user_text = self.ids.user_entry.text.strip()
         if not user_text:
             return
         
         self.add_message("You", user_text)
         self.ids.user_entry.text = ""
-        self.jerry_ai.get_response_thread(user_text, self.handle_ai_response)
+        
+        if self.jerry_ai:
+            self.jerry_ai.get_response_thread(user_text, self.handle_ai_response)
         
     def handle_ai_response(self, response):
         if response.startswith("ACTION:"):
-            MDApp.get_running_app().root.ids.sm.current = response.split(":")[1].strip()
+            app = MDApp.get_running_app()
+            if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+                app.root.ids.sm.current = response.split(":")[1].strip()
         else:
             self.add_message("Jerry", response)
 
     def add_message(self, speaker, message):
+        if not hasattr(self, 'ids') or not hasattr(self.ids, 'chat_log'):
+            return
+            
         app = MDApp.get_running_app()
+        if not app:
+            return
+            
         speaker_color = app.theme_cls.primary_color if speaker == 'Jerry' else app.theme_cls.accent_color
         
         message_label = MDLabel(
@@ -469,8 +522,9 @@ class JerryScreen(Screen):
         self.scroll_to_bottom()
         
     def scroll_to_bottom(self):
-        scroll_view = self.ids.scroller
-        Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0), 0.1)
+        if hasattr(self, 'ids') and hasattr(self.ids, 'scroller'):
+            scroll_view = self.ids.scroller
+            Clock.schedule_once(lambda dt: setattr(scroll_view, 'scroll_y', 0), 0.1)
 
 class SettingsScreen(Screen):
     def __init__(self, **kwargs):
@@ -480,59 +534,77 @@ class SettingsScreen(Screen):
     def on_enter(self):
         app = MDApp.get_running_app()
         
-        if not self.is_first_setup:
+        if not self.is_first_setup and app and hasattr(app, 'update_affirmation_banner'):
             app.update_affirmation_banner(self.name)
         
         self.load_current_settings()
 
     def load_current_settings(self):
         app = MDApp.get_running_app()
-        if app.api_key:
+        if app and hasattr(app, 'api_key') and app.api_key and hasattr(self, 'ids') and hasattr(self.ids, 'api_key_input'):
             self.ids.api_key_input.text = app.api_key
 
     def save_api_key(self):
+        if not hasattr(self, 'ids') or not hasattr(self.ids, 'api_key_input'):
+            return
+            
         api_key = self.ids.api_key_input.text.strip()
-        app_dir = app.user_data_dir
-        app.set_api_key(api_key)
+        app = MDApp.get_running_app()
+        if app and hasattr(app, 'set_api_key'):
+            app.set_api_key(api_key)
 
         self.show_message("API key saved successfully!")
 
         if self.is_first_setup:
             self.is_first_setup = False
-            app.root.ids.sm.current = "splash"
+            if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+                app.root.ids.sm.current = "splash"
         else:
-            app.root.ids.sm.current = "jerry"
+            if app and hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+                app.root.ids.sm.current = "jerry"
        
     def skip_setup(self):
         if self.is_first_setup:
             app = MDApp.get_running_app()
-            app.setup_completed = True
-            app.save_settings()
-            self.is_first_setup = False
-            app.root.ids.sm.current = "splash"
+            if app:
+                app.setup_completed = True
+                if hasattr(app, 'save_settings'):
+                    app.save_settings()
+                self.is_first_setup = False
+                if hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+                    app.root.ids.sm.current = "splash"
 
     def show_message(self, message):
-        self.ids.message_label.text = message
-        self.ids.message_label.opacity = 1
-        
-        def fade_message(dt):
-            anim = Animation(opacity=0, duration=0.5)
-            anim.start(self.ids.message_label)
-        
-        Clock.schedule_once(fade_message, 3)
+        if hasattr(self, 'ids') and hasattr(self.ids, 'message_label'):
+            self.ids.message_label.text = message
+            self.ids.message_label.opacity = 1
+            
+            def fade_message(dt):
+                anim = Animation(opacity=0, duration=0.5)
+                anim.start(self.ids.message_label)
+            
+            Clock.schedule_once(fade_message, 3)
 
 class CheckinScreen(Screen):
     checkin_step = NumericProperty(0)
     
     def on_enter(self):
-        MDApp.get_running_app().update_affirmation_banner(self.name)
+        app = MDApp.get_running_app()
+        if app and hasattr(app, 'update_affirmation_banner'):
+            app.update_affirmation_banner(self.name)
         self.checkin_data = {}
         self.checkin_step = 0
         self.display_step()
 
     def display_step(self):
+        if not hasattr(self, 'ids') or not hasattr(self.ids, 'checkin_content'):
+            return
+            
         self.ids.checkin_content.clear_widgets()
         app = MDApp.get_running_app()
+        if not app:
+            return
+            
         theme_cls = app.theme_cls
 
         steps = [
@@ -547,8 +619,10 @@ class CheckinScreen(Screen):
 
         title, choices, key = steps[self.checkin_step]
         
-        self.ids.progress_bar.value = (self.checkin_step + 1) / len(steps) * 100
-        self.ids.checkin_title_label.text = title
+        if hasattr(self.ids, 'progress_bar'):
+            self.ids.progress_bar.value = (self.checkin_step + 1) / len(steps) * 100
+        if hasattr(self.ids, 'checkin_title_label'):
+            self.ids.checkin_title_label.text = title
 
         button_layout = GridLayout(cols=1, spacing=dp(15), size_hint_y=None)
         button_layout.bind(minimum_height=button_layout.setter('height'))
@@ -572,18 +646,28 @@ class CheckinScreen(Screen):
 
     def complete_checkin(self):
         app = MDApp.get_running_app()
+        if not app:
+            return
+            
         summary = f"Emotionally feeling {self.checkin_data.get('emotion', 'N/A')}, physically {self.checkin_data.get('physical', 'N/A')}, mentally {self.checkin_data.get('mental', 'N/A')}."
         log_data = {"summary": summary, "details": self.checkin_data}
-        app.entries_log.add_entry("Check-in", log_data)
-        app.jerry_ai.companion.feed("clarity", 50)
-        app.jerry_ai.companion.add_xp(10)
-        app.root.ids.sm.current = 'jerry'
+        
+        if hasattr(app, 'entries_log'):
+            app.entries_log.add_entry("Check-in", log_data)
+        if hasattr(app, 'jerry_ai') and app.jerry_ai and hasattr(app.jerry_ai, 'companion'):
+            app.jerry_ai.companion.feed("clarity", 50)
+            app.jerry_ai.companion.add_xp(10)
+        
+        if hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+            app.root.ids.sm.current = 'jerry'
 
 class TherapyScreenBase(Screen):
     flow_step = NumericProperty(0)
 
     def on_enter(self):
-        MDApp.get_running_app().update_affirmation_banner(self.name)
+        app = MDApp.get_running_app()
+        if app and hasattr(app, 'update_affirmation_banner'):
+            app.update_affirmation_banner(self.name)
         self.flow_data = {}
         self.flow_step = 0
         self.questions = []
@@ -596,6 +680,9 @@ class TherapyScreenBase(Screen):
         pass
 
     def display_step(self):
+        if not hasattr(self, 'ids') or not hasattr(self.ids, 'content_box'):
+            return
+            
         content_box = self.ids.content_box
         content_box.clear_widgets()
         num_questions = len(self.questions)
@@ -607,9 +694,19 @@ class TherapyScreenBase(Screen):
             self.complete_flow()
 
     def display_question_step(self):
+        if not self.questions or self.flow_step >= len(self.questions):
+            return
+            
         question_data = self.questions[self.flow_step]
-        self.ids.title_label.text = question_data["question"]
-        self.ids.next_button.text = 'Next'
+        
+        if hasattr(self.ids, 'title_label'):
+            self.ids.title_label.text = question_data["question"]
+        if hasattr(self.ids, 'next_button'):
+            self.ids.next_button.text = 'Next'
+            
+        if not hasattr(self.ids, 'content_box'):
+            return
+            
         content_box = self.ids.content_box
         content_box.clear_widgets()
         
@@ -639,7 +736,10 @@ class TherapyScreenBase(Screen):
                 height=dp(100),
                 hint_text=question_data.get("hint", "")
             )
-            self.ids.next_button.bind(on_press=self.get_text_input_answer(question_data["key"], text_input))
+            # Clear existing bindings before adding new ones
+            if hasattr(self.ids, 'next_button'):
+                self.ids.next_button.unbind(on_press=self.get_text_input_answer)
+                self.ids.next_button.bind(on_press=self.get_text_input_answer(question_data["key"], text_input))
             content_box.add_widget(text_input)
 
     def get_text_input_answer(self, key, text_input):
@@ -653,6 +753,9 @@ class TherapyScreenBase(Screen):
         self.flow_data[key] = value
 
     def display_checklist_step(self):
+        if not hasattr(self.ids, 'title_label') or not hasattr(self.ids, 'next_button') or not hasattr(self.ids, 'content_box'):
+            return
+            
         self.ids.title_label.text = "Which cognitive distortions apply?"
         self.ids.next_button.text = 'Complete'
         content_box = self.ids.content_box
@@ -675,30 +778,38 @@ class TherapyScreenBase(Screen):
         scroll_view.add_widget(checklist_grid)
         content_box.add_widget(scroll_view)
         
-        self.ids.next_button.unbind(on_press=self.get_text_input_answer(None, None))
+        # Clear existing bindings
+        self.ids.next_button.unbind(on_press=self.get_text_input_answer)
         self.ids.next_button.bind(on_press=lambda x: self.complete_flow())
 
     def toggle_checklist_item(self, item, is_active):
         if is_active:
             if "distortions" not in self.flow_data:
                 self.flow_data["distortions"] = []
-            self.flow_data["distortions"].append(item)
+            if item not in self.flow_data["distortions"]:
+                self.flow_data["distortions"].append(item)
         else:
             if "distortions" in self.flow_data and item in self.flow_data["distortions"]:
                 self.flow_data["distortions"].remove(item)
 
     def complete_flow(self):
         app = MDApp.get_running_app()
-        app.entries_log.add_entry(self.entry_type, self.flow_data)
+        if not app:
+            return
+            
+        if hasattr(app, 'entries_log'):
+            app.entries_log.add_entry(self.entry_type, self.flow_data)
         
-        if self.entry_type == "CBT":
-            app.jerry_ai.companion.feed("insight", 50)
-            app.jerry_ai.companion.add_xp(20)
-        elif self.entry_type == "DBT":
-            app.jerry_ai.companion.feed("calm", 50)
-            app.jerry_ai.companion.add_xp(20)
+        if hasattr(app, 'jerry_ai') and app.jerry_ai and hasattr(app.jerry_ai, 'companion'):
+            if self.entry_type == "CBT":
+                app.jerry_ai.companion.feed("insight", 50)
+                app.jerry_ai.companion.add_xp(20)
+            elif self.entry_type == "DBT":
+                app.jerry_ai.companion.feed("calm", 50)
+                app.jerry_ai.companion.add_xp(20)
 
-        app.root.ids.sm.current = 'jerry'
+        if hasattr(app, 'root') and hasattr(app.root, 'ids') and hasattr(app.root.ids, 'sm'):
+            app.root.ids.sm.current = 'jerry'
 
 class CBTFlowScreen(TherapyScreenBase):
     def setup_flow(self):
@@ -717,13 +828,6 @@ class HushApp(MDApp):
     dialog = None
     affirmation_text = StringProperty("")
 
-    def app_dir(self):
-        if platform == "android":
-            from android.storage import app_storage_path
-            return app_storage_path()
-        else:
-            return os.path.dirname(os.path.abspath(__file__))
-    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         Window.bind(on_request_close=self.on_request_close)
@@ -735,18 +839,16 @@ class HushApp(MDApp):
     def build(self):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Indigo"
-        
         self.load_settings()
-
         return RootWidget()
 
     def load_settings(self):
         settings_path = os.path.join(self.user_data_dir, "app_settings.json")
-        
+
         if not os.path.exists(settings_path):
             self.save_settings()
             return
-            
+
         try:
             with open(settings_path, "r") as f:
                 settings = json.load(f)
@@ -762,75 +864,101 @@ class HushApp(MDApp):
             self.save_settings()
 
     def save_settings(self):
-        settings_path = os.path.join(self.user_data_dir, "app_settings.json")
-        settings = {
-            "theme_style": self.theme_cls.theme_style,
-            "font_size": self.font_size_multiplier,
-            "HUSHOS_API_KEY": self.api_key,
-            "setup_completed": self.setup_completed,
-        }
-        with open(settings_path, 'w') as f:
-            json.dump(settings, f, indent=4)
-            
+        try:
+            settings_path = os.path.join(self.user_data_dir, "app_settings.json")
+            settings = {
+                "theme_style": self.theme_cls.theme_style,
+                "font_size": self.font_size_multiplier,
+                "HUSHOS_API_KEY": self.api_key,
+                "setup_completed": self.setup_completed,
+            }
+            with open(settings_path, "w") as f:
+                json.dump(settings, f, indent=4)
+        except Exception as e:
+            print(f"Error saving settings: {e}")
+
     def toggle_theme_style(self):
         self.theme_cls.theme_style = "Dark" if self.theme_cls.theme_style == "Light" else "Light"
         self.save_settings()
-        
+
     def set_font_size(self, multiplier):
         self.font_size_multiplier = multiplier
         self.save_settings()
-        # You'll need to apply this to all labels/widgets.
-        # This is a conceptual implementation. A real app might need to
-        # iterate through a list of labels or use a more dynamic method.
-        # For now, let's just save the setting.
+
     def set_api_key(self, api_key):
         self.api_key = api_key.strip()
         self.setup_completed = True
         self.save_settings()
-        if hasattr(self, "jerry_ai"):
+        if hasattr(self, "jerry_ai") and self.jerry_ai:
             self.jerry_ai.api_key = self.api_key
             if self.api_key:
                 openai.api_key = self.api_key
 
     def on_start(self):
-        self.conversation_log_path = os.path.join(self.user_data_dir, "conversation_log.json")
-        self.jerry_memory_path = os.path.join(self.user_data_dir, "jerry_memory.json")
-        self.entries_filepath = os.path.join(self.user_data_dir, "entries.json")
-        
-        self.entries_log = EntriesLog(self.entries_filepath)
-        
-        self.root.ids.sm.add_widget(SettingsScreen(name='settings'))
-        self.root.ids.sm.add_widget(CheckinScreen(name='checkin'))
-        self.root.ids.sm.add_widget(CBTFlowScreen(name='cbt_flow'))
-        self.root.ids.sm.add_widget(DBTFlowScreen(name='dbt_flow'))
+        try:
+            self.conversation_log_path = os.path.join(self.user_data_dir, "conversation_log.json")
+            self.jerry_memory_path = os.path.join(self.user_data_dir, "jerry_memory.json")
+            self.entries_filepath = os.path.join(self.user_data_dir, "entries.json")
 
-        self.jerry_ai = JerryAI(
-            self.root.ids.jerry_screen.ids.animator,
-            self,
-            self.conversation_log_path,
-            self.jerry_memory_path
-        )
+            self.entries_log = EntriesLog(self.entries_filepath)
 
-        if not self.setup_completed:
-            self.root.ids.sm.current = 'settings'
-            self.root.ids.settings_screen.is_first_setup = True
-        else:
-            self.root.ids.sm.current = 'jerry'
-            
-        Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
-        self.update_affirmation_banner(self.root.ids.sm.current)
-        Clock.schedule_interval(lambda dt: self.update_affirmation_banner(), 10)
+            # Safely add screens
+            if hasattr(self.root, "ids") and "sm" in self.root.ids:
+                sm = self.root.ids.sm
+                sm.add_widget(SettingsScreen(name="settings"))
+                sm.add_widget(CheckinScreen(name="checkin"))
+                sm.add_widget(CBTFlowScreen(name="cbt_flow"))
+                sm.add_widget(DBTFlowScreen(name="dbt_flow"))
+
+            # Initialize JerryAI with safe access to animator
+            jerry_animator = None
+            if (
+                hasattr(self.root, "ids")
+                and "jerry_screen" in self.root.ids
+                and hasattr(self.root.ids.jerry_screen, "ids")
+                and "animator" in self.root.ids.jerry_screen.ids
+            ):
+                jerry_animator = self.root.ids.jerry_screen.ids.animator
+
+            self.jerry_ai = JerryAI(
+                jerry_animator,
+                self,
+                self.conversation_log_path,
+                self.jerry_memory_path,
+                self.api_key,
+            )
+
+            # Decide startup screen
+            if not self.setup_completed:
+                if hasattr(self.root, "ids") and "sm" in self.root.ids:
+                    self.root.ids.sm.current = "settings"
+                if hasattr(self.root, "ids") and "settings_screen" in self.root.ids:
+                    self.root.ids.settings_screen.is_first_setup = True
+            else:
+                if hasattr(self.root, "ids") and "sm" in self.root.ids:
+                    self.root.ids.sm.current = "jerry"
+
+            # Schedule Jerry updates
+            if hasattr(self, "jerry_ai") and self.jerry_ai:
+                Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
+            self.update_affirmation_banner(self.root.ids.sm.current)
+            Clock.schedule_interval(lambda dt: self.update_affirmation_banner(), 10)
+
+        except Exception as e:
+            print(f"Error in on_start: {e}")
 
     def on_stop(self):
-        if hasattr(self, 'jerry_ai'):
+        if hasattr(self, "jerry_ai"):
             self.jerry_ai.end_session()
-        Window.close()
+        # Window.close() removed – let the OS handle lifecycle
 
     def update_affirmation_banner(self, screen_name=None):
+        if not (hasattr(self.root, "ids") and "sm" in self.root.ids):
+            return
         if screen_name is None:
             screen_name = self.root.ids.sm.current
 
-        if screen_name == 'jerry' or screen_name == 'checkin':
+        if screen_name in ("jerry", "checkin"):
             self.affirmation_text = random.choice(AFFIRMATIONS)
         else:
             self.affirmation_text = ""
@@ -858,15 +986,17 @@ class HushApp(MDApp):
         self.dialog.open()
 
     def dismiss_dialog(self, obj):
-        self.dialog.dismiss()
+        if self.dialog:
+            self.dialog.dismiss()
 
     def on_request_close(self, *args):
         self.show_exit_dialog()
-        return True # Return True to indicate that we will handle the closing ourselves
+        return True  # Prevent default OS close, handle with dialog
+
 
 # --- Main Entry Point ---
-if __name__ == '__main__':
+if __name__ == "__main__":
     if not os.path.exists(ASSETS_PATH):
         print("Assets folder not found!")
-    
+
     HushApp().run()
