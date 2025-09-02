@@ -1255,90 +1255,70 @@ class HushApp(MDApp):
             print(f"[HushApp] set_api_key error: {e}")
 
     def on_start(self):
-        try:
-            # Ensure user data paths exist
-            try:
-                base_dir = self.user_data_dir
-            except Exception:
-                base_dir = os.path.dirname(os.path.abspath(__file__))
+        Clock.schedule_once(self._delayed_on_start, 0)
 
-            self.conversation_log_path = os.path.join(base_dir, "conversation_log.json")
-            self.jerry_memory_path = os.path.join(base_dir, "jerry_memory.json")
-            self.entries_filepath = os.path.join(base_dir, "entries.json")
+    def _delayed_on_start(self, dt):
+      try:
+        base_dir = getattr(self, 'user_data_dir', None)
+        if not base_dir:
+          base_dir = os.path.dirname(os.path.abspath(__file__))
+          
+          self.conversation_log_path = os.path.join(base_dir, "conversation_log.json")
+          self.jerry_memory_path = os.path.join(base_dir, "jerry_memory.json")
+          self.entries_filepath = os.path.join(base_dir, "entries.json")
 
-            self.entries_log = EntriesLog(self.entries_filepath)
+          self.entries_log = EntriesLog(self.entries_filepath)
 
             # Safely add screens if screen manager exists in root ids
-            if hasattr(self.root, "ids") and "sm" in self.root.ids:
-                sm = self.root.ids.sm
-                # avoid adding duplicates; check names
-                existing_names = set()
-                for w in sm.children:
-                    if hasattr(w, 'name'):
-                        existing_names.add(w.name)
-                if 'settings' not in existing_names:
-                    sm.add_widget(SettingsScreen(name="settings"))
-                if 'checkin' not in existing_names:
-                    sm.add_widget(CheckinScreen(name="checkin"))
-                if 'cbt_flow' not in existing_names:
-                    sm.add_widget(CBTFlowScreen(name="cbt_flow"))
-                if 'dbt_flow' not in existing_names:
-                    sm.add_widget(DBTFlowScreen(name="dbt_flow"))
+          sm = getattr(self.root.ids, "sm", None)
+          if sm:
+            existing_names = {w.name for w in sm.children if hasattr(w, 'name')}
+            screens_to_add = [
+              (SettingsScreen, "settings"),
+              (CheckinScreen, "checkin"),
+              (CBTFlowScreen, "cbt_flow"),
+              (DBTFlowScreen, "dbt_flow"),
+            ]
+            for screen_cls, name in screens_to_add:
+              if name not in existing_names:
+                sm.add_widget(screen_cls(name=name))
 
             # Initialize JerryAI with safe access to animator
             jerry_animator = None
-            if (
-                hasattr(self.root, "ids")
-                and "jerry_screen" in self.root.ids
-                and hasattr(self.root.ids.jerry_screen, "ids")
-                and "animator" in self.root.ids.jerry_screen.ids
-            ):
-                jerry_animator = self.root.ids.jerry_screen.ids.animator
+            js = getattr(self.root.ids, "jerry_screen", None)
+            if js:
+              jerry_animator = getattr(js.ids, "animator", None)
 
-            self.jerry_ai = JerryAI(
+              self.jerry_ai = JerryAI(
                 jerry_animator,
                 self,
                 self.conversation_log_path,
                 self.jerry_memory_path,
-                self.api_key,
-            )
+                getattr(self, 'api_key', None),
+              )
 
             # Decide startup screen
-            if not self.setup_completed:
-                if hasattr(self.root, "ids") and "sm" in self.root.ids:
-                    self.root.ids.sm.current = "settings"
-                # flag first-setup if settings_screen widget is named differently,
-                # the SettingsScreen added above uses name 'settings'
-                if hasattr(self.root, "ids") and "settings_screen" in self.root.ids:
-                    try:
-                        self.root.ids.settings_screen.is_first_setup = True
-                    except Exception:
-                        pass
-                # if using the 'settings' name in sm children, set attribute if present
-                try:
-                    if hasattr(self.root, "ids") and 'sm' in self.root.ids:
-                        for w in self.root.ids.sm.children:
-                            if getattr(w, 'name', '') == 'settings':
-                                try:
-                                    w.is_first_setup = True
-                                except Exception:
-                                    pass
-                except Exception:
-                    pass
+            if not getattr(self, 'setup_completed', False):
+              if sm:
+                sm.current = "settings"
+                for w in sm.children:
+                  if getattr(w, 'name', '') == 'settings':
+                    setattr(w, 'is_first_setup', True)
             else:
-                if hasattr(self.root, "ids") and "sm" in self.root.ids:
-                    self.root.ids.sm.current = "jerry"
+              is sm:
+              sm.current = "jerry"
 
             # Schedule Jerry updates
             if hasattr(self, "jerry_ai") and self.jerry_ai:
                 Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
-            # Update affirmation banner safely (only if sm exists)
-            if hasattr(self.root, "ids") and "sm" in self.root.ids:
-                try:
-                    self.update_affirmation_banner(self.root.ids.sm.current)
-                except Exception:
-                    pass
+            
             Clock.schedule_interval(lambda dt: self.update_affirmation_banner(), 10)
+            
+            if sm:
+              try:
+                self.update_affirmation_banner(sm.current)
+              except Exception:
+                pass
 
         except Exception as e:
             print(f"[HushApp] Error in on_start: {e}")
