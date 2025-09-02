@@ -738,7 +738,7 @@ class HushApp(MDApp):
         
         self.load_settings()
 
-        return self.root
+        return RootWidget()
 
     def load_settings(self):
         settings_path = os.path.join(self.user_data_dir, "app_settings.json")
