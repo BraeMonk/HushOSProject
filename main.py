@@ -498,7 +498,7 @@ class SettingsScreen(Screen):
 
     def save_api_key(self):
         api_key = self.ids.api_key_input.text.strip()
-        app_dir = MDApp.get_running_app()
+        app_dir = app.user_data_dir
         app.set_api_key(api_key)
 
         self.show_message("API key saved successfully!")
