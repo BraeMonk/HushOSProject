@@ -720,7 +720,7 @@ class HushApp(MDApp):
     def app_dir(self):
         if platform == "android":
             from android.storage import app_storage_path
-            app_dir = app_storage_path()
+            return app_storage_path()
         else:
             return os.path.dirname(os.path.abspath(__file__))
     
@@ -737,24 +737,6 @@ class HushApp(MDApp):
         self.theme_cls.primary_palette = "Indigo"
         
         self.load_settings()
-       
-        self.conversation_log_path = os.path.join(self.user_data_dir, "conversation_log.json")
-        self.jerry_memory_path = os.path.join(self.user_data_dir, "jerry_memory.json")
-        self.entries_filepath = os.path.join(self.user_data_dir, "entries.json")
-        
-        self.jerry_ai = JerryAI(self.root.ids.jerry_screen.ids.animator, self, self.conversation_log_path, self.jerry_memory_path)
-        self.entries_log = EntriesLog(self.entries_filepath)
-        
-        self.root.ids.sm.add_widget(SettingsScreen(name='settings'))
-        self.root.ids.sm.add_widget(CheckinScreen(name='checkin'))
-        self.root.ids.sm.add_widget(CBTFlowScreen(name='cbt_flow'))
-        self.root.ids.sm.add_widget(DBTFlowScreen(name='dbt_flow'))
-
-        if not self.setup_completed:
-            self.root.ids.sm.current = 'settings'
-            self.root.ids.settings_screen.is_first_setup = True
-        else:
-            self.root.ids.sm.current = 'splash'
 
         return self.root
 
@@ -811,6 +793,30 @@ class HushApp(MDApp):
                 openai.api_key = self.api_key
 
     def on_start(self):
+        self.conversation_log_path = os.path.join(self.user_data_dir, "conversation_log.json")
+        self.jerry_memory_path = os.path.join(self.user_data_dir, "jerry_memory.json")
+        self.entries_filepath = os.path.join(self.user_data_dir, "entries.json")
+        
+        self.entries_log = EntriesLog(self.entries_filepath)
+        
+        self.root.ids.sm.add_widget(SettingsScreen(name='settings'))
+        self.root.ids.sm.add_widget(CheckinScreen(name='checkin'))
+        self.root.ids.sm.add_widget(CBTFlowScreen(name='cbt_flow'))
+        self.root.ids.sm.add_widget(DBTFlowScreen(name='dbt_flow'))
+
+        self.jerry_ai = JerryAI(
+            self.root.ids.jerry_screen.ids.animator,
+            self,
+            self.conversation_log_path,
+            self.jerry_memory_path
+        )
+
+        if not self.setup_completed:
+            self.root.ids.sm.current = 'settings'
+            self.root.ids.settings_screen.is_first_setup = True
+        else:
+            self.root.ids.sm.current = 'splash'
+            
         Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
         self.update_affirmation_banner(self.root.ids.sm.current)
         Clock.schedule_interval(lambda dt: self.update_affirmation_banner(), 10)
