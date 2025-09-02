@@ -815,7 +815,7 @@ class HushApp(MDApp):
             self.root.ids.sm.current = 'settings'
             self.root.ids.settings_screen.is_first_setup = True
         else:
-            self.root.ids.sm.current = 'splash'
+            self.root.ids.sm.current = 'jerry'
             
         Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
         self.update_affirmation_banner(self.root.ids.sm.current)
