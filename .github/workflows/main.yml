@@ -1,4 +1,4 @@
-name: Build HushOS APK
+name: Build Jerry APK
 on:
   push:
     branches:
