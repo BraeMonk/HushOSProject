@@ -1321,13 +1321,14 @@ class HushApp(MDApp):
                 pass
               except Exception as e:
                 print(f"[HushApp] Error in on_start: {e}")
-
+                
+                
     def on_stop(self):
-        try:
-            if hasattr(self, "jerry_ai"):
-                self.jerry_ai.end_session()
-        except Exception as e:
-            print(f"[HushApp] on_stop error: {e}")
+      try:
+        if hasattr(self, "jerry_ai"):
+          self.jerry_ai.end_session()
+      except Exception as e:
+        print(f"[HushApp] on_stop error: {e}")
         # Let the OS manage window closing and lifecycle
 
     def update_affirmation_banner(self, screen_name=None):
