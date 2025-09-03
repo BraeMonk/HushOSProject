@@ -1331,20 +1331,20 @@ class HushApp(MDApp):
         # Let the OS manage window closing and lifecycle
 
        
-     def update_affirmation_banner(self, screen_name=None):
-       # If screen_name not provided, try to determine from screen manager
-       try:
-         if not (hasattr(self.root, "ids") and "sm" in self.root.ids):
-           return
-           if screen_name is None:
-             screen_name = self.root.ids.sm.current
+    def update_affirmation_banner(self, screen_name=None):
+      # If screen_name not provided, try to determine from screen manager
+      try:
+        if not (hasattr(self.root, "ids") and "sm" in self.root.ids):
+          return
+          if screen_name is None:
+            screen_name = self.root.ids.sm.current
              
-             if screen_name in ("jerry", "checkin"):
-               self.affirmation_text = random.choice(AFFIRMATIONS)
-             else:
-               self.affirmation_text = ""
-       except Exception as e:
-         print(f"[HushApp] update_affirmation_banner error: {e}")
+            if screen_name in ("jerry", "checkin"):
+              self.affirmation_text = random.choice(AFFIRMATIONS)
+            else:
+              self.affirmation_text = ""
+      except Exception as e:
+        print(f"[HushApp] update_affirmation_banner error: {e}")
          
      def show_exit_dialog(self):
        try:
