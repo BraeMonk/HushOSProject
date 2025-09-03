@@ -1258,6 +1258,7 @@ class HushApp(MDApp):
       Clock.schedule_once(self._delayed_on_start, 0)
       
     def _delayed_on_start(self, dt):
+      sm = None
       try:
         base_dir = getattr(self, 'user_data_dir', None)
         if not base_dir:
@@ -1270,17 +1271,17 @@ class HushApp(MDApp):
           
           # Safely add screens if screen manager exists in root ids
           sm = getattr(self.root.ids, "sm", None)
-        if sm:
-          existing_names = {w.name for w in sm.children if hasattr(w, 'name')}
-          screens_to_add = [
-            (SettingsScreen, "settings"),
-            (CheckinScreen, "checkin"),
-            (CBTFlowScreen, "cbt_flow"),
-            (DBTFlowScreen, "dbt_flow"),
-          ]
-          for screen_cls, name in screens_to_add:
-            if name not in existing_names:
-              sm.add_widget(screen_cls(name=name))
+          if sm:
+            existing_names = {w.name for w in sm.children if hasattr(w, 'name')}
+            screens_to_add = [
+              (SettingsScreen, "settings"),
+              (CheckinScreen, "checkin"),
+              (CBTFlowScreen, "cbt_flow"),
+              (DBTFlowScreen, "dbt_flow"),
+            ]
+            for screen_cls, name in screens_to_add:
+              if name not in existing_names:
+                sm.add_widget(screen_cls(name=name))
               
         # Initialize JerryAI with safe access to animator
         jerry_animator = None
