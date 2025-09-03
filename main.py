@@ -1255,8 +1255,8 @@ class HushApp(MDApp):
             print(f"[HushApp] set_api_key error: {e}")
 
     def on_start(self):
-        Clock.schedule_once(self._delayed_on_start, 0)
-
+      Clock.schedule_once(self._delayed_on_start, 0)
+      
     def _delayed_on_start(self, dt):
       try:
         base_dir = getattr(self, 'user_data_dir', None)
@@ -1269,7 +1269,7 @@ class HushApp(MDApp):
 
           self.entries_log = EntriesLog(self.entries_filepath)
 
-            # Safely add screens if screen manager exists in root ids
+          # Safely add screens if screen manager exists in root ids
           sm = getattr(self.root.ids, "sm", None)
           if sm:
             existing_names = {w.name for w in sm.children if hasattr(w, 'name')}
@@ -1288,7 +1288,6 @@ class HushApp(MDApp):
             js = getattr(self.root.ids, "jerry_screen", None)
             if js:
               jerry_animator = getattr(js.ids, "animator", None)
-
               self.jerry_ai = JerryAI(
                 jerry_animator,
                 self,
@@ -1317,12 +1316,9 @@ class HushApp(MDApp):
             if sm:
               try:
                 self.update_affirmation_banner(sm.current)
-              except Exception:
-                pass
               except Exception as e:
                 print(f"[HushApp] Error in on_start: {e}")
-                
-                
+                            
     def on_stop(self):
       try:
         if hasattr(self, "jerry_ai"):
