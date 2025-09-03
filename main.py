@@ -1253,7 +1253,7 @@ class HushApp(MDApp):
                     openai.api_key = self.api_key
         except Exception as e:
             print(f"[HushApp] set_api_key error: {e}")
-
+          
     def on_start(self):
       Clock.schedule_once(self._delayed_on_start, 0)
       
@@ -1319,68 +1319,68 @@ class HushApp(MDApp):
               except Exception as e:
                 print(f"[HushApp] Error in on_start: {e}")
                             
-    def on_stop(self):
-      try:
-        if hasattr(self, "jerry_ai"):
-          self.jerry_ai.end_session()
-      except Exception as e:
-        print(f"[HushApp] on_stop error: {e}")
-        # Let the OS manage window closing and lifecycle
+     def on_stop(self):
+       try:
+         if hasattr(self, "jerry_ai"):
+           self.jerry_ai.end_session()
+       except Exception as e:
+         print(f"[HushApp] on_stop error: {e}")
+         # Let the OS manage window closing and lifecycle
+       
+     def update_affirmation_banner(self, screen_name=None):
+       # If screen_name not provided, try to determine from screen manager
+       try:
+         if not (hasattr(self.root, "ids") and "sm" in self.root.ids):
+           return
+           if screen_name is None:
+             screen_name = self.root.ids.sm.current
+             
+             if screen_name in ("jerry", "checkin"):
+               self.affirmation_text = random.choice(AFFIRMATIONS)
+             else:
+               self.affirmation_text = ""
+       except Exception as e:
+         print(f"[HushApp] update_affirmation_banner error: {e}")
+         
+     def show_exit_dialog(self):
+       try:
+         if not self.dialog:
+           self.dialog = MDDialog(
+             title="Exit?",
+             text="Are you sure you want to exit?",
+             buttons=[
+               MDFlatButton(
+                 text="CANCEL",
+                 theme_text_color="Custom",
+                 text_color=self.theme_cls.primary_color,
+                 on_release=self.dismiss_dialog,
+               ),
+               MDRaisedButton(
+                 text="EXIT",
+                 theme_text_color="Custom",
+                 text_color=self.theme_cls.primary_color,
+                 on_release=lambda x: self.stop(),
+               ),
+             ],
+           )
+           self.dialog.open()
+       except Exception as e:
+         print(f"[HushApp] show_exit_dialog error: {e}")
 
-    def update_affirmation_banner(self, screen_name=None):
-        # If screen_name not provided, try to determine from screen manager
-        try:
-            if not (hasattr(self.root, "ids") and "sm" in self.root.ids):
-                return
-            if screen_name is None:
-                screen_name = self.root.ids.sm.current
+     def dismiss_dialog(self, obj):
+       try:
+         if self.dialog:
+           self.dialog.dismiss()
+       except Exception as e:
+         print(f"[HushApp] dismiss_dialog error: {e}")
 
-            if screen_name in ("jerry", "checkin"):
-                self.affirmation_text = random.choice(AFFIRMATIONS)
-            else:
-                self.affirmation_text = ""
-        except Exception as e:
-            print(f"[HushApp] update_affirmation_banner error: {e}")
-
-    def show_exit_dialog(self):
-        try:
-            if not self.dialog:
-                self.dialog = MDDialog(
-                    title="Exit Hush?",
-                    text="Are you sure you want to exit?",
-                    buttons=[
-                        MDFlatButton(
-                            text="CANCEL",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=self.dismiss_dialog,
-                        ),
-                        MDRaisedButton(
-                            text="EXIT",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=lambda x: self.stop(),
-                        ),
-                    ],
-                )
-            self.dialog.open()
-        except Exception as e:
-            print(f"[HushApp] show_exit_dialog error: {e}")
-
-    def dismiss_dialog(self, obj):
-        try:
-            if self.dialog:
-                self.dialog.dismiss()
-        except Exception as e:
-            print(f"[HushApp] dismiss_dialog error: {e}")
-
-    def on_request_close(self, *args):
-        # show dialog and prevent immediate close
-        try:
-            self.show_exit_dialog()
-            return True
-        except Exception:
-            return True
+     def on_request_close(self, *args):
+       # show dialog and prevent immediate close
+       try:
+         self.show_exit_dialog()
+         return True
+       except Exception:
+         return True
 
 # --- Main Entry Point ---
 if __name__ == "__main__":
