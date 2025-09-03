@@ -1266,66 +1266,70 @@ class HushApp(MDApp):
           self.conversation_log_path = os.path.join(base_dir, "conversation_log.json")
           self.jerry_memory_path = os.path.join(base_dir, "jerry_memory.json")
           self.entries_filepath = os.path.join(base_dir, "entries.json")
-
           self.entries_log = EntriesLog(self.entries_filepath)
-
+          
           # Safely add screens if screen manager exists in root ids
           sm = getattr(self.root.ids, "sm", None)
+        if sm:
+          existing_names = {w.name for w in sm.children if hasattr(w, 'name')}
+          screens_to_add = [
+            (SettingsScreen, "settings"),
+            (CheckinScreen, "checkin"),
+            (CBTFlowScreen, "cbt_flow"),
+            (DBTFlowScreen, "dbt_flow"),
+          ]
+          for screen_cls, name in screens_to_add:
+            if name not in existing_names:
+              sm.add_widget(screen_cls(name=name))
+              
+        # Initialize JerryAI with safe access to animator
+        jerry_animator = None
+        js = getattr(self.root.ids, "jerry_screen", None)
+        if js:
+          jerry_animator = getattr(js.ids, "animator", None)
+          self.jerry_ai = JerryAI(
+            jerry_animator,
+            self,
+            self.conversation_log_path,
+            self.jerry_memory_path,
+            getattr(self, 'api_key', None),
+          )
+          
+        # Decide startup screen
+        if not getattr(self, 'setup_completed', False):
           if sm:
-            existing_names = {w.name for w in sm.children if hasattr(w, 'name')}
-            screens_to_add = [
-              (SettingsScreen, "settings"),
-              (CheckinScreen, "checkin"),
-              (CBTFlowScreen, "cbt_flow"),
-              (DBTFlowScreen, "dbt_flow"),
-            ]
-            for screen_cls, name in screens_to_add:
-              if name not in existing_names:
-                sm.add_widget(screen_cls(name=name))
-
-            # Initialize JerryAI with safe access to animator
-            jerry_animator = None
-            js = getattr(self.root.ids, "jerry_screen", None)
-            if js:
-              jerry_animator = getattr(js.ids, "animator", None)
-              self.jerry_ai = JerryAI(
-                jerry_animator,
-                self,
-                self.conversation_log_path,
-                self.jerry_memory_path,
-                getattr(self, 'api_key', None),
-              )
-
-            # Decide startup screen
-            if not getattr(self, 'setup_completed', False):
-              if sm:
-                sm.current = "settings"
-                for w in sm.children:
-                  if getattr(w, 'name', '') == 'settings':
-                    setattr(w, 'is_first_setup', True)
-            else:
-              if sm:
-                sm.current = "jerry"
-
-            # Schedule Jerry updates
-            if hasattr(self, "jerry_ai") and self.jerry_ai:
-                Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
+            sm.current = "settings"
+            for w in sm.children:
+              if getattr(w, 'name', '') == 'settings':
+                setattr(w, 'is_first_setup', True)
+              
+              else:
+                if sm:
+                  sm.current = "jerry"
+                  
+        # Schedule Jerry updates
+        if hasattr(self, "jerry_ai") and self.jerry_ai:
+          Clock.schedule_interval(lambda dt: self.jerry_ai.companion.update_needs(), 60)
+          
+          Clock.schedule_interval(lambda dt: self.update_affirmation_banner(), 10)
+          
+          if sm:
+            try:
+              self.update_affirmation_banner(sm.current)
+            except Exception as e:
+              print(f"[HushApp] Error in on_start: {e}")
             
-            Clock.schedule_interval(lambda dt: self.update_affirmation_banner(), 10)
-            
-            if sm:
-              try:
-                self.update_affirmation_banner(sm.current)
-              except Exception as e:
-                print(f"[HushApp] Error in on_start: {e}")
-                            
-     def on_stop(self):
-       try:
-         if hasattr(self, "jerry_ai"):
-           self.jerry_ai.end_session()
-       except Exception as e:
-         print(f"[HushApp] on_stop error: {e}")
-         # Let the OS manage window closing and lifecycle
+      except Exception as e:
+      print(f"[HushApp] _delayed_on_start error: {e}")
+      
+    def on_stop(self):
+      try:
+        if hasattr(self, "jerry_ai"):
+          self.jerry_ai.end_session()
+      except Exception as e:
+        print(f"[HushApp] on_stop error: {e}")
+        # Let the OS manage window closing and lifecycle
+
        
      def update_affirmation_banner(self, screen_name=None):
        # If screen_name not provided, try to determine from screen manager
