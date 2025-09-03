@@ -1141,6 +1141,12 @@ class DBTFlowScreen(TherapyScreenBase):
         self.checklist = DBT_SKILLS
         self.entry_type = "DBT"
 
+class EntriesScreen(Screen):
+  pass
+
+class HistoryScreen(Screen):
+  pass
+
 # --- MAIN APP CLASS ---
 class HushApp(MDApp):
     dialog = None
