@@ -1319,9 +1319,8 @@ class HushApp(MDApp):
                 self.update_affirmation_banner(sm.current)
               except Exception:
                 pass
-
-        except Exception as e:
-            print(f"[HushApp] Error in on_start: {e}")
+              except Exception as e:
+                print(f"[HushApp] Error in on_start: {e}")
 
     def on_stop(self):
         try:
