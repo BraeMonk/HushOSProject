@@ -1181,9 +1181,9 @@ class HushScreen(Screen):
       if self._timer_event:
           self._timer_event.cancel()
           self._timer_event = None
-          self.timer_active = False
-          self._remaining_seconds = 180
-          self.timer_text = "03:00"
+      self.timer_active = False
+      self._remaining_seconds = 180
+      self.timer_text = "03:00"
   
 # --- MAIN APP CLASS ---
 class HushApp(MDApp):
