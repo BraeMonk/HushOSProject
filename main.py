@@ -1142,10 +1142,51 @@ class DBTFlowScreen(TherapyScreenBase):
         self.entry_type = "DBT"
 
 class EntriesScreen(Screen):
-  pass
+    # store journal entries as a list of strings
+    entries = ListProperty([])
+
+    def add_entry(self, text):
+        """Add a new journal entry dynamically."""
+        if text.strip():
+            self.entries.append(text.strip())
+            self.update_entries_display()
+
+    def update_entries_display(self):
+        container = self.ids.entries_text
+        container.clear_widgets()
+        from kivymd.uix.label import MDLabel
+        for entry in self.entries:
+            container.add_widget(MDLabel(
+                text=entry,
+                theme_text_color="Custom",
+                text_color=self.theme_cls.text_color,
+                halign="left",
+                adaptive_height=True
+            ))
+
 
 class HistoryScreen(Screen):
-  pass
+    # store history items as a list of strings
+    history = ListProperty([])
+
+    def add_history(self, text):
+        """Add a new conversation history line dynamically."""
+        if text.strip():
+            self.history.append(text.strip())
+            self.update_history_display()
+
+    def update_history_display(self):
+        container = self.ids.history_text
+        container.clear_widgets()
+        from kivymd.uix.label import MDLabel
+        for line in self.history:
+            container.add_widget(MDLabel(
+                text=line,
+                theme_text_color="Custom",
+                text_color=self.theme_cls.text_color,
+                halign="left",
+                adaptive_height=True
+            ))
 
 class HushScreen(Screen):
   timer_active = BooleanProperty(False)
