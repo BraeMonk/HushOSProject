@@ -1147,6 +1147,9 @@ class EntriesScreen(Screen):
 class HistoryScreen(Screen):
   pass
 
+class HushScreen(Screen):
+  pass
+  
 # --- MAIN APP CLASS ---
 class HushApp(MDApp):
     dialog = None
