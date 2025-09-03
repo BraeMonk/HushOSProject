@@ -1305,8 +1305,8 @@ class HushApp(MDApp):
                   if getattr(w, 'name', '') == 'settings':
                     setattr(w, 'is_first_setup', True)
             else:
-              is sm:
-              sm.current = "jerry"
+              if sm:
+                sm.current = "jerry"
 
             # Schedule Jerry updates
             if hasattr(self, "jerry_ai") and self.jerry_ai:
