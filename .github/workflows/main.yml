@@ -23,10 +23,6 @@ jobs:
           echo "Disk space after cleanup:"
           df -h
 
-      - name: Create .env file for Buildozer
-        run: |
-          echo "HUSHOS_API_KEY=${{ secrets.HUSHOS_API_KEY }}" > .env
-
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
@@ -34,7 +30,6 @@ jobs:
           buildozer_version: "1.5.0"
           command: |
             buildozer android clean
-            echo "HUSHOS_API_KEY=${{ secrets.HUSHOS_API_KEY }}" > .buildozer/android/app/data/.env
             buildozer -v android debug
         env:
           GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError
