@@ -1320,8 +1320,8 @@ class HushApp(MDApp):
               print(f"[HushApp] Error in on_start: {e}")
             
       except Exception as e:
-      print(f"[HushApp] _delayed_on_start error: {e}")
-      
+        print(f"[HushApp] _delayed_on_start error: {e}")
+        
     def on_stop(self):
       try:
         if hasattr(self, "jerry_ai"):
