@@ -1,10 +1,10 @@
 [app]
 # (str) Title of your application
-title = HushOS
+title = Jerry
 # (str) Package name
-package.name = hushos
+package.name = jerry
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.hushos
+package.domain = org.jerry
 # (str) Source code directory
 source.dir = .
 # (list) Source file extensions to include
@@ -17,7 +17,7 @@ version = 0.1
 # Added certifi for SSL certificate handling
 requirements = python3,kivy,kivymd,pillow,pyjnius,android,openssl,sqlite3,requests,urllib3,tqdm,certifi,openai,typing_extensions,pydantic,httpx,anyio,sniffio,charset_normalizer,distro,python-dotenv,idna
 # (str) Icon of the application
-icon.filename = %(source.dir)s/assets/icon.png
+icon.filename = %(source.dir)s/assets/JerryIcon.png
 # (str) Supported orientation
 orientation = portrait
 android.add_assets = assets
