@@ -1193,32 +1193,33 @@ class HushScreen(Screen):
   timer_text = StringProperty("03:00")  # initial display
   _remaining_seconds = NumericProperty(180)  # 3 minutes = 180s
   _timer_event = None
-
-    def start_stop_timer(self):
-        if not self.timer_active:
+  
+  def start_stop_timer(self):
+      if not self.timer_active:
             # Start timer
             self._remaining_seconds = 180
             self.timer_active = True
             self.update_timer_label()
             self._timer_event = Clock.schedule_interval(self._update_timer, 1)
-        else:
+            
+      else:
             # Stop timer
             self.stop_timer()
-
-    def _update_timer(self, dt):
-        if self._remaining_seconds > 0:
-            self._remaining_seconds -= 1
-            self.update_timer_label()
-        else:
+            
+  def _update_timer(self, dt):
+      if self._remaining_seconds > 0:
+        self._remaining_seconds -= 1
+        self.update_timer_label()
+      else:
             # Timer finished
             self.stop_timer()
             self.timer_text = "Done"
 
-    def update_timer_label(self):
-        minutes, seconds = divmod(self._remaining_seconds, 60)
-        self.timer_text = f"{minutes:02}:{seconds:02}"
+  def update_timer_label(self):
+    minutes, seconds = divmod(self._remaining_seconds, 60)
+    self.timer_text = f"{minutes:02}:{seconds:02}"
 
-    def stop_timer(self):
+  def stop_timer(self):
       if self._timer_event:
           self._timer_event.cancel()
           self._timer_event = None
