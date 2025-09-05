@@ -51,7 +51,7 @@ from kivy.core.window import Window
 from kivy.core.audio import SoundLoader
 from kivy.utils import platform, get_hex_from_color, get_color_from_hex
 from kivy.metrics import dp
-from kivy.graphics import Color, Ellipse, Rectangle
+from kivy.graphics import Color, Ellipse, Rectangle, InstructionGroup
 from kivy.lang import Builder
 from dotenv import load_dotenv
 
@@ -353,16 +353,11 @@ class JerryAnimator(FloatLayout):
             self.theme_cls = app.theme_cls
             self._define_sprites()
 
-            # Bind size and position changes to redraw
-            self.bind(
-                size=lambda *args: self.draw_sprite(self.sprites["content"][0], "content"),
-                pos=lambda *args: self.draw_sprite(self.sprites["content"][0], "content")
-            )
-        
-            # Force initial draw
-            self.draw_sprite(self.sprites["content"][0], "content")
-            # Start only if companion exists or will exist
-            self.start()
+        # initial draw — binds automatically
+        self.draw_sprite(self.sprites["content"][0], "content")
+
+        # start animation if companion exists
+        self.start()
 
     def _define_sprites(self):
         # Sprites: lists of 16x16 integer matrices, multiple frames per animation.
@@ -595,16 +590,21 @@ class JerryAnimator(FloatLayout):
             print(f"[JerryAnimator] animate_thinking error: {e}")
 
     def draw_sprite(self, data, anim_key):
-        # safety check for size
         if not data or self.width == 0 or self.height == 0:
             return
 
         try:
-            self.canvas.clear()
+            # Remove previous sprite instructions only, don't clear entire canvas
+            if hasattr(self, '_sprite_instructions'):
+                self.canvas.remove(self._sprite_instructions)
+            self._sprite_instructions = InstructionGroup()
+            self.canvas.add(self._sprite_instructions)
+
             pixel_size = self.width / 18
             offset_x = (self.width - (16 * pixel_size)) / 2
             offset_y = (self.height - (16 * pixel_size)) / 2
 
+            # colors
             body_c = (0.3, 0.6, 0.9, 1)
             outline_c = (0.5, 0.8, 1.0, 1)
             eye_c = (1, 1, 1, 1)
@@ -613,43 +613,49 @@ class JerryAnimator(FloatLayout):
             if self.evolution_level >= 1:
                 body_c = (0.4, 0.6, 1.0, 1)
                 outline_c = (0.6, 0.9, 1.0, 1)
-
             if self.evolution_level >= 3:
-                body_c = (body_c[0] * 0.9, body_c[1] * 0.9, body_c[2] * 0.7, 1)
+                body_c = (body_c[0]*0.9, body_c[1]*0.9, body_c[2]*0.7, 1)
                 feature_c = (1.0, 0.9, 0.5, 1)
-
             if anim_key == 'low_insight':
                 body_c = (body_c[0]*0.8, body_c[1]*0.8, body_c[2]*0.8, 1)
                 feature_c = (0.4, 0.57, 0.65, 1)
 
-            with self.canvas:
-                if self.evolution_level >= 2 and self.aura_color:
-                    try:
-                        self.canvas.add(self.aura_color)
-                    except Exception:
-                        pass
-                    aura_size = (16 * pixel_size + 40, 16 * pixel_size + 40)
-                    aura_pos = (offset_x - 20, offset_y - 20)
-                    Ellipse(pos=aura_pos, size=aura_size)
+            # draw aura if needed
+            if self.evolution_level >= 2 and self.aura_color:
+                try:
+                    self._sprite_instructions.add(self.aura_color)
+                except Exception:
+                    pass
+                aura_size = (16 * pixel_size + 40, 16 * pixel_size + 40)
+                aura_pos = (offset_x - 20, offset_y - 20)
+                self._sprite_instructions.add(Ellipse(pos=aura_pos, size=aura_size))
 
-                for y, row in enumerate(data):
-                    for x, p in enumerate(row):
-                        if p > 0:
-                            if p == 1:
-                                Color(*body_c)
-                            elif p == 2:
-                                Color(*eye_c)
-                            elif p == 3:
-                                Color(*outline_c)
-                            elif p == 4:
-                                Color(*feature_c)
-                            Rectangle(
-                                pos=(x * pixel_size + offset_x, self.height - (y + 1) * pixel_size - offset_y),
-                                size=(pixel_size, pixel_size)
-                            )
+            # draw pixels
+            for y, row in enumerate(data):
+                for x, p in enumerate(row):
+                    if p > 0:
+                        if p == 1:
+                            self._sprite_instructions.add(Color(*body_c))
+                        elif p == 2:
+                            self._sprite_instructions.add(Color(*eye_c))
+                        elif p == 3:
+                            self._sprite_instructions.add(Color(*outline_c))
+                        elif p == 4:
+                            self._sprite_instructions.add(Color(*feature_c))
+                        self._sprite_instructions.add(Rectangle(
+                            pos=(x * pixel_size + offset_x, self.height - (y + 1) * pixel_size - offset_y),
+                            size=(pixel_size, pixel_size)
+                        ))
+
+            # bind size and pos changes once
+            if not hasattr(self, '_sprite_bound'):
+                self.bind(size=lambda *a: self.draw_sprite(data, anim_key))
+                self.bind(pos=lambda *a: self.draw_sprite(data, anim_key))
+                self._sprite_bound = True
+
         except Exception as e:
             print(f"[JerryAnimator] draw_sprite error: {e}")
-
+      
 class SplashScreen(Screen):
     def on_enter(self):
         layout = BoxLayout()
