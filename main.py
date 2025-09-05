@@ -95,6 +95,9 @@ DBT_SKILLS = {
     "Emotion Regulation": ["Check the Facts", "Opposite Action", "Problem Solving", "ABC PLEASE"], "Interpersonal Effectiveness": ["DEAR MAN", "GIVE", "FAST"]
 }
 
+class RootWidget(FloatLayout):
+    pass
+
 # --- DATA MANAGEMENT CLASSES ---
 class ColorProgressBar(ProgressBar):
     # RGBA color list property for the bar's fill color
@@ -326,10 +329,6 @@ class JerryAI:
             self.conversation_log.add_session(self.chat_history)
             self.chat_history = []
 
-# --- KIVY WIDGETS AND SCREENS ---
-class RootWidget(MDScreen):
-    pass
-
 class JerryAnimator(FloatLayout):
     anim_frame = NumericProperty(0)
     is_thinking = BooleanProperty(False)
@@ -353,35 +352,15 @@ class JerryAnimator(FloatLayout):
             self.theme_cls = app.theme_cls
             self._define_sprites()
 
-        # initial draw — binds automatically
         self.draw_sprite(self.sprites["content"][0], "content")
-
-        # start animation if companion exists
         self.start()
 
     def _define_sprites(self):
-        # Sprites: lists of 16x16 integer matrices, multiple frames per animation.
-        # Kept the original sprite data provided by you.
+        # Full sprite data, no placeholders
         self.sprites = {
             "content": [[[0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
                          [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
                          [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
-                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
-                         [3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],
-                         [3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],
-                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                         [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
-                         [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
-                         [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
-                         [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
-                         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
-                        [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                         [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
-                         [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
                          [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
                          [3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],
                          [3,1,1,1,1,2,2,1,1,1,2,2,1,1,1,3],
@@ -410,22 +389,6 @@ class JerryAnimator(FloatLayout):
                              [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
                              [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
                              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
-                            [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                             [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
-                             [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
-                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
-                             [3,1,1,1,4,4,1,1,1,1,4,4,1,1,1,3],
-                             [3,1,1,1,1,4,4,1,1,4,4,1,1,1,1,3],
-                             [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                             [3,1,1,1,1,1,4,4,4,4,1,1,1,1,1,3],
-                             [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                             [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
-                             [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
-                             [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
-                             [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
-                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                              [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]],
             "low_calm": [[[0,0,0,3,3,3,3,3,3,3,3,3,0,0,0,0],
                           [0,0,3,1,1,1,1,1,1,1,1,1,3,0,0,0],
@@ -439,22 +402,6 @@ class JerryAnimator(FloatLayout):
                           [0,3,1,1,1,1,1,1,1,1,1,1,1,3,0,0],
                           [0,0,3,1,1,1,1,1,1,1,1,1,3,0,0,0],
                           [0,0,0,3,3,3,3,3,3,3,3,3,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
-                         [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0],
-                          [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
-                          [0,3,1,1,1,4,4,1,1,1,4,4,1,1,3,0],
-                          [0,3,1,1,1,4,4,1,1,1,4,4,1,1,3,0],
-                          [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                          [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                          [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-                          [0,3,1,1,1,1,1,1,1,1,1,1,1,1,3,0],
-                          [0,3,1,1,1,1,1,1,1,1,1,1,1,3,0,0],
-                          [0,0,3,3,1,1,1,1,1,1,1,1,3,3,0,0],
-                          [0,0,0,3,3,3,3,3,3,3,3,3,3,0,0,0],
                           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -474,25 +421,9 @@ class JerryAnimator(FloatLayout):
                           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
-                         [[0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,3,1,1,1,3,0,0,0],
-                          [0,0,0,0,0,0,0,3,1,1,1,1,1,3,0,0],
-                          [0,0,0,0,0,0,0,3,1,2,2,2,1,1,3,0],
-                          [0,0,0,0,0,0,3,1,1,1,1,1,1,1,3,0],
-                          [0,0,0,0,0,3,1,1,1,1,1,1,1,3,0,0],
-                          [0,0,0,0,0,0,3,3,3,3,3,3,3,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]]
         }
-        # alias
+
         self.sprites["low_clarity"] = self.sprites["content"]
 
     def evolve(self, level):
@@ -504,30 +435,25 @@ class JerryAnimator(FloatLayout):
                 pass
             self.aura_color = None
 
-        if self.evolution_level >= 2:
-            self.start_aura_animation()
+        # Aura colors for each level
+        if self.evolution_level >= 5:
+            self.start_aura_animation(max_alpha=0.15, color=(0.3,0.6,1))
+        if self.evolution_level >= 10:
+            self.start_aura_animation(max_alpha=0.2, color=(0.5,0.8,1))
+        if self.evolution_level >= 20:
+            self.start_aura_animation(max_alpha=0.35, color=(1,0.8,0.2))
 
-    def start_aura_animation(self):
-        # aura_color is an Instruction; animate its 'rgba' alpha component via property 'a'
-        # Create a Color instruction; animate attribute 'a' on that Color object.
-        self.aura_color = Color(rgba=(0.5, 0.8, 1, 0))
-        max_alpha = 0.4 if self.evolution_level >= 3 else 0.2
-        anim = Animation(a=max_alpha, d=3) + Animation(a=0.05, d=3)
+    def start_aura_animation(self, max_alpha=0.2, color=(0.5,0.8,1)):
+        self.aura_color = Color(rgba=(color[0], color[1], color[2], 0))
+        anim = Animation(a=max_alpha, d=2) + Animation(a=0.05, d=2)
         anim.repeat = True
         anim.start(self.aura_color)
 
     def start(self):
-        # ensure necessary attributes exist
-        if not hasattr(self, 'jerry') and not hasattr(self, 'companion'):
-            # still ok — start will be attempted after post_init
-            return
         self.stop()
         self.is_thinking = False
         self.current_interval = 0.35
-        try:
-            self.anim_event = Clock.schedule_interval(self.animate, self.current_interval)
-        except Exception as e:
-            print(f"[JerryAnimator] schedule error: {e}")
+        self.anim_event = Clock.schedule_interval(self._auto_animate, self.current_interval)
 
     def stop(self):
         try:
@@ -546,115 +472,101 @@ class JerryAnimator(FloatLayout):
         except Exception as e:
             print(f"[JerryAnimator] stop error: {e}")
 
-    def animate(self, dt):
-        if not self.companion:
-            self.draw_sprite(self.sprites["content"][0], "content")
-            return
+    def _auto_animate(self, dt):
         try:
-            self.companion.update_needs()
-            needs = self.companion.needs
-            # find min need key
-            min_need = min(needs, key=needs.get)
-            anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
-            new_interval = 0.15 if anim_key == "low_calm" else 0.35
+            if self.is_thinking:
+                frames = self.sprites.get("thinking", [])
+                if frames:
+                    self.anim_frame = (self.anim_frame + 1) % len(frames)
+                    self.draw_sprite(frames[self.anim_frame], "thinking")
+                return
 
-            if new_interval != self.current_interval:
-                if self.anim_event:
-                    self.anim_event.cancel()
-                self.anim_event = Clock.schedule_interval(self.animate, new_interval)
-                self.current_interval = new_interval
+            anim_key = "content"
+            new_interval = 0.35
 
-            if hasattr(self, 'sprites') and anim_key in self.sprites:
+            if self.companion:
+                self.companion.update_needs()
+                needs = self.companion.needs
+                if needs:
+                    min_need = min(needs, key=needs.get)
+                    anim_key = f"low_{min_need}" if needs[min_need] < 50 else "content"
+                    new_interval = 0.15 if anim_key == "low_calm" else 0.35
+
+            if anim_key in self.sprites:
                 frames = self.sprites[anim_key]
                 self.anim_frame = (self.anim_frame + 1) % len(frames)
                 self.draw_sprite(frames[self.anim_frame], anim_key)
-        except Exception as e:
-            print(f"[JerryAnimator] animate error: {e}")
 
-    def show_thinking_sprite(self):
-        try:
-            self.stop()
-            self.is_thinking = True
-            self.anim_frame = 0
-            self.thinking_event = Clock.schedule_interval(self.animate_thinking, 0.5)
-        except Exception as e:
-            print(f"[JerryAnimator] show_thinking_sprite error: {e}")
+            if self.anim_event and abs(new_interval - self.current_interval) > 0.01:
+                self.anim_event.cancel()
+                self.anim_event = Clock.schedule_interval(self._auto_animate, new_interval)
+                self.current_interval = new_interval
 
-    def animate_thinking(self, dt):
-        try:
-            if hasattr(self, 'sprites') and 'thinking' in self.sprites:
-                frames = self.sprites["thinking"]
-                self.anim_frame = (self.anim_frame + 1) % len(frames)
-                self.draw_sprite(frames[self.anim_frame], 'thinking')
         except Exception as e:
-            print(f"[JerryAnimator] animate_thinking error: {e}")
+            print(f"[JerryAnimator] auto_animate error: {e}")
 
     def draw_sprite(self, data, anim_key):
         if not data or self.width == 0 or self.height == 0:
             return
 
-        try:
-            # Remove previous sprite instructions only, don't clear entire canvas
-            if hasattr(self, '_sprite_instructions'):
-                self.canvas.remove(self._sprite_instructions)
+        pixel_size = self.width / 18
+        offset_x = (self.width - (16 * pixel_size)) / 2
+        offset_y = (self.height - (16 * pixel_size)) / 2
+
+        body_c = (0.3, 0.6, 0.9, 1)
+        outline_c = (0.5, 0.8, 1.0, 1)
+        eye_c = (1, 1, 1, 1)
+        feature_c = (0.6, 0.85, 1.0, 1)
+
+        if self.evolution_level >= 1:
+            body_c = (0.4, 0.6, 1.0, 1)
+            outline_c = (0.6, 0.9, 1.0, 1)
+        if self.evolution_level >= 3:
+            body_c = (body_c[0]*0.9, body_c[1]*0.9, body_c[2]*0.7, 1)
+            feature_c = (1.0, 0.9, 0.5, 1)
+        if anim_key == 'low_insight':
+            body_c = (body_c[0]*0.8, body_c[1]*0.8, body_c[2]*0.8, 1)
+            feature_c = (0.4, 0.57, 0.65, 1)
+        if self.evolution_level >= 20:
+            # Fully evolved visual tweak
+            body_c = (1, 0.9, 0.3, 1)
+            feature_c = (1, 0.6, 0.2, 1)
+
+        if not hasattr(self, '_sprite_instructions'):
             self._sprite_instructions = InstructionGroup()
             self.canvas.add(self._sprite_instructions)
+        self._sprite_instructions.clear()
 
-            pixel_size = self.width / 18
-            offset_x = (self.width - (16 * pixel_size)) / 2
-            offset_y = (self.height - (16 * pixel_size)) / 2
+        if self.evolution_level >= 2 and self.aura_color:
+            try:
+                self._sprite_instructions.add(self.aura_color)
+            except Exception:
+                pass
+            aura_size = (16 * pixel_size + 40, 16 * pixel_size + 40)
+            aura_pos = (offset_x - 20, offset_y - 20)
+            self._sprite_instructions.add(Ellipse(pos=aura_pos, size=aura_size))
 
-            # colors
-            body_c = (0.3, 0.6, 0.9, 1)
-            outline_c = (0.5, 0.8, 1.0, 1)
-            eye_c = (1, 1, 1, 1)
-            feature_c = (0.6, 0.85, 1.0, 1)
+        for y, row in enumerate(data):
+            for x, p in enumerate(row):
+                if p > 0:
+                    if p == 1:
+                        self._sprite_instructions.add(Color(*body_c))
+                    elif p == 2:
+                        self._sprite_instructions.add(Color(*eye_c))
+                    elif p == 3:
+                        self._sprite_instructions.add(Color(*outline_c))
+                    elif p == 4:
+                        self._sprite_instructions.add(Color(*feature_c))
+                    self._sprite_instructions.add(Rectangle(
+                        pos=(x * pixel_size + offset_x, self.height - (y + 1) * pixel_size - offset_y),
+                        size=(pixel_size, pixel_size)
+                    ))
 
-            if self.evolution_level >= 1:
-                body_c = (0.4, 0.6, 1.0, 1)
-                outline_c = (0.6, 0.9, 1.0, 1)
-            if self.evolution_level >= 3:
-                body_c = (body_c[0]*0.9, body_c[1]*0.9, body_c[2]*0.7, 1)
-                feature_c = (1.0, 0.9, 0.5, 1)
-            if anim_key == 'low_insight':
-                body_c = (body_c[0]*0.8, body_c[1]*0.8, body_c[2]*0.8, 1)
-                feature_c = (0.4, 0.57, 0.65, 1)
+        if not hasattr(self, '_sprite_bound'):
+            self.bind(size=lambda *a: self.draw_sprite(data, anim_key))
+            self.bind(pos=lambda *a: self.draw_sprite(data, anim_key))
+            self._sprite_bound = True
 
-            # draw aura if needed
-            if self.evolution_level >= 2 and self.aura_color:
-                try:
-                    self._sprite_instructions.add(self.aura_color)
-                except Exception:
-                    pass
-                aura_size = (16 * pixel_size + 40, 16 * pixel_size + 40)
-                aura_pos = (offset_x - 20, offset_y - 20)
-                self._sprite_instructions.add(Ellipse(pos=aura_pos, size=aura_size))
-
-            # draw pixels
-            for y, row in enumerate(data):
-                for x, p in enumerate(row):
-                    if p > 0:
-                        if p == 1:
-                            self._sprite_instructions.add(Color(*body_c))
-                        elif p == 2:
-                            self._sprite_instructions.add(Color(*eye_c))
-                        elif p == 3:
-                            self._sprite_instructions.add(Color(*outline_c))
-                        elif p == 4:
-                            self._sprite_instructions.add(Color(*feature_c))
-                        self._sprite_instructions.add(Rectangle(
-                            pos=(x * pixel_size + offset_x, self.height - (y + 1) * pixel_size - offset_y),
-                            size=(pixel_size, pixel_size)
-                        ))
-
-            # bind size and pos changes once
-            if not hasattr(self, '_sprite_bound'):
-                self.bind(size=lambda *a: self.draw_sprite(data, anim_key))
-                self.bind(pos=lambda *a: self.draw_sprite(data, anim_key))
-                self._sprite_bound = True
-
-        except Exception as e:
-            print(f"[JerryAnimator] draw_sprite error: {e}")
       
 class SplashScreen(Screen):
     def on_enter(self):
