@@ -352,6 +352,15 @@ class JerryAnimator(FloatLayout):
                 self.jerry = app.jerry_ai
             self.theme_cls = app.theme_cls
             self._define_sprites()
+
+            # Bind size and position changes to redraw
+            self.bind(
+                size=lambda *args: self.draw_sprite(self.sprites["content"][0], "content"),
+                pos=lambda *args: self.draw_sprite(self.sprites["content"][0], "content")
+            )
+        
+            # Force initial draw
+            self.draw_sprite(self.sprites["content"][0], "content")
             # Start only if companion exists or will exist
             self.start()
 
@@ -544,6 +553,7 @@ class JerryAnimator(FloatLayout):
 
     def animate(self, dt):
         if not self.companion:
+            self.draw_sprite(self.sprites["content"][0], "content")
             return
         try:
             self.companion.update_needs()
