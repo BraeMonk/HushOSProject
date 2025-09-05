@@ -28,6 +28,7 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
 from kivymd.uix.button import MDRaisedButton, MDFlatButton
 from kivymd.uix.dialog import MDDialog
+from kivy.uix.widget import Widget
 from kivy.app import App
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.navigationdrawer import MDNavigationLayout
@@ -1472,6 +1473,32 @@ class HushApp(MDApp):
          return True
        except Exception:
          return True
+
+    def change_screen(self, screen_name: str):
+        sm = self.root.ids.sm  # grab your ScreenManager
+
+        if screen_name not in [screen.name for screen in sm.screens]:
+            print(f"[HushApp] Error: Screen '{screen_name}' does not exist.")
+            return
+
+        # create a radial circle overlay
+        overlay = Widget(size=sm.size, pos=sm.pos)
+        overlay.canvas.clear()
+        with overlay.canvas:
+            from kivy.graphics import Color, Ellipse
+            Color(1, 1, 1, 1)  # white circle (can customize)
+            ellipse = Ellipse(pos=sm.center, size=(0, 0))
+
+        sm.add_widget(overlay)
+
+        # animate circle growing from center to full screen
+        anim = Animation(size=(sm.width*2, sm.height*2), pos=(sm.x-sm.width/2, sm.y-sm.height/2), duration=0.4)
+        def on_complete(*args):
+            sm.current = screen_name  # switch screens
+            sm.remove_widget(overlay)  # remove overlay
+
+        anim.bind(on_complete=on_complete)
+        anim.start(ellipse)
 
 # --- Main Entry Point ---
 if __name__ == "__main__":
