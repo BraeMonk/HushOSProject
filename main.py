@@ -511,7 +511,7 @@ class JerryAnimator(FloatLayout):
 
         pixel_size = self.width / 18
         offset_x = (self.width - (16 * pixel_size)) / 2
-        offset_y = (self.height - (16 * pixel_size)) / 2
+        offset_y = (self.height - (16 * pixel_size) - 20
 
         body_c = (0.3, 0.6, 0.9, 1)
         outline_c = (0.5, 0.8, 1.0, 1)
