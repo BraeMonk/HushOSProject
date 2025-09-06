@@ -1409,6 +1409,8 @@ class HushApp(MDApp):
             print(f"[HushApp] Error: Screen '{screen_name}' does not exist.")
             return
 
+        root_layout = self.root
+
         # create a radial circle overlay
         overlay = Widget(size=sm.size, pos=sm.pos)
         overlay.canvas.clear()
@@ -1417,14 +1419,15 @@ class HushApp(MDApp):
             Color(1, 1, 1, 1)  # white circle (can customize)
             ellipse = Ellipse(pos=sm.center, size=(0, 0))
 
-        sm.add_widget(overlay)
+        root_layout.add_widget(overlay)
 
         # animate circle growing from center to full screen
         anim = Animation(size=(sm.width*2, sm.height*2), pos=(sm.x-sm.width/2, sm.y-sm.height/2), duration=0.4)
+        
         def on_complete(*args):
             sm.current = screen_name  # switch screens
             sm.remove_widget(overlay)  # remove overlay
-
+        
         anim.bind(on_complete=on_complete)
         anim.start(ellipse)
 
